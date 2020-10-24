@@ -31,44 +31,38 @@ import kotlinx.coroutines.flow.consumeAsFlow
 
 
 open class GenericMidiController(
-    deviceInfo: MidiDeviceDescriptor.MidiInDeviceInfo,
+    private val readable: MidiDeviceDescriptor.MidiInDeviceInfo,
     private val messageMapper: MidiMessageMapper = GenericMessageMapper()
 ): MidiController, Receiver {
-    private val device: MidiDevice
-    private val transmitter: Transmitter
+    private var device: MidiDevice? = null
+    private var transmitter: Transmitter? = null
     private val output = Channel<MidiInputEvent>()
-    private val sysexResponses = Channel<SystemExclusiveMessage>()
-
-    init {
-        try {
-            device = deviceInfo.device()
-            transmitter = device.transmitter
-            transmitter.receiver = this
-        } catch (e: MidiUnavailableException) {
-            throw RuntimeException("Error fetching device $deviceInfo", e)
-        }
-    }
 
     override fun open() {
-        if (!device.isOpen) {
-            device.open()
+        try {
+            device = readable.device()
+            transmitter = device!!.transmitter
+            transmitter!!.receiver = this
+        } catch (e: MidiUnavailableException) {
+            throw RuntimeException("Error fetching device $readable", e)
+        }
+
+        if (!device!!.isOpen) {
+            device!!.open()
         }
     }
 
+    /**
+     * Actually it's receive... - Javas MIDI-Api is a bit weird here
+     */
     override fun send(message: MidiMessage?, timeStamp: Long) {
         try {
             when(message) {
                 null -> println("Unexpected empty message")
                 is ShortMessage -> triggerInputEvent(messageMapper.dispatch(message))
                 is SysexMessage -> {
-                    println("Trying to decode SysEx ${message.data.toUByteArray().toHexString()}")
-                    val decoded = messageMapper.dispatch(message)
-                    if (decoded != null) {
-                        println("Decoded $decoded")
-                        triggerInputEvent(decoded)
-                    } else {
-                        println("Undecodable SysEx message")
-                    }
+                    println("Received SysEx ${message.data.toUByteArray().toHexString()}")
+                    triggerInputEvent(MidiInputEvent.SystemExclusive(message.data.toUByteArray()))
                 }
                 else -> println("Unsupported message-type ${message.javaClass.simpleName}")
             }
@@ -83,21 +77,13 @@ open class GenericMidiController(
         }
     }
 
-    private fun triggerInputEvent(message: SystemExclusiveMessage) {
-        GlobalScope.launch {
-            sysexResponses.send(message)
-        }
-    }
-
     override fun flow(): Flow<MidiInputEvent> =
         output.consumeAsFlow()
 
-    override fun sysexFlow(): Flow<SystemExclusiveMessage> =
-        sysexResponses.consumeAsFlow()
 
     override fun close() {
         output.close()
-        device.close()
+        device?.close()
     }
 
     open class GenericMessageMapper: MidiMessageMapper {
@@ -146,8 +132,5 @@ open class GenericMidiController(
                 else ->
                     TODO("Not yet implemented")
             }
-
-        override fun dispatch(message: SysexMessage): SystemExclusiveMessage? =
-            null
     }
 }

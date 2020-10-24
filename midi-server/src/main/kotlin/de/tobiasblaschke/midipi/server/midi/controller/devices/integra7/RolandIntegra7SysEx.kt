@@ -1,7 +1,6 @@
 package de.tobiasblaschke.midipi.server.midi.controller.devices.integra7
 
 import de.tobiasblaschke.midipi.server.midi.controller.GenericMidiController
-import de.tobiasblaschke.midipi.server.midi.controller.SystemExclusiveMessage
 import javax.sound.midi.SysexMessage
 
 
@@ -25,15 +24,16 @@ fun UInt.msb(): UByte =
 
 
 object Integra7MessageMapper: GenericMidiController.GenericMessageMapper() {
-    override fun dispatch(message: SysexMessage): SystemExclusiveMessage? {
+    fun dispatch(message: de.tobiasblaschke.midipi.server.midi.controller.MidiInputEvent.SystemExclusive): Integra7SystemExclusiveMessage? {
         val responseReaders = listOf(
             Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse.IdentityReply::read,
             Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse.DataSet1Reply::read
         )
 
+        println("Unmarshallng $message")
         val response: Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse? =
             responseReaders
-                .map { it(message.data.toUByteArray()) }
+                .map { it(message.content) }
                 .firstOrNull()
 
         println("Received $response")
@@ -42,7 +42,7 @@ object Integra7MessageMapper: GenericMidiController.GenericMessageMapper() {
 }
 
 
-sealed class Integra7SystemExclusiveMessage: SystemExclusiveMessage {
+sealed class Integra7SystemExclusiveMessage {
     companion object {
         private const val EXCLUSIVE: UByte = 0xF0u
         private const val END: UByte = 0xF7u

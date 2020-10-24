@@ -7,11 +7,10 @@ import de.tobiasblaschke.midipi.server.midi.toHexString
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import javax.sound.midi.MidiMessage
 import javax.sound.midi.SysexMessage
 
-class RolandIntegra7(val readable: MidiDeviceDescriptor.MidiInDeviceInfo, val writable: MidiDeviceDescriptor.MidiOutDeviceInfo, val deviceId: DeviceId): GenericMidiController(readable, Integra7MessageMapper) {
+class RolandIntegra7(private val readable: MidiDeviceDescriptor.MidiInDeviceInfo, private val writable: MidiDeviceDescriptor.MidiOutDeviceInfo, val deviceId: DeviceId): GenericMidiController(readable, Integra7MessageMapper) {
     companion object {
         const val ROLAND: UByte = 0x41u
         const val INTEGRA7: UShort = 0x6402u
@@ -60,23 +59,25 @@ class RolandIntegra7(val readable: MidiDeviceDescriptor.MidiInDeviceInfo, val wr
         val sysexIdentityRequest = SysexMessage()
         sysexIdentityRequest.setMessage(MidiDiscovery.SysexProbe.SYSEX_IDENTITY_REQUEST_BYTES.toByteArray(), MidiDiscovery.SysexProbe.SYSEX_IDENTITY_REQUEST_BYTES.size)
         send(sysexIdentityRequest)
-        val response = sysexFlow()
+        val response = flow()
+            .filterIsInstance<de.tobiasblaschke.midipi.server.midi.controller.MidiInputEvent.SystemExclusive>()
+            .map(Integra7MessageMapper::dispatch)
             .filterIsInstance<Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse.IdentityReply>()
             .first()
         return response
     }
 
-    suspend fun getReverbType(): ReverbType {
-        val request = Integra7SystemExclusiveMessage.IntegraAddressRequests.TemporaryStudioSet.reverbType(0x00u).asSysExGet(deviceId)   // TODO: Bad to pass something here
-        send(request.asSysexMessage())
-        val response = runBlocking {
-            sysexFlow()
-                .filterIsInstance<Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse.DataSet1Reply>()
-                .map { it.bytes[0] } // TODO: Bad location for unmarshalling
-                .first()
-        }
-        return ReverbType.read(response)
-    }
+//    suspend fun getReverbType(): ReverbType {
+//        val request = Integra7SystemExclusiveMessage.IntegraAddressRequests.TemporaryStudioSet.reverbType(0x00u).asSysExGet(deviceId)   // TODO: Bad to pass something here
+//        send(request.asSysexMessage())
+//        val response = runBlocking {
+//            sysexFlow()
+//                .filterIsInstance<Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse.DataSet1Reply>()
+//                .map { it.bytes[0] } // TODO: Bad location for unmarshalling
+//                .first()
+//        }
+//        return ReverbType.read(response)
+//    }
 
     fun setReverbType(reverbType: ReverbType) {
         val request = Integra7SystemExclusiveMessage.IntegraAddressRequests.TemporaryStudioSet.reverbType(reverbType.byte).asSysExSet(deviceId)

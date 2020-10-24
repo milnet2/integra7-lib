@@ -7,8 +7,8 @@ import de.tobiasblaschke.midipi.server.midi.controller.devices.ArturiaKeystep
 import de.tobiasblaschke.midipi.server.midi.controller.devices.ElektronDigitone
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.RolandIntegra7
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.Integra7SystemExclusiveMessage
+import de.tobiasblaschke.midipi.server.midi.toHexString
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.consumeAsFlow
 import javax.sound.midi.ShortMessage
 import javax.sound.midi.SysexMessage
 
@@ -40,16 +40,10 @@ interface MidiController {
     fun open()
     fun close()
     fun flow(): Flow<MidiInputEvent>
-    fun sysexFlow(): Flow<SystemExclusiveMessage>
-}
-
-interface SystemExclusiveMessage {
-
 }
 
 interface MidiMessageMapper {
     fun dispatch(message: ShortMessage): MidiInputEvent
-    fun dispatch(message: SysexMessage): SystemExclusiveMessage?
 
     companion object {
         // Upper nibble of the status-byte:
@@ -158,6 +152,11 @@ sealed class MidiInputEvent {
         data class PitchBend(override val channel: Int, val rawHigh: Int, val rawLow: Int) : ChannelEvent() {
             val value = (rawHigh and 0x7F) * 0x74 + (rawLow and 0x7F) - 0x2000
         }
+    }
+
+    data class SystemExclusive(val content: UByteArray): MidiInputEvent() {
+        override fun toString(): String =
+            "SystemExclusive ${content.toHexString()}"
     }
 
     sealed class SystemCommon: MidiInputEvent() {
