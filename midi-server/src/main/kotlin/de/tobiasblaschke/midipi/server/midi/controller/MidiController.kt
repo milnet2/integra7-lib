@@ -5,9 +5,12 @@ import de.tobiasblaschke.midipi.server.midi.MidiDeviceDescriptor
 import de.tobiasblaschke.midipi.server.midi.controller.devices.ArturiaBeatstepPro
 import de.tobiasblaschke.midipi.server.midi.controller.devices.ArturiaKeystep
 import de.tobiasblaschke.midipi.server.midi.controller.devices.ElektronDigitone
-import de.tobiasblaschke.midipi.server.midi.controller.devices.RolandIntegra7
+import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.RolandIntegra7
+import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.Integra7SystemExclusiveMessage
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.consumeAsFlow
 import javax.sound.midi.ShortMessage
+import javax.sound.midi.SysexMessage
 
 interface MidiController {
     companion object {
@@ -19,8 +22,11 @@ interface MidiController {
                     ElektronDigitone(devicePair.readable)
                 ArturiaBeatstepPro.matches(devicePair.identifyResponse) ->
                     ArturiaBeatstepPro(devicePair.readable)
-                RolandIntegra7.matches(devicePair.identifyResponse) ->
-                    RolandIntegra7(devicePair.readable, devicePair.writable)
+                RolandIntegra7.matches(devicePair.identifyResponse) -> {
+                    val identity =
+                        Integra7SystemExclusiveMessage.SystemExclusiveRealtimeResponse.IdentityReply.read(devicePair.identifyResponse)!!
+                    RolandIntegra7(devicePair.readable, devicePair.writable, identity.deviceId)
+                }
                 else ->
                     GenericMidiController(devicePair.readable)
             }
@@ -34,10 +40,16 @@ interface MidiController {
     fun open()
     fun close()
     fun flow(): Flow<MidiInputEvent>
+    fun sysexFlow(): Flow<SystemExclusiveMessage>
+}
+
+interface SystemExclusiveMessage {
+
 }
 
 interface MidiMessageMapper {
     fun dispatch(message: ShortMessage): MidiInputEvent
+    fun dispatch(message: SysexMessage): SystemExclusiveMessage?
 
     companion object {
         // Upper nibble of the status-byte:

@@ -21,6 +21,7 @@ import de.tobiasblaschke.midipi.server.midi.controller.MidiMessageMapper.Compani
 import de.tobiasblaschke.midipi.server.midi.controller.MidiMessageMapper.Companion.SYSTEM_REAL_TIME_START
 import de.tobiasblaschke.midipi.server.midi.controller.MidiMessageMapper.Companion.SYSTEM_REAL_TIME_STOP
 import de.tobiasblaschke.midipi.server.midi.controller.MidiMessageMapper.Companion.SYSTEM_REAL_TIME_TIMING_CLOCK
+import de.tobiasblaschke.midipi.server.midi.toHexString
 import kotlinx.coroutines.channels.Channel
 import java.lang.IllegalArgumentException
 import javax.sound.midi.*
@@ -36,6 +37,7 @@ open class GenericMidiController(
     private val device: MidiDevice
     private val transmitter: Transmitter
     private val output = Channel<MidiInputEvent>()
+    private val sysexResponses = Channel<SystemExclusiveMessage>()
 
     init {
         try {
@@ -56,28 +58,49 @@ open class GenericMidiController(
     override fun send(message: MidiMessage?, timeStamp: Long) {
         try {
             when(message) {
-                is ShortMessage -> dispatchMidiMessage(message)
+                null -> println("Unexpected empty message")
+                is ShortMessage -> triggerInputEvent(messageMapper.dispatch(message))
+                is SysexMessage -> {
+                    println("Trying to decode SysEx ${message.data.toUByteArray().toHexString()}")
+                    val decoded = messageMapper.dispatch(message)
+                    if (decoded != null) {
+                        println("Decoded $decoded")
+                        triggerInputEvent(decoded)
+                    } else {
+                        println("Undecodable SysEx message")
+                    }
+                }
+                else -> println("Unsupported message-type ${message.javaClass.simpleName}")
             }
         } catch (ex: Exception) {
             ex.printStackTrace();
         }
     }
 
-    private fun dispatchMidiMessage(message: ShortMessage) {
+    private fun triggerInputEvent(message: MidiInputEvent) {
         GlobalScope.launch {
-            output.send(messageMapper.dispatch(message))
+            output.send(message)
+        }
+    }
+
+    private fun triggerInputEvent(message: SystemExclusiveMessage) {
+        GlobalScope.launch {
+            sysexResponses.send(message)
         }
     }
 
     override fun flow(): Flow<MidiInputEvent> =
         output.consumeAsFlow()
 
+    override fun sysexFlow(): Flow<SystemExclusiveMessage> =
+        sysexResponses.consumeAsFlow()
+
     override fun close() {
         output.close()
         device.close()
     }
 
-    class GenericMessageMapper: MidiMessageMapper {
+    open class GenericMessageMapper: MidiMessageMapper {
         override fun dispatch(message: ShortMessage): MidiInputEvent =
             // https://www.midi.org/specifications-old/item/table-1-summary-of-midi-message
             when(message.command) {
@@ -123,5 +146,8 @@ open class GenericMidiController(
                 else ->
                     TODO("Not yet implemented")
             }
+
+        override fun dispatch(message: SysexMessage): SystemExclusiveMessage? =
+            null
     }
 }
