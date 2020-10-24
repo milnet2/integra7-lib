@@ -26,8 +26,7 @@ import kotlinx.coroutines.channels.Channel
 import java.lang.IllegalArgumentException
 import javax.sound.midi.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.*
 
 
 open class GenericMidiController(
@@ -37,6 +36,7 @@ open class GenericMidiController(
     private var device: MidiDevice? = null
     private var transmitter: Transmitter? = null
     private val output = Channel<MidiInputEvent>()
+    private val outFlow = output.receiveAsFlow().shareIn(GlobalScope, SharingStarted.Eagerly)
 
     override fun open() {
         try {
@@ -77,8 +77,8 @@ open class GenericMidiController(
         }
     }
 
-    override fun flow(): Flow<MidiInputEvent> =
-        output.consumeAsFlow()
+    override fun flow(): SharedFlow<MidiInputEvent> =
+        outFlow
 
 
     override fun close() {

@@ -2,6 +2,7 @@ package de.tobiasblaschke.midipi.server
 
 import de.tobiasblaschke.midipi.server.midi.MatchedDevice
 import de.tobiasblaschke.midipi.server.midi.MidiDiscovery
+import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiDiscovery
 import de.tobiasblaschke.midipi.server.midi.controller.MidiController
 import de.tobiasblaschke.midipi.server.midi.controller.MidiInputEvent
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.RolandIntegra7
@@ -13,33 +14,36 @@ import kotlinx.coroutines.launch
 object MidiServerMain {
     @JvmStatic
     fun main(args: Array<String>) {
-        val d = MidiDiscovery()
-        val devices = d.scan()
+        val devices = MBJavaMidiDiscovery().scan()
         devices.forEach { println("Device $it") }
 
-        val controllers = devices
-            .filterIsInstance<MatchedDevice.Pair>()
-            .map(MidiController::create)
-
-        Thread.sleep(1000)
-        println()
-        println()
-        println()
-        println()
-
-        controllers
-            .filter { it !is RolandIntegra7 }
-            .forEach {  controller ->
-            println("Opening a ${controller.javaClass.simpleName}")
-            controller.open()
-            dumpEvents(controller)
-        }
-
-        controllers
-            .firstOrNull { it is RolandIntegra7 }
-            ?.let { dumpEvents(it) }
-
-        Thread.sleep(100000)
+//        val d = MidiDiscovery()
+//        val devices = d.scan()
+//        devices.forEach { println("Device $it") }
+//
+//        val controllers = devices
+//            .filterIsInstance<MatchedDevice.Pair>()
+//            .map(MidiController::create)
+//
+//        Thread.sleep(1000)
+//        println()
+//        println()
+//        println()
+//        println()
+//
+//        controllers
+//            .filter { it !is RolandIntegra7 }
+//            .forEach {  controller ->
+//            println("Opening a ${controller.javaClass.simpleName}")
+//            controller.open()
+//            dumpEvents(controller)
+//        }
+//
+//        controllers
+//            .firstOrNull { it is RolandIntegra7 }
+//            ?.let { dumpEvents(it) }
+//
+//        Thread.sleep(100000)
     }
 
     private fun dumpEvents(controller: MidiController) {
