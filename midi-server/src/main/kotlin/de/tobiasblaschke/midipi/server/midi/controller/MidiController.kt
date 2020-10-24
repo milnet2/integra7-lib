@@ -2,21 +2,27 @@ package de.tobiasblaschke.midipi.server.midi.controller
 
 import de.tobiasblaschke.midipi.server.midi.MatchedDevice
 import de.tobiasblaschke.midipi.server.midi.MidiDeviceDescriptor
+import de.tobiasblaschke.midipi.server.midi.controller.devices.ArturiaBeatstepPro
 import de.tobiasblaschke.midipi.server.midi.controller.devices.ArturiaKeystep
 import de.tobiasblaschke.midipi.server.midi.controller.devices.ElektronDigitone
+import de.tobiasblaschke.midipi.server.midi.controller.devices.RolandIntegra7
 import kotlinx.coroutines.flow.Flow
 import javax.sound.midi.ShortMessage
 
 interface MidiController {
     companion object {
-        fun create(deviceInfo: MatchedDevice.Pair): MidiController {
+        fun create(devicePair: MatchedDevice.Pair): MidiController {
             return when {
-                ArturiaKeystep.matches(deviceInfo.identifyResponse) ->
-                    ArturiaKeystep(deviceInfo.readable)
-                ElektronDigitone.matches(deviceInfo.identifyResponse) ->
-                    ElektronDigitone(deviceInfo.readable)
+                ArturiaKeystep.matches(devicePair.identifyResponse) ->
+                    ArturiaKeystep(devicePair.readable)
+                ElektronDigitone.matches(devicePair.identifyResponse) ->
+                    ElektronDigitone(devicePair.readable)
+                ArturiaBeatstepPro.matches(devicePair.identifyResponse) ->
+                    ArturiaBeatstepPro(devicePair.readable)
+                RolandIntegra7.matches(devicePair.identifyResponse) ->
+                    RolandIntegra7(devicePair.readable, devicePair.writable)
                 else ->
-                    GenericMidiController(deviceInfo.readable)
+                    GenericMidiController(devicePair.readable)
             }
         }
 
@@ -130,6 +136,8 @@ sealed class MidiInputEvent {
                     get() = c
                 val value: Int
                     get() = v
+                override fun toString(): String =
+                    String.format("%s c=0x%02X(%d) v=0x%02X(%d)", this.javaClass.simpleName, c, c, v, v)
             }
         }
 
