@@ -2,8 +2,6 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
-import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBMidiMessage
-import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.RolandIntegra7
 
 sealed class Integra7MemoryIO {
     abstract val deviceId: DeviceId

@@ -61,7 +61,7 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
 
     sealed class MBJavaMidiConnection: AutoCloseable, MBConnection {
         class MBJavaMidiReadWriteConnection(readable: MidiDevice, writable: MidiDevice, isAutoClose: Boolean) :
-            MBJavaMidiConnection(), MBConnectionWritable, MBConnectionReadable<UByteSerializable> {
+            MBJavaMidiConnection(), MBConnectionReadWrite<UByteSerializable> {
             private val readConnection = MBJavaMidiReadConnection(readable, isAutoClose)
             private val writeConnection = MBJavaMidiWriteConnection(writable, isAutoClose)
 

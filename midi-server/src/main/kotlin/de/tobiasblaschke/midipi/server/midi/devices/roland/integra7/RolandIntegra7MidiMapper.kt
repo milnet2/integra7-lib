@@ -46,8 +46,8 @@ class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7Midi
                 lift(generic)
             is MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific ->
                 lift(generic)
-            MBGenericMidiMessage.SystemRealTime.TimingClock -> RolandIntegra7MidiMessage.TimingClock(generic as MBMidiMessage.TimingClock)
-            MBGenericMidiMessage.SystemRealTime.ActiveSensing -> RolandIntegra7MidiMessage.ActiveSensing(generic as MBMidiMessage.ActiveSensing)
+            MBGenericMidiMessage.SystemRealTime.TimingClock -> RolandIntegra7MidiMessage.TimingClock(generic as MBUnidirectionalMidiMessage.TimingClock)
+            MBGenericMidiMessage.SystemRealTime.ActiveSensing -> RolandIntegra7MidiMessage.ActiveSensing(generic as MBUnidirectionalMidiMessage.ActiveSensing)
             else -> throw IllegalArgumentException("Unsupported MIDI-message $generic")
         }
     }

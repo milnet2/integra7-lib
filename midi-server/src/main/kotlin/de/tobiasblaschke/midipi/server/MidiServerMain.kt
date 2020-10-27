@@ -26,8 +26,8 @@ object MidiServerMain {
         integra7.withConnection { connection ->
             val dev = RolandIntegra7(connection)
 
-            dev.identity()
-
+            val identity = dev.identity().get()
+            println("Successful response! $identity")
         }
 
 //        val d = MidiDiscovery()
