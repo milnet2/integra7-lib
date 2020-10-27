@@ -1,6 +1,7 @@
 package de.tobiasblaschke.midipi.server.midi.bearable.javamidi
 
 import de.tobiasblaschke.midipi.server.midi.bearable.*
+import de.tobiasblaschke.midipi.server.midi.toHexString
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import javax.sound.midi.*
@@ -104,6 +105,7 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
                 assert(writable.isOpen)
                 assert(receiver != null)
                 // TODO: Open and close the receiver?!
+                println("Sending MIDI: $message...")
                 receiver!!.send(message, timestamp)
             }
 
@@ -183,6 +185,7 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
                             if (message == null) {
                                 println("Skipping empty MIDI-message")
                             } else {
+                                println("Received ${message.message.toUByteArray().toHexString()}")
                                 emit(MidiMessageWrapper(message))
                             }
                         }

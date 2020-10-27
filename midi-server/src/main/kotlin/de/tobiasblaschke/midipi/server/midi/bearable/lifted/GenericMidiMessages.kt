@@ -9,7 +9,39 @@ fun interface MidiMapper<I: UByteSerializable, O: UByteSerializable> {
     fun lift(`in`: I): O
 }
 
-interface MBMidiMessage: UByteSerializable
+interface MBMidiMessage: UByteSerializable {
+    interface NoteOff: MBMidiMessage { val channel: Int; val key: Int; val velocity: Int }
+    interface NoteOn: MBMidiMessage { val channel: Int; val key: Int; val velocity: Int }
+    interface PolyphonicKeyPressure: MBMidiMessage { val channel: Int; val key: Int; val velocity: Int }
+    interface AllSoundsOff: MBMidiMessage { val channel: Int }
+    interface ResetAllControllers: MBMidiMessage { val channel: Int; val value: Int }
+    interface LocalControlOff: MBMidiMessage { val channel: Int }
+    interface LocalControlOn: MBMidiMessage { val channel: Int }
+    interface AllNotesOff: MBMidiMessage { val channel: Int }
+    interface OmniModeOff: MBMidiMessage { val channel: Int }
+    interface OmniModeOn: MBMidiMessage { val channel: Int }
+    interface MonoModeOn: MBMidiMessage { val channel: Int; val channelCount: Int }
+    interface PolyModeOn: MBMidiMessage { val channel: Int }
+    interface ControlChangeController: MBMidiMessage { val channel: Int; val controllerNumber: Int; val value: Int }
+    interface ProgramChange: MBMidiMessage { val channel: Int; val programNumber: Int }
+    interface ChannelPressure: MBMidiMessage { val channel: Int; val value: Int }
+    interface PitchBend: MBMidiMessage { val channel: Int; val value: Int }
+    interface TimeCode: MBMidiMessage {val messageType: Int; val value: Int }
+    interface SongPositionPointer: MBMidiMessage {val beats: Int }
+    interface SongSelect: MBMidiMessage {val song: Int }
+    interface TuneRequest: MBMidiMessage
+    interface TimingClock: MBMidiMessage
+    interface Start: MBMidiMessage
+    interface Continue: MBMidiMessage
+    interface Stop: MBMidiMessage
+    interface ActiveSensing: MBMidiMessage
+    interface Reset: MBMidiMessage
+}
+
+@Deprecated(message = "Reserved command, don't create :)")
+data class Reserved(val bytes: UByteArray) : MBGenericMidiMessage() {
+    override fun bytes(): UByteArray = bytes
+}
 
 @ExperimentalUnsignedTypes
 open class GenericMidiMapper: MidiMapper<UByteSerializable, MBGenericMidiMessage> {
@@ -57,13 +89,7 @@ open class GenericMidiMapper: MidiMapper<UByteSerializable, MBGenericMidiMessage
                 message[0].toInt() + message[1].toInt() * 0x80 - 0x2000)
             else -> throw IllegalArgumentException("Cannot decode $baseCommand")
         } else when (message[0].toUInt()) {
-            0xF0u -> if (message[1] == 0x00u.toUByte()) {
-                MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(DeviceId.Short(message[1]),
-                    message.toList().drop(2).dropLast(1).toUByteArray())
-                } else {
-                    MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(DeviceId.Triplet(message[2], message[3]),
-                    message.toList().drop(4).dropLast(1).toUByteArray())
-                }
+            0xF0u -> liftSysex(message)
             0xF1u -> MBGenericMidiMessage.SystemCommon.TimeCode((message[1] / 0x10u).toInt(), (message[1] and 0x0Fu).toInt())
             0xF2u -> MBGenericMidiMessage.SystemCommon.SongPositionPointer((message[1] + message[2] * 0x80u).toInt())
             0xF3u -> MBGenericMidiMessage.SystemCommon.SongSelect(message[1].toInt())
@@ -86,6 +112,23 @@ open class GenericMidiMapper: MidiMapper<UByteSerializable, MBGenericMidiMessage
 
         return decoded
     }
+
+    private fun liftSysex(message: UByteArray): MBGenericMidiMessage.SystemCommon.SystemExclusive {
+        val offset: Int = if (message[1] != 0x00u.toUByte()) 1 else 3
+        val manufacturer = if (message[1] != 0x00u.toUByte()) ManufacturerId.Short(message[1]) else ManufacturerId.Triplet(message[2], message[3])
+
+        return when(manufacturer) {
+            ManufacturerId.UNIVERSAL_REALTIME ->
+                MBGenericMidiMessage.SystemCommon.SystemExclusive.UniversalRealtime(DeviceId.Short(message[2]),
+                    message.toList().drop(3).dropLast(1).toUByteArray())
+            ManufacturerId.UNIVERSAL_NON_REALTIME ->
+                MBGenericMidiMessage.SystemCommon.SystemExclusive.UniversalNonRealtime(DeviceId.Short(message[2]),
+                    message.toList().drop(3).dropLast(1).toUByteArray())
+            else ->
+                MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(manufacturer,
+                    message.toList().drop(1 + offset).dropLast(1).toUByteArray())
+        }
+    }
 }
 
 @ExperimentalUnsignedTypes
@@ -93,7 +136,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
     sealed class ChannelEvent: MBGenericMidiMessage() {
         abstract val channel: Int
 
-        data class NoteOff(override val channel: Int, val key: Int, val velocity: Int) : ChannelEvent() {
+        data class NoteOff(override val channel: Int, override val key: Int, override val velocity: Int) : ChannelEvent(), MBMidiMessage.NoteOff {
             init {
                 assert(channel in 0..15)
                 assert(key in 0..127)
@@ -103,7 +146,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                 0x80u.toUByte() and channel.toUByte(), key.toUByte(), velocity.toUByte())
         }
 
-        data class NoteOn(override val channel: Int, val key: Int, val velocity: Int) : ChannelEvent() {
+        data class NoteOn(override val channel: Int, override val key: Int, override val velocity: Int) : ChannelEvent(), MBMidiMessage.NoteOn {
             init {
                 assert(channel in 0..15)
                 assert(key in 0..127)
@@ -113,7 +156,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                 0x90u.toUByte() and channel.toUByte(), key.toUByte(), velocity.toUByte())
         }
 
-        data class PolyphonicKeyPressure(override val channel: Int, val key: Int, val velocity: Int) : ChannelEvent() {
+        data class PolyphonicKeyPressure(override val channel: Int, override val key: Int, override val velocity: Int) : ChannelEvent(), MBMidiMessage.PolyphonicKeyPressure {
             init {
                 assert(channel in 0..15)
                 assert(key in 0..127)
@@ -124,7 +167,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
         }
 
         sealed class ControlChange: ChannelEvent() {
-            data class AllSoundsOff(override val channel: Int) : ControlChange() {
+            data class AllSoundsOff(override val channel: Int) : ControlChange(), MBMidiMessage.AllSoundsOff {
                 init {
                     assert(channel in 0..15)
                 }
@@ -132,7 +175,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 120u, 0u)
             }
 
-            data class ResetAllControllers(override val channel: Int, val value: Int = 0) : ControlChange() {
+            data class ResetAllControllers(override val channel: Int, override val value: Int = 0) : ControlChange(), MBMidiMessage.ResetAllControllers {
                 init {
                     assert(channel in 0..15)
                     assert(value in 0..127)
@@ -141,7 +184,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 121u, value.toUByte())
             }
 
-            data class LocalControlOff(override val channel: Int) : ControlChange() {
+            data class LocalControlOff(override val channel: Int) : ControlChange(), MBMidiMessage.LocalControlOff {
                 init {
                     assert(channel in 0..15)
                 }
@@ -149,7 +192,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 122u, 0u)
             }
 
-            data class LocalControlOn(override val channel: Int) : ControlChange() {
+            data class LocalControlOn(override val channel: Int) : ControlChange(), MBMidiMessage.LocalControlOn {
                 init {
                     assert(channel in 0..15)
                 }
@@ -157,7 +200,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 122u, 127u)
             }
 
-            data class AllNotesOff(override val channel: Int) : ControlChange() {
+            data class AllNotesOff(override val channel: Int) : ControlChange(), MBMidiMessage.AllNotesOff {
                 init {
                     assert(channel in 0..15)
                 }
@@ -165,7 +208,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 123u, 0u)
             }
 
-            data class OmniModeOff(override val channel: Int) : ControlChange() {
+            data class OmniModeOff(override val channel: Int) : ControlChange(), MBMidiMessage.OmniModeOff {
                 init {
                     assert(channel in 0..15)
                 }
@@ -173,7 +216,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 124u, 0u)
             }
 
-            data class OmniModeOn(override val channel: Int) : ControlChange() {
+            data class OmniModeOn(override val channel: Int) : ControlChange(), MBMidiMessage.OmniModeOn {
                 init {
                     assert(channel in 0..15)
                 }
@@ -181,7 +224,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 125u, 0u)
             }
 
-            data class MonoModeOn(override val channel: Int, val channelCount: Int) : ControlChange() {
+            data class MonoModeOn(override val channel: Int, override val channelCount: Int) : ControlChange(), MBMidiMessage.MonoModeOn {
                 init {
                     assert(channel in 0..15)
                     assert(channelCount in 0..127)
@@ -190,7 +233,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 126u, channelCount.toUByte())
             }
 
-            data class PolyModeOn(override val channel: Int) : ControlChange() {
+            data class PolyModeOn(override val channel: Int) : ControlChange(), MBMidiMessage.PolyModeOn {
                 init {
                     assert(channel in 0..15)
                 }
@@ -198,7 +241,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                     0xB0u.toUByte() and channel.toUByte(), 127u, 0u)
             }
 
-            data class ControlChangeController(override val channel: Int, val controllerNumber: Int, val value: Int): ControlChange() {
+            data class ControlChangeController(override val channel: Int, override val controllerNumber: Int, override val value: Int): ControlChange(), MBMidiMessage.ControlChangeController {
                 init {
                     assert(channel in 0..15)
                     assert(controllerNumber in 0 .. 119)
@@ -211,7 +254,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
             }
         }
 
-        data class ProgramChange(override val channel: Int, val programNumber: Int): ChannelEvent() {
+        data class ProgramChange(override val channel: Int, override val programNumber: Int): ChannelEvent(), MBMidiMessage.ProgramChange {
             init {
                 assert(channel in 0..15)
                 assert(programNumber in 0 .. 127)
@@ -219,7 +262,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
             override fun bytes(): UByteArray = ubyteArrayOf(
                 0xC0.toUByte() and channel.toUByte(), programNumber.toUByte())
         }
-        data class ChannelPressure(override val channel: Int, val value: Int) : ChannelEvent() {
+        data class ChannelPressure(override val channel: Int, override val value: Int) : ChannelEvent(), MBMidiMessage.ChannelPressure {
             init {
                 assert(channel in 0..15)
                 assert(value in 0 .. 127)
@@ -227,7 +270,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
             override fun bytes(): UByteArray = ubyteArrayOf(
                 0xD0.toUByte() and channel.toUByte(), value.toUByte())
         }
-        data class PitchBend(override val channel: Int, val value: Int) : ChannelEvent() {
+        data class PitchBend(override val channel: Int, override val value: Int) : ChannelEvent(), MBMidiMessage.PitchBend {
             init {
                 assert(channel in 0..15)
                 assert(value in -16384/2 .. 16384/2)
@@ -277,18 +320,39 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
 //                }
 //            }
 
-            data class ManufacturerSpecific(val deviceId: DeviceId = ALL_DEVICES, val payload: UByteArray): SystemExclusive() {
+            data class UniversalNonRealtime(val deviceId: DeviceId = ALL_DEVICES, val payload: UByteArray): SystemExclusive() {
                 init {
                     assert(payload.all { it in 0x00u .. 0x7Fu })
                 }
                 override fun toString(): String =
-                    "SystemExclusive(to=$deviceId payload=${payload.toHexString()})"
+                    "UniversalNonRealtime(to=$deviceId payload=${payload.toHexString()})"
                 override fun bytes(): UByteArray =
-                    ubyteArrayOf(0xF0u) + deviceId.bytes() + payload + ubyteArrayOf(0xF7u)
+                   ubyteArrayOf(0xF0u, 0x7Eu) + deviceId.bytes() + payload + ubyteArrayOf(0xF7u)
+            }
+
+
+            data class UniversalRealtime(val deviceId: DeviceId = ALL_DEVICES, val payload: UByteArray): SystemExclusive() {
+                init {
+                    assert(payload.all { it in 0x00u .. 0x7Fu })
+                }
+                override fun toString(): String =
+                    "UniversalNonRealtime(to=$deviceId payload=${payload.toHexString()})"
+                override fun bytes(): UByteArray =
+                    ubyteArrayOf(0xF0u, 0x7Fu) + deviceId.bytes() + payload + ubyteArrayOf(0xF7u)
+            }
+
+            data class ManufacturerSpecific(val manufacturer: ManufacturerId, val payload: UByteArray): SystemExclusive() {
+                init {
+                    assert(payload.all { it in 0x00u .. 0x7Fu })
+                }
+                override fun toString(): String =
+                    "SystemExclusive(to=$manufacturer payload=${payload.toHexString()})"
+                override fun bytes(): UByteArray =
+                    ubyteArrayOf(0xF0u) + manufacturer.bytes() + payload + ubyteArrayOf(0xF7u)
             }
         }
 
-        data class TimeCode(val messageType: Int, val value: Int) : SystemCommon() {
+        data class TimeCode(override val messageType: Int, override val value: Int) : SystemCommon(), MBMidiMessage.TimeCode {
             init {
                 assert(messageType in 0 .. 7)
                 assert(value in 0 .. 0x0F)
@@ -297,7 +361,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                 0xF1u, (messageType * 0x10 + value).toUByte())
         }
 
-        data class SongPositionPointer(val beats: Int) : SystemCommon() {
+        data class SongPositionPointer(override val beats: Int) : SystemCommon(), MBMidiMessage.SongPositionPointer {
             public val midiClocks = beats * 6
             init {
                 assert(beats in 0 .. 0x3FFF)
@@ -309,7 +373,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
             }
         }
 
-        data class SongSelect(val song: Int) : SystemCommon() {
+        data class SongSelect(override val song: Int) : SystemCommon(), MBMidiMessage.SongSelect {
             init {
                 assert(song in 0 .. 0x7F)
             }
@@ -317,7 +381,7 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
                 0xF3u, song.toUByte())
         }
 
-        object TuneRequest: SystemCommon() {
+        object TuneRequest: SystemCommon(), MBMidiMessage.TuneRequest {
             override fun bytes(): UByteArray = ubyteArrayOf(0xF6u)
         }
 
@@ -328,27 +392,27 @@ sealed class MBGenericMidiMessage: MBMidiMessage {
     }
 
     sealed class SystemRealTime: MBGenericMidiMessage() {
-        object TimingClock: SystemRealTime() {
+        object TimingClock: SystemRealTime(), MBMidiMessage.TimingClock {
             override fun bytes(): UByteArray = ubyteArrayOf(0xF8u)
         }
 
-        object Start: SystemRealTime() {
+        object Start: SystemRealTime(), MBMidiMessage.Start {
             override fun bytes(): UByteArray = ubyteArrayOf(0xFAu)
         }
 
-        object Continue: SystemRealTime() {
+        object Continue: SystemRealTime(), MBMidiMessage.Continue {
             override fun bytes(): UByteArray = ubyteArrayOf(0xFBu)
         }
 
-        object Stop: SystemRealTime() {
+        object Stop: SystemRealTime(), MBMidiMessage.Stop {
             override fun bytes(): UByteArray = ubyteArrayOf(0xFCu)
         }
 
-        object ActiveSensing: SystemRealTime() {
+        object ActiveSensing: SystemRealTime(), MBMidiMessage.ActiveSensing {
             override fun bytes(): UByteArray = ubyteArrayOf(0xFEu)
         }
 
-        object Reset: SystemRealTime() {
+        object Reset: SystemRealTime(), MBMidiMessage.Reset {
             override fun bytes(): UByteArray = ubyteArrayOf(0xFEu)
         }
     }
@@ -364,13 +428,36 @@ sealed class DeviceId: UByteSerializable {
     companion object {
         val ALL_DEVICES = Short(0x7Fu)
     }
-    class Short(val deviceId: UByte): DeviceId() {
+    data class Short(val deviceId: UByte): DeviceId() {
         init {
             assert(deviceId in 1 .. 0x7F)
         }
         override fun bytes() = ubyteArrayOf(deviceId)
     }
-    class Triplet(val first: UByte, val second: UByte): DeviceId() {
+}
+
+@ExperimentalUnsignedTypes
+sealed class ManufacturerId: UByteSerializable {
+    companion object {
+        val UNIVERSAL_REALTIME = Short(0x7Fu)
+        val UNIVERSAL_NON_REALTIME = Short(0x7Eu)
+
+        val ROLAND = Short(0x41u)
+    }
+    data class Short(val manufacturer: UByte): ManufacturerId() {
+        init {
+            assert(manufacturer in 1 .. 0x7F)
+        }
+        override fun bytes() = ubyteArrayOf(manufacturer)
+
+        override fun toString(): String = when(this) {
+            UNIVERSAL_NON_REALTIME -> "UNIVERSAL_NON_REALTIME"
+            UNIVERSAL_REALTIME -> "UNIVERSAL_REALTIME"
+            ROLAND -> "Roland"
+            else -> super.toString()
+        }
+    }
+    data class Triplet(val first: UByte, val second: UByte): ManufacturerId() {
         init {
             assert(first in 0x00 .. 0x80)
             assert(second in 0x00 .. 0x80)
