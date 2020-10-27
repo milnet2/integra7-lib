@@ -3,13 +3,17 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 
-sealed class Integra7MemoryIO {
-    abstract val deviceId: DeviceId
-    abstract val address: Integra7Address
 
-    fun asDataRequest1(size: UInt): RolandIntegra7MidiMessage {
+
+
+abstract class Integra7MemoryIO {
+    internal abstract val deviceId: DeviceId
+    internal abstract val address: Integra7Address
+    internal abstract val size: UInt
+
+    fun asDataRequest1(): RolandIntegra7MidiMessage {
         val payload = size.toByteArrayMsbFirst()
-        return RolandIntegra7MidiMessage.IntegraSysExRequest(
+        return RolandIntegra7MidiMessage.IntegraSysExReadRequest(
             deviceId = deviceId,
             payload =
                     ubyteArrayOf(0x11u) +   // Command
@@ -19,7 +23,7 @@ sealed class Integra7MemoryIO {
     }
 
     fun asDataSet1(payload: UByteArray): RolandIntegra7MidiMessage {
-        return RolandIntegra7MidiMessage.IntegraSysExRequest(
+        return RolandIntegra7MidiMessage.IntegraSysExReadRequest(
             deviceId = deviceId,
             payload =
                     ubyteArrayOf(0x12u) +
@@ -45,6 +49,42 @@ sealed class Integra7MemoryIO {
         return ubyteArrayOf(msb, mmsb, mlsb, lsb)
     }
 }
+
+
+// ----------------------------------------------------
+
+class AddressRequestBuilder(deviceId: DeviceId) {
+    val tone1 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000))
+    val test = TestDummy(deviceId, Integra7Address(0x19000000))
+}
+
+/* internal abstract */ data class ToneAddressRequestBuilder(private val deviceId: DeviceId, private val address: Integra7Address) {
+    val pcmSynthTone = PcmSynthToneBuilder(deviceId, address.offsetBy(0x000000))
+}
+
+/* internal */ data class PcmSynthToneBuilder(private val deviceId: DeviceId, private val address: Integra7Address) {
+    val common = PcmSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
+}
+
+/* internal */ data class PcmSynthToneCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+    override val size: UInt = 0x50u
+
+    val name = PcmSynthToneCommonName(deviceId, address.offsetBy(0x000000))
+}
+
+/* internal */ data class PcmSynthToneCommonName(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+    override val size: UInt = 0x0Cu
+
+}
+
+data class TestDummy(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+    override val size: UInt = 0x200000u
+
+    // F0 41 10 00 00 64 11 - 19 00 00 00 - 00 20 00 00 - 7F F7
+}
+
+// ----------------------------------------------------
+
 
 //sealed class Integra7SysexResponse: MBMidiMessage {
 //    companion object {
@@ -118,11 +158,16 @@ sealed class Integra7MemoryIO {
 //}
 
 data class Integra7Address(val address: Int): UByteSerializable {
-    val msb: UByte = TODO()
-    val mmsb: UByte = TODO()
-    val mlsb: UByte = TODO()
-    val lsb: UByte = TODO()
+    val msb: UByte = (address / 0x1000000).toUByte()
+    val mmsb: UByte = ((address / 0x10000).toUInt() and 0xFFu).toUByte()
+    val mlsb: UByte = ((address / 0x100).toUInt() and 0xFFu).toUByte()
+    val lsb: UByte = (address.toUInt() and 0xFFu).toUByte()
 
     override fun bytes(): UByteArray =
         ubyteArrayOf(msb, mmsb, mlsb, lsb)
+
+    fun offsetBy(offset: Int): Integra7Address {
+        // TODO: Add assertions
+        return Integra7Address(address + offset)
+    }
 }

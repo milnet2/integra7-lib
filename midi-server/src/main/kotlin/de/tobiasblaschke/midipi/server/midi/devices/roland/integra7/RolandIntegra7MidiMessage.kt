@@ -422,7 +422,27 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
     /**
      * @param payload starting with COMMAND, excluding EOX
      */
-    internal data class IntegraSysExRequest(val deviceId: DeviceId, val payload: UByteArray): RolandIntegra7MidiMessage() {
+    internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val payload: UByteArray): MBUnidirectionalMidiMessage, RolandIntegra7MidiMessage() { // TODO: Make a MBResponseMidiMessage!
+        private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
+            manufacturer = ROLAND,
+            payload = deviceId.bytes() + INTEGRA7 + payload)
+        override fun bytes() = delegate.bytes()
+    }
+
+    /**
+     * @param payload starting with COMMAND, excluding EOX
+     */
+    internal data class IntegraSysExWriteRequest(val deviceId: DeviceId, val payload: UByteArray): MBUnidirectionalMidiMessage, RolandIntegra7MidiMessage() {
+        private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
+            manufacturer = ROLAND,
+            payload = deviceId.bytes() + INTEGRA7 + payload)
+        override fun bytes() = delegate.bytes()
+    }
+
+    /**
+     * @param payload starting with COMMAND, excluding EOX
+     */
+    internal data class IntegraSysExDataSet1Response(val deviceId: DeviceId, val payload: UByteArray): MBResponseMidiMessage, RolandIntegra7MidiMessage() {
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
             manufacturer = ROLAND,
             payload = deviceId.bytes() + INTEGRA7 + payload)

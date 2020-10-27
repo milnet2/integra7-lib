@@ -221,8 +221,44 @@ sealed class Integra7SystemExclusiveMessage {
                     TemporaryStudioSetOffset.COMMON_REVERB.offset +
                             0x00u, // ReverbType
                     ubyteArrayOf(value), 0x01u)
-
         }
+
+        sealed class PcmSynthTone {
+            abstract val offsetAddress: UInt
+
+            object PcmSynthToneCommon: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x000000u
+            }
+
+            object PcmSynthToneCommonMfx: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x000200u
+            }
+
+            object PcmSynthTonePartialMixTable: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x001000u
+            }
+
+            object PcmSynthTonePartial1: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x002000u
+            }
+
+            object PcmSynthTonePartial2: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x002200u
+            }
+
+            object PcmSynthTonePartial3: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x002400u
+            }
+
+            object PcmSynthTonePartial4: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x002600u
+            }
+
+            object PcmSynthToneCommon2: PcmSynthTone() {
+                override val offsetAddress: UInt = 0x003000u
+            }
+        }
+
     }
 
     data class IntegraAddressRequest(val startAddress: IntegraStartAddress, val offsetAddress: UInt, val payload: UByteArray, val size: UInt) {

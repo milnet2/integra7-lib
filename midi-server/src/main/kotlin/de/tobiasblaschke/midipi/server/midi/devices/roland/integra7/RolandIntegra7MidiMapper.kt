@@ -133,11 +133,19 @@ class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7Midi
     }
 
     private fun lift(message: MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific): RolandIntegra7MidiMessage {
-        TODO("${message.javaClass.simpleName} - payload ${message.payload.toHexString()}")
-//        return when (message.payload[2] * 0x100u + message.payload[3]) {
-//            0x0404u -> TODO() // RolandIntegra7MidiMessage.IntegraSysExRequest(message.)
-//
-//
-//        }
+        return if (message.manufacturer == ManufacturerId.ROLAND) {
+            val deviceId = DeviceId.Short(message.payload[0])
+            val modelId = message.payload[1] * 0x10000u + message.payload[2] * 0x100u + message.payload[3]
+            assert(modelId == 0x000064u)
+            val command = message.payload[4]
+
+            return when(command.toUInt()) {
+                0x12u -> RolandIntegra7MidiMessage.IntegraSysExDataSet1Response(deviceId,
+                    message.payload.toList().drop(6).dropLast(1).toUByteArray())
+                else -> throw IllegalArgumentException("Unsupported command $command in ${message.payload.toHexString()}")
+            }
+        } else {
+            throw IllegalArgumentException("Manufacturer is not Roland")
+        }
     }
 }

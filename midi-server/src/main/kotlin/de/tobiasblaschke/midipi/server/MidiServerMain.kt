@@ -31,6 +31,8 @@ object MidiServerMain {
 
             con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
 
+            // con.request { it.tone1.pcmSynthTone.common }
+            con.request { it.test }
         }
 
 //        val d = MidiDiscovery()

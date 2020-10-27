@@ -13,6 +13,11 @@ class RolandIntegra7(
     private val midiMapper: MidiMapper<UByteSerializable, RolandIntegra7MidiMessage> = RolandIntegra7MidiMapper()) {
 
     private val device = RequestResponseConnection(midiDevice, midiMapper)
+    private val addressRequestBuilder: CompletableFuture<AddressRequestBuilder> =
+        device.send(RolandIntegra7MidiMessage.IdentityRequest())
+            .map { it as RolandIntegra7MidiMessage.IdentityReply }
+            .map { AddressRequestBuilder(it.deviceId) }
+
 
     init {
         device.subscribe {
@@ -27,6 +32,11 @@ class RolandIntegra7(
 
     fun send(rpn: RolandIntegra7RpnMessage) {
         rpn.messages.forEach { device.send(it, -1) }
+    }
+
+    fun request(req: (AddressRequestBuilder) -> Integra7MemoryIO) {
+        val sysEx: RolandIntegra7MidiMessage = req(addressRequestBuilder.get()).asDataRequest1()
+        device.send(sysEx, -1)
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {
