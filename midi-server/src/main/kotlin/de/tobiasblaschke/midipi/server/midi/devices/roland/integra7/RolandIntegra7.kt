@@ -2,6 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
+import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBUnidirectionalMidiMessage
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MidiMapper
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.RequestResponseConnection
 import java.util.concurrent.CompletableFuture
@@ -18,6 +19,14 @@ class RolandIntegra7(
             val message = midiMapper.lift(it)
             println("Received $message")
         }
+    }
+
+    fun <M> send(unidirectional: M, timestamp: Long = -1) where M: MBUnidirectionalMidiMessage, M: RolandIntegra7MidiMessage {
+        device.send(unidirectional, timestamp)
+    }
+
+    fun send(rpn: RolandIntegra7RpnMessage) {
+        rpn.messages.forEach { device.send(it, -1) }
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {

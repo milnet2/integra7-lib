@@ -90,6 +90,7 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
             private var receiver: Receiver? = null
 
             override fun send(message: UByteSerializable, timestamp: Long) {
+                println("Sending MIDI: ${message.bytes().toHexString()} <== $message...")
                 when (message) {
                     is MidiMessageWrapper -> send(message, timestamp)
                     is MidiMessage -> send(message as MidiMessage, timestamp)
@@ -97,15 +98,14 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
                 }
             }
 
-            fun send(message: MidiMessageWrapper, timestamp: Long = -1) {
+            private fun send(message: MidiMessageWrapper, timestamp: Long = -1) {
                 send(message.unwrap(), timestamp)
             }
 
-            fun send(message: MidiMessage, timestamp: Long = -1) {
+            private fun send(message: MidiMessage, timestamp: Long = -1) {
                 assert(writable.isOpen)
                 assert(receiver != null)
                 // TODO: Open and close the receiver?!
-                println("Sending MIDI: $message...")
                 receiver!!.send(message, timestamp)
             }
 

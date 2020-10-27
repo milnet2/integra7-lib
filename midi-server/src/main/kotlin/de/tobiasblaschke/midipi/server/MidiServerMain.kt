@@ -2,9 +2,9 @@ package de.tobiasblaschke.midipi.server
 
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiDiscovery
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
-import de.tobiasblaschke.midipi.server.midi.controller.MidiController
-import de.tobiasblaschke.midipi.server.midi.controller.MidiInputEvent
+import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBGenericMidiMessage
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7MidiMessage
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
@@ -24,10 +24,13 @@ object MidiServerMain {
         println("Integra: $integra7")
 
         integra7.withConnection { connection ->
-            val dev = RolandIntegra7(connection)
+            val con = RolandIntegra7(connection)
 
-            val identity = dev.identity().get()
+            val identity = con.identity().get()
             println("Successful response! $identity")
+
+            con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
+
         }
 
 //        val d = MidiDiscovery()
