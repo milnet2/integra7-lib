@@ -2,6 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
+import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBRequestResponseMidiMessage
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBUnidirectionalMidiMessage
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MidiMapper
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.RequestResponseConnection
@@ -34,9 +35,10 @@ class RolandIntegra7(
         rpn.messages.forEach { device.send(it, -1) }
     }
 
-    fun request(req: (AddressRequestBuilder) -> Integra7MemoryIO) {
+    fun request(req: (AddressRequestBuilder) -> Integra7MemoryIO): CompletableFuture<RolandIntegra7MidiMessage.IntegraSysExDataSet1Response> {
         val sysEx: RolandIntegra7MidiMessage = req(addressRequestBuilder.get()).asDataRequest1()
-        device.send(sysEx, -1)
+        return device.send(sysEx as MBRequestResponseMidiMessage, -1)
+            .map { it as RolandIntegra7MidiMessage.IntegraSysExDataSet1Response }
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {

@@ -4,6 +4,7 @@ import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.lsb
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.msb
+import java.lang.Exception
 
 sealed class RolandIntegra7MidiMessage: UByteSerializable {
     companion object {
@@ -420,13 +421,44 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
     }
 
     /**
-     * @param payload starting with COMMAND, excluding EOX
+     * @param checkSum starting with COMMAND, excluding EOX
      */
-    internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val payload: UByteArray): MBUnidirectionalMidiMessage, RolandIntegra7MidiMessage() { // TODO: Make a MBResponseMidiMessage!
+    internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val address: Integra7Address, val size: UInt, val checkSum: UByte): MBRequestResponseMidiMessage, RolandIntegra7MidiMessage() {
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
             manufacturer = ROLAND,
-            payload = deviceId.bytes() + INTEGRA7 + payload)
+            payload = deviceId.bytes() + INTEGRA7 + 0x11u + address.bytes() + size.toByteArrayMsbFirst() + checkSum)
         override fun bytes() = delegate.bytes()
+        override fun isExpectingResponse(message: MBResponseMidiMessage): Boolean {
+            // There may only be one message out in the wild at a time, so it's sufficient to test the type
+            return message is IntegraSysExDataSet1Response
+        }
+
+        override fun isComplete(message: MBResponseMidiMessage): Boolean {
+            val response = message as IntegraSysExDataSet1Response
+            val expectedEndAddress = Integra7Address(address.address + size.toInt())
+            val actualEndAddress = Integra7Address(response.startAddress.address + response.payload.size)
+            val complete = expectedEndAddress == actualEndAddress ||
+                    response.startAddress.address == 0x19020200 // TODO: Bodge!
+            println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.toInt()} Bytes => complete = $complete")
+            return complete
+        }
+
+        override fun merge(left: MBResponseMidiMessage, right: MBResponseMidiMessage): MBResponseMidiMessage {
+            try {
+                val l = left as IntegraSysExDataSet1Response
+                val r = right as IntegraSysExDataSet1Response
+                println("Padding ${r.startAddress} - ${l.startAddress} + ${l.payload.size}")
+                val paddingLength = r.startAddress.address - l.startAddress.address + l.payload.size
+                val padding = UByteArray(paddingLength) { 0x00u }
+
+                val payload: UByteArray = l.payload + padding + r.payload
+
+                return IntegraSysExDataSet1Response(deviceId, l.startAddress, payload, 0x00u)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
+            }
+        }
     }
 
     /**
@@ -442,10 +474,10 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
     /**
      * @param payload starting with COMMAND, excluding EOX
      */
-    internal data class IntegraSysExDataSet1Response(val deviceId: DeviceId, val payload: UByteArray): MBResponseMidiMessage, RolandIntegra7MidiMessage() {
+    data class IntegraSysExDataSet1Response(val deviceId: DeviceId, val startAddress: Integra7Address, val payload: UByteArray, val checkSum: UByte): MBResponseMidiMessage, RolandIntegra7MidiMessage() {
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
             manufacturer = ROLAND,
-            payload = deviceId.bytes() + INTEGRA7 + payload)
+            payload = deviceId.bytes() + INTEGRA7 + 0x12u + startAddress.bytes() + payload + checkSum)
         override fun bytes() = delegate.bytes()
     }
 }

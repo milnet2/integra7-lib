@@ -39,6 +39,11 @@ interface MBUnidirectionalMidiMessage: UByteSerializable {
 
 interface MBRequestResponseMidiMessage: UByteSerializable {
     fun isExpectingResponse(message: MBResponseMidiMessage): Boolean
+    fun isComplete(message: MBResponseMidiMessage): Boolean = true
+    fun merge(left: MBResponseMidiMessage, right: MBResponseMidiMessage): MBResponseMidiMessage {
+        println("OVERRIDE ME!!!")
+        TODO("Not yet implemented")
+    }
 }
 
 interface MBResponseMidiMessage: UByteSerializable

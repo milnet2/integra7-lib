@@ -2,8 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
-
-
+import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBRequestResponseMidiMessage
 
 
 abstract class Integra7MemoryIO {
@@ -12,18 +11,15 @@ abstract class Integra7MemoryIO {
     internal abstract val size: UInt
 
     fun asDataRequest1(): RolandIntegra7MidiMessage {
-        val payload = size.toByteArrayMsbFirst()
         return RolandIntegra7MidiMessage.IntegraSysExReadRequest(
             deviceId = deviceId,
-            payload =
-                    ubyteArrayOf(0x11u) +   // Command
-                    address.bytes() +
-                    payload +
-                    checkSum(payload))
+            address = address,
+            size = size,
+            checkSum = checkSum(size.toByteArrayMsbFirst()))
     }
 
     fun asDataSet1(payload: UByteArray): RolandIntegra7MidiMessage {
-        return RolandIntegra7MidiMessage.IntegraSysExReadRequest(
+        return RolandIntegra7MidiMessage.IntegraSysExWriteRequest(
             deviceId = deviceId,
             payload =
                     ubyteArrayOf(0x12u) +
@@ -40,17 +36,15 @@ abstract class Integra7MemoryIO {
         val reminder = (totalSum % 128u).toUByte()
         return if (reminder < 128u) (128u - reminder).toUByte() else (reminder - 128u).toUByte()
     }
-
-    private fun UInt.toByteArrayMsbFirst(): UByteArray {
-        val lsb = this.and(0xFFu).toUByte()
-        val mlsb = (this / 0x100u).and(0xFFu).toUByte()
-        val mmsb = (this / 0x10000u).and(0xFFu).toUByte()
-        val msb = (this / 0x1000000u).toUByte()
-        return ubyteArrayOf(msb, mmsb, mlsb, lsb)
-    }
 }
 
-
+fun UInt.toByteArrayMsbFirst(): UByteArray {
+    val lsb = this.and(0xFFu).toUByte()
+    val mlsb = (this / 0x100u).and(0xFFu).toUByte()
+    val mmsb = (this / 0x10000u).and(0xFFu).toUByte()
+    val msb = (this / 0x1000000u).toUByte()
+    return ubyteArrayOf(msb, mmsb, mlsb, lsb)
+}
 // ----------------------------------------------------
 
 class AddressRequestBuilder(deviceId: DeviceId) {
@@ -170,4 +164,7 @@ data class Integra7Address(val address: Int): UByteSerializable {
         // TODO: Add assertions
         return Integra7Address(address + offset)
     }
+
+    override fun toString(): String =
+        String.format("0x%08X", address)
 }
