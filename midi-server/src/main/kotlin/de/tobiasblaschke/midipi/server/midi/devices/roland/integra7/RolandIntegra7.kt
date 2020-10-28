@@ -2,10 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
-import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBRequestResponseMidiMessage
-import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBUnidirectionalMidiMessage
-import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MidiMapper
-import de.tobiasblaschke.midipi.server.midi.bearable.lifted.RequestResponseConnection
+import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
@@ -15,7 +12,7 @@ class RolandIntegra7(
     private val midiMapper: MidiMapper<UByteSerializable, RolandIntegra7MidiMessage> = RolandIntegra7MidiMapper()) {
 
     private val device = RequestResponseConnection(midiDevice, midiMapper)
-    private val addressRequestBuilder: CompletableFuture<AddressRequestBuilder> =
+    private val addressRequestBuilder: MonadicFuture<AddressRequestBuilder> =
         device.send(RolandIntegra7MidiMessage.IdentityRequest())
             .map { it as RolandIntegra7MidiMessage.IdentityReply }
             .map { AddressRequestBuilder(it.deviceId) }
@@ -38,7 +35,7 @@ class RolandIntegra7(
         rpn.messages.forEach { device.send(it, -1) }
     }
 
-    fun <T> request(req: (AddressRequestBuilder) -> Integra7MemoryIO<T>): CompletableFuture<T> {
+    fun <T> request(req: (AddressRequestBuilder) -> Integra7MemoryIO<T>): MonadicFuture<T> {
         val addressRange = req(addressRequestBuilder.get())
         val sysEx: RolandIntegra7MidiMessage = addressRange.asDataRequest1()
         return device.send(sysEx as MBRequestResponseMidiMessage, -1)

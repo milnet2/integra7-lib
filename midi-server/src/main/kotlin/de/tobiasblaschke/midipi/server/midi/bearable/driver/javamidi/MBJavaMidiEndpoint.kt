@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.bearable.javamidi
 import de.tobiasblaschke.midipi.server.midi.bearable.*
 import de.tobiasblaschke.midipi.server.midi.toHexString
 import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 import javax.sound.midi.*
 
@@ -151,7 +152,7 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
             private val refCount = AtomicInteger(0)
             private var shouldClose = isAutoClose
             private var transmitter: Transmitter? = null
-            private val listeners = mutableListOf<(UByteSerializable) -> Unit>()
+            private val listeners = ArrayBlockingQueue<(UByteSerializable) -> Unit>(5)
 
             override fun open() {
                 if (readable.isOpen) {

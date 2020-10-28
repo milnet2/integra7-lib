@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.bearable.lifted
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId.Companion.ALL_DEVICES
 import de.tobiasblaschke.midipi.server.midi.toHexString
+import java.time.Duration
 
 fun interface MidiMapper<I: UByteSerializable, O: UByteSerializable> {
     fun lift(`in`: I): O
@@ -38,6 +39,7 @@ interface MBUnidirectionalMidiMessage: UByteSerializable {
 }
 
 interface MBRequestResponseMidiMessage: UByteSerializable {
+    val completeAfter: Duration?
     fun isExpectingResponse(message: MBResponseMidiMessage): Boolean
     fun isComplete(message: MBResponseMidiMessage): Boolean = true
     fun merge(left: MBResponseMidiMessage, right: MBResponseMidiMessage): MBResponseMidiMessage {

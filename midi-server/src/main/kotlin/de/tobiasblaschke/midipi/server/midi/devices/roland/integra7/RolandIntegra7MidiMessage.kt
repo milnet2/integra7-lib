@@ -5,6 +5,7 @@ import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.lsb
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.msb
 import java.lang.Exception
+import java.time.Duration
 
 sealed class RolandIntegra7MidiMessage: UByteSerializable {
     companion object {
@@ -354,6 +355,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
     // Specific sysEx-messages
     // -------------------------------------------------------------
     data class IdentityRequest(val deviceId: DeviceId = DeviceId.ALL_DEVICES): MBRequestResponseMidiMessage, RolandIntegra7MidiMessage() {
+        override val completeAfter: Duration? = null
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.UniversalNonRealtime(deviceId,
             payload = ubyteArrayOf(0x6u, 0x1u))
         override fun bytes() = delegate.bytes()
@@ -424,6 +426,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
      * @param checkSum starting with COMMAND, excluding EOX
      */
     internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val address: Integra7Address, val size: UInt, val checkSum: UByte): MBRequestResponseMidiMessage, RolandIntegra7MidiMessage() {
+        override val completeAfter = Duration.ofMillis(50)
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
             manufacturer = ROLAND,
             payload = deviceId.bytes() + INTEGRA7 + 0x11u + address.bytes() + size.toByteArrayMsbFirst() + checkSum)
@@ -437,25 +440,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
             val response = message as IntegraSysExDataSet1Response
             val expectedEndAddress = Integra7Address(address.address + size.toInt() - 1)
             val actualEndAddress = Integra7Address(response.startAddress.address + response.payload.size)
-            val complete = expectedEndAddress == actualEndAddress ||
-                    response.startAddress.address == 0x19020200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19220200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19420200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19620200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19820200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19A20200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19C20200 || // TODO: Bodge!
-                    response.startAddress.address == 0x19E20200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1A020200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1A220200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1A420200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1A620200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1A820200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1AA20200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1AC20200 || // TODO: Bodge!
-                    response.startAddress.address == 0x1AE20200 || // TODO: Bodge!
-                    response.startAddress.address == 0x18005F00 ||    // TODO: another Bodge
-                    actualEndAddress.address == 0x18000055
+            val complete = expectedEndAddress == actualEndAddress
             println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.toInt()} Bytes => complete = $complete")
             return complete
         }
