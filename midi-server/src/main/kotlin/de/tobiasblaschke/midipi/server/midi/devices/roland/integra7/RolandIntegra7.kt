@@ -6,6 +6,7 @@ import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBRequestResponseMid
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBUnidirectionalMidiMessage
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MidiMapper
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.RequestResponseConnection
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -19,6 +20,8 @@ class RolandIntegra7(
             .map { it as RolandIntegra7MidiMessage.IdentityReply }
             .map { AddressRequestBuilder(it.deviceId) }
 
+    fun part(p: IntegraPart) =
+        Integra7PartFacade(p, this)
 
     init {
         device.subscribe {
@@ -35,7 +38,7 @@ class RolandIntegra7(
         rpn.messages.forEach { device.send(it, -1) }
     }
 
-    fun request(req: (AddressRequestBuilder) -> Integra7MemoryIO): CompletableFuture<Any> {
+    fun <T> request(req: (AddressRequestBuilder) -> Integra7MemoryIO<T>): CompletableFuture<T> {
         val addressRange = req(addressRequestBuilder.get())
         val sysEx: RolandIntegra7MidiMessage = addressRange.asDataRequest1()
         return device.send(sysEx as MBRequestResponseMidiMessage, -1)
@@ -51,4 +54,25 @@ class RolandIntegra7(
 
     fun <T, R> CompletableFuture<T>.map(mapper: (T) -> R): CompletableFuture<R> =
         this.thenApply(mapper)
+
+
+
+
+    class Integra7PartFacade(private val part: IntegraPart, private val integra: RolandIntegra7) {
+        val sound: Integra7ToneFacade
+            get() = Integra7ToneFacade(integra.request({ it.tones[part]!! }).get())
+
+        class Integra7ToneFacade(private val tone: ToneAddressRequestBuilder.TemporaryTone) {  // Temporary Tone
+            val pcm: PcmSynthToneBuilder.PcmSynthTone
+                get() = tone.pcmSynthTone
+        }
+    }
 }
+
+enum class IntegraPart(val zeroBased: Int) {
+    P1(0), P2(1), P3(2), P4(3), P5(4),
+    P6(5), P7(6), P8(7), P9(8), P10(9),
+    P11(10), P12(11), P13(12), P14(13), P15(14),
+    P16(15)
+}
+

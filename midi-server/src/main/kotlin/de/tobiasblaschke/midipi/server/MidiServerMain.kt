@@ -2,15 +2,8 @@ package de.tobiasblaschke.midipi.server
 
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiDiscovery
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
-import de.tobiasblaschke.midipi.server.midi.bearable.lifted.MBGenericMidiMessage
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.IntegraPart
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7MidiMessage
-import de.tobiasblaschke.midipi.server.midi.toHexString
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import java.util.concurrent.CompletableFuture
 
 object MidiServerMain {
     @JvmStatic
@@ -28,18 +21,30 @@ object MidiServerMain {
         integra7.withConnection { connection ->
             val con = RolandIntegra7(connection)
 
-            val identity = con.identity().get()
-            println("Successful response! $identity")
+            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
 
-            con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
+            IntegraPart.values()
+                .forEach { part ->
+                    println("Part $part: " +
+                            con.part(part)
+                                .sound.pcm.common)
+                }
+
+
+
+
+//            val identity = con.identity().get()
+//            println("Successful response! $identity")
+//
+//            con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
 
             // con.request { it.tone1.pcmSynthTone.common }
-            val future: CompletableFuture<Any> = con.request { it.tone1 }
-            //val future: CompletableFuture<Any> = con.request { it.studioSet }
-//            val future: CompletableFuture<Any> = con.request { it.studioSet.common }
-            println("waiting....")
-            val mem = future.get()
-            println("$mem")
+//            val future: CompletableFuture<Any> = con.request { it.tone1 }
+//            //val future: CompletableFuture<Any> = con.request { it.studioSet }
+////            val future: CompletableFuture<Any> = con.request { it.studioSet.common }
+//            println("waiting....")
+//            val mem = future.get()
+//            println("$mem")
 //            println()
 //            println()
 //            println()

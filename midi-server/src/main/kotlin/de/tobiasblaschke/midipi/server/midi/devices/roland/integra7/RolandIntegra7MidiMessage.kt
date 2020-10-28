@@ -439,6 +439,21 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
             val actualEndAddress = Integra7Address(response.startAddress.address + response.payload.size)
             val complete = expectedEndAddress == actualEndAddress ||
                     response.startAddress.address == 0x19020200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19220200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19420200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19620200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19820200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19A20200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19C20200 || // TODO: Bodge!
+                    response.startAddress.address == 0x19E20200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1A020200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1A220200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1A420200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1A620200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1A820200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1AA20200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1AC20200 || // TODO: Bodge!
+                    response.startAddress.address == 0x1AE20200 || // TODO: Bodge!
                     response.startAddress.address == 0x18005F00 ||    // TODO: another Bodge
                     actualEndAddress.address == 0x18000055
             println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.toInt()} Bytes => complete = $complete")
@@ -449,7 +464,6 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
             try {
                 val l = left as IntegraSysExDataSet1Response
                 val r = right as IntegraSysExDataSet1Response
-                println("Padding ${r.startAddress} - ${l.startAddress} + ${l.payload.size}")
                 val paddingLength = r.startAddress.address - l.startAddress.address + l.payload.size
                 val padding = UByteArray(paddingLength) { 0x00u }
 

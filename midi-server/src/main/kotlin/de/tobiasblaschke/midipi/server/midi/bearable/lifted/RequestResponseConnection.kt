@@ -2,6 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.bearable.lifted
 
 import de.tobiasblaschke.midipi.server.midi.bearable.MBConnectionReadWrite
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
+import java.lang.RuntimeException
 import java.util.concurrent.CompletableFuture
 
 class RequestResponseConnection<T: UByteSerializable, L: UByteSerializable>(
@@ -17,7 +18,6 @@ class RequestResponseConnection<T: UByteSerializable, L: UByteSerializable>(
                 val matchedPair = responseCorrelation.firstOrNull { it.first.isExpectingResponse(message) }
                 if (matchedPair != null) {
                     if (matchedPair.first.isComplete(message)) {
-                        println("Message complete")
                         responseCorrelation.remove(matchedPair)
                         matchedPair.second.complete(message)
                     } else {
@@ -26,13 +26,15 @@ class RequestResponseConnection<T: UByteSerializable, L: UByteSerializable>(
                         val originalFuture = matchedPair.second
                         val nextChunk = CompletableFuture<L>()
                         nextChunk.whenComplete { response, throwable ->
-                                if (throwable != null) {
-                                    println("COMBINING!!!!!! Error: $throwable")
-                                    originalFuture.completeExceptionally(throwable)
-                                } else {
-                                    val ret = matchedPair.first.merge(message, response as MBResponseMidiMessage) as L
-                                    println("COMBINING!!!!!! Response: $ret")
-                                    originalFuture.complete(ret)
+                                try {
+                                    if (throwable != null) {
+                                        originalFuture.completeExceptionally(throwable)
+                                    } else {
+                                        val ret = matchedPair.first.merge(message, response as MBResponseMidiMessage) as L
+                                        originalFuture.complete(ret)
+                                    }
+                                } catch (e: RuntimeException) {
+                                    originalFuture.completeExceptionally(e)
                                 }
                             }
 

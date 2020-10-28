@@ -6,7 +6,7 @@ import java.lang.IllegalArgumentException
 import kotlin.math.min
 
 
-abstract class Integra7MemoryIO {
+abstract class Integra7MemoryIO<T> {
     internal abstract val deviceId: DeviceId
     internal abstract val address: Integra7Address
     internal abstract val size: UInt
@@ -38,7 +38,7 @@ abstract class Integra7MemoryIO {
         return if (reminder < 128u) (128u - reminder).toUByte() else (reminder - 128u).toUByte()
     }
 
-    abstract fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): Any
+    abstract fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): T
 }
 
 fun UInt.toByteArrayMsbFirst(): UByteArray {
@@ -50,42 +50,32 @@ fun UInt.toByteArrayMsbFirst(): UByteArray {
 }
 // ----------------------------------------------------
 
-class AddressRequestBuilder(deviceId: DeviceId) {
+class AddressRequestBuilder(private val deviceId: DeviceId) {
     val setup = SetupRequestBuilder(deviceId, Integra7Address(0x01000000))
     val system = SystemCommonRequestBuilder(deviceId, Integra7Address(0x02000000))
     val studioSet = StudioSetAddressRequestBuilder(deviceId, Integra7Address(0x18000000))
-    val tone1 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 0))
-    val tone2 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 1))
-    val tone3 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 2))
-    val tone4 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 3))
-    val tone5 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 4))
-    val tone6 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 5))
-    val tone7 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 6))
-    val tone8 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 7))
-    val tone9 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 8))
-    val tone10 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 9))
-    val tone11 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 10))
-    val tone12 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 11))
-    val tone13 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 12))
-    val tone14 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 13))
-    val tone15 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 14))
-    val tone16 = ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * 15))
+
+    val tones: Map<IntegraPart, ToneAddressRequestBuilder> = IntegraPart.values()
+        .map { it to ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000 + 0x200000 * it.zeroBased)) }
+        .toMap()
 
     fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): Values {
         //assert(length <= size.toInt())
         assert(payload.size <= length)
 
         return Values(
-            tone1 = tone1.interpret(startAddress, 0x303C, payload.copyOfRange(0, 0x303C))
+            tone = IntegraPart.values()
+                .map { it to this.tones.getValue(it).interpret(startAddress, 0x303C, payload.copyOfRange(0x200000 * it.zeroBased, 0x200000 * it.zeroBased + 0x303C)) }
+                .toMap()
         )
     }
 
     data class Values(
-        val tone1: ToneAddressRequestBuilder.TemporaryTone
+        val tone: Map<IntegraPart, ToneAddressRequestBuilder.TemporaryTone>
     )
 }
 
-data class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+data class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<SetupRequestBuilder.Setup>() {
     override val size: UInt = 0x0000038u
 
     override fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): Setup {
@@ -119,7 +109,7 @@ data class SetupRequestBuilder(override val deviceId: DeviceId, override val add
     }
 }
 
-data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<SystemCommonRequestBuilder.SystemCommon>() {
     override val size: UInt = 0x00002Fu
 
     override fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): SystemCommon {
@@ -187,7 +177,7 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
         SPEAKER, PHONES
     }
 
-    private data class SystemControlSourceAddress(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+    private data class SystemControlSourceAddress(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<ControlSource>() {
         override val size: UInt = 0x000001u
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): ControlSource {
@@ -227,7 +217,7 @@ enum class ControlSource(val hex: UByte) {
 
 // -----------------------------------------------------
 
-data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetAddressRequestBuilder.StudioSet>() {
     override val size: UInt = 0x1000000u
 
     val common = StudioSetCommonAddressRequestBuilder(deviceId, address.offsetBy(0x000000))
@@ -259,7 +249,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
         val common: StudioSetCommonAddressRequestBuilder.StudioSetCommon
     )
 
-    data class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+    data class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetCommonAddressRequestBuilder.StudioSetCommon>() {
         override val size: UInt = 0x000054u
 
         val name = StudioSetCommonName(deviceId, address.offsetBy(0x000000))
@@ -345,7 +335,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
         )
     }
 
-    data class StudioSetCommonName(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+    data class StudioSetCommonName(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<String>() {
         override val size: UInt = 0x0Fu
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): String {
@@ -361,7 +351,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     }
 }
 
-/* internal abstract */ data class ToneAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+/* internal abstract */ data class ToneAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<ToneAddressRequestBuilder.TemporaryTone>() {
     override val size: UInt = 0x200000u
 
     val pcmSynthTone = PcmSynthToneBuilder(deviceId, address.offsetBy(0x000000))
@@ -381,7 +371,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     )
 }
 
-/* internal */ data class PcmSynthToneBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+/* internal */ data class PcmSynthToneBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<PcmSynthToneBuilder.PcmSynthTone>() {
     override val size: UInt = 0x303Cu
 
     val common = PcmSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
@@ -401,7 +391,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     )
 }
 
-/* internal */ data class PcmSynthToneCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+/* internal */ data class PcmSynthToneCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<PcmSynthToneCommonBuilder.PcmSynthToneCommon>() {
     override val size: UInt = 0x50u
 
     val name = PcmSynthToneCommonName(deviceId, address.offsetBy(0x000000))
@@ -425,7 +415,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     )
 }
 
-/* internal */ data class PcmSynthToneCommonName(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO() {
+/* internal */ data class PcmSynthToneCommonName(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<String>() {
     override val size: UInt = 0x0Cu
 
     override fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): String {

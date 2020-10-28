@@ -218,9 +218,10 @@ sealed class MBJavaMidiEndpoint<T: MBJavaMidiEndpoint.MBJavaMidiConnection>(): M
 }
 
 class MidiMessageWrapper(private val delegate: MidiMessage): UByteSerializable {
+    private val bytes = delegate.message.clone().toUByteArray()
+
     fun unwrap(): MidiMessage =
         delegate
 
-    override fun bytes(): UByteArray =
-        delegate.message.toUByteArray()
+    override fun bytes(): UByteArray = this.bytes
 }
