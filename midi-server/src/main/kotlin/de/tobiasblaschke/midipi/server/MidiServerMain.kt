@@ -34,20 +34,23 @@ object MidiServerMain {
             con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
 
             // con.request { it.tone1.pcmSynthTone.common }
-            val future: CompletableFuture<RolandIntegra7MidiMessage.IntegraSysExDataSet1Response> = con.request { it.test }
+            val future: CompletableFuture<Any> = con.request { it.tone1 }
+            //val future: CompletableFuture<Any> = con.request { it.studioSet }
+//            val future: CompletableFuture<Any> = con.request { it.studioSet.common }
             println("waiting....")
             val mem = future.get()
-            println()
-            println()
-            println()
-            println("Got response ${mem.startAddress}, length ${mem.payload.size}, => ${mem.payload.toHexString()}")
-
-            println(mem.payload.toList()
-                .chunked(10)
-                .map { it
-                    .map { bt -> if (bt >= 48u && bt <= 90u) bt.toByte().toChar() else '.' }
-                    .joinToString(separator = " ")
-                }.joinToString(separator = "\n"))
+            println("$mem")
+//            println()
+//            println()
+//            println()
+//            println("Got response ${mem.startAddress}, length ${mem.payload.size}, => ${mem.payload.toHexString()}")
+//
+//            println(mem.payload.toList()
+//                .chunked(10)
+//                .map { it
+//                    .map { bt -> if (bt >= 48u && bt <= 90u) bt.toByte().toChar() else '.' }
+//                    .joinToString(separator = " ")
+//                }.joinToString(separator = "\n"))
         }
 
 //        val d = MidiDiscovery()

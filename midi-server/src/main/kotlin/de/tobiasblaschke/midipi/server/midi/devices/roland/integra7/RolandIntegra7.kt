@@ -35,10 +35,12 @@ class RolandIntegra7(
         rpn.messages.forEach { device.send(it, -1) }
     }
 
-    fun request(req: (AddressRequestBuilder) -> Integra7MemoryIO): CompletableFuture<RolandIntegra7MidiMessage.IntegraSysExDataSet1Response> {
-        val sysEx: RolandIntegra7MidiMessage = req(addressRequestBuilder.get()).asDataRequest1()
+    fun request(req: (AddressRequestBuilder) -> Integra7MemoryIO): CompletableFuture<Any> {
+        val addressRange = req(addressRequestBuilder.get())
+        val sysEx: RolandIntegra7MidiMessage = addressRange.asDataRequest1()
         return device.send(sysEx as MBRequestResponseMidiMessage, -1)
             .map { it as RolandIntegra7MidiMessage.IntegraSysExDataSet1Response }
+            .map { addressRange.interpret(Integra7Address(it.startAddress.address), it.payload.size, it.payload)  }
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {

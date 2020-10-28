@@ -435,10 +435,12 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
 
         override fun isComplete(message: MBResponseMidiMessage): Boolean {
             val response = message as IntegraSysExDataSet1Response
-            val expectedEndAddress = Integra7Address(address.address + size.toInt())
+            val expectedEndAddress = Integra7Address(address.address + size.toInt() - 1)
             val actualEndAddress = Integra7Address(response.startAddress.address + response.payload.size)
             val complete = expectedEndAddress == actualEndAddress ||
-                    response.startAddress.address == 0x19020200 // TODO: Bodge!
+                    response.startAddress.address == 0x19020200 || // TODO: Bodge!
+                    response.startAddress.address == 0x18005F00 ||    // TODO: another Bodge
+                    actualEndAddress.address == 0x18000055
             println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.toInt()} Bytes => complete = $complete")
             return complete
         }
