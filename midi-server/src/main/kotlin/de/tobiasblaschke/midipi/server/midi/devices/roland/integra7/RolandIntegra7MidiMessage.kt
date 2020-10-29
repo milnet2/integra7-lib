@@ -2,8 +2,6 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
-import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.lsb
-import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.msb
 import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
 import java.lang.Exception
 import java.time.Duration
@@ -535,3 +533,8 @@ sealed class RolandIntegra7RpnMessage {
     }
 }
 
+fun UShort.msb(): UByte =
+    (this / 0x100u).toUByte()
+
+fun UShort.lsb(): UByte =
+    (this and 0xFFu).toUByte()
