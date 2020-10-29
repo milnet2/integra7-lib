@@ -21,24 +21,28 @@ class SparseUByteArray(): Collection<UByte> {
         findInternal(key) != null
 
     operator fun get(key: Int): UByte {
-        val entry = findInternal(key)
-        return if (entry == null) {
-            throw NoSuchElementException("When accessing $key")
-        } else {
-            entry.value[key - entry.key.first]
+        synchronized(this.values) {
+            val entry = findInternal(key)
+            return if (entry == null) {
+                throw NoSuchElementException("When accessing $key")
+            } else {
+                entry.value[key - entry.key.first]
+            }
         }
     }
 
     operator fun get(rng: IntRange): UByteArray {
-        val relevantExistingEntries = this.values.entries
-            .filter { it.key.first >= rng.first && it.key.last <= rng.last }
-        return if (relevantExistingEntries.isEmpty()) {
-            throw NoSuchElementException("When accessing $rng")
-        } else if (relevantExistingEntries.size == 1) {
-            val entry = relevantExistingEntries[0]
-            return entry.value.copyOfRange(rng.first - entry.key.first, rng.last - entry.key.last)
-        } else {
-            TODO()
+        synchronized(this.values) {
+            val relevantExistingEntries = this.values.entries
+                .filter { it.key.first >= rng.first && it.key.last <= rng.last }
+            return if (relevantExistingEntries.isEmpty()) {
+                throw NoSuchElementException("When accessing $rng")
+            } else if (relevantExistingEntries.size == 1) {
+                val entry = relevantExistingEntries[0]
+                return entry.value.copyOfRange(rng.first - entry.key.first, rng.last - entry.key.last)
+            } else {
+                TODO()
+            }
         }
     }
 
@@ -47,19 +51,23 @@ class SparseUByteArray(): Collection<UByte> {
 
 
     fun putAll(addendum: SparseUByteArray) {
-        addendum.values.entries
-            .forEach { this.putAll(it.key.first, it.value) }
+        synchronized(this.values) {
+            addendum.values.entries
+                .forEach { this.putAll(it.key.first, it.value) }
+        }
     }
 
     fun putAll(startAddress: Int, values: UByteArray) {
-        val endAddress = startAddress + values.size - 1
-        val relevantExistingEntries = this.values.entries
-            .filter { it.key.first >= startAddress && it.key.last <= endAddress }
+        synchronized(this.values) {
+            val endAddress = startAddress + values.size - 1
+            val relevantExistingEntries = this.values.entries
+                .filter { it.key.first >= startAddress && it.key.last <= endAddress }
 
-        if (relevantExistingEntries.isEmpty()) {
-            this.values[IntRange(startAddress, endAddress)] = values
-        } else {
-            TODO()
+            if (relevantExistingEntries.isEmpty()) {
+                this.values[IntRange(startAddress, endAddress)] = values
+            } else {
+                TODO()
+            }
         }
     }
 

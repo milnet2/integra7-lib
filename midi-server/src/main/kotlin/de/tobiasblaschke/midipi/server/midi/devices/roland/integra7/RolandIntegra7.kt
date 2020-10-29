@@ -3,8 +3,6 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
-import de.tobiasblaschke.midipi.server.midi.utils.IndexedCollection
-import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -60,9 +58,9 @@ class RolandIntegra7(
         val sound: Integra7ToneFacade
             get() = Integra7ToneFacade(integra.request({ it.tones[part]!! }).get())
 
-        class Integra7ToneFacade(private val tone: ToneAddressRequestBuilder.TemporaryTone) {  // Temporary Tone
-            val pcm: PcmSynthToneBuilder.PcmSynthTone
-                get() = tone.pcmSynthTone
+        class Integra7ToneFacade(val tone: ToneAddressRequestBuilder.TemporaryTone) {  // Temporary Tone
+//            val pcm: IntegraToneBuilder.PcmSynthToneBuilder.PcmSynthTone
+//                get() = tone.tone as IntegraToneBuilder.PcmSynthToneBuilder.PcmSynthTone
         }
     }
 }
