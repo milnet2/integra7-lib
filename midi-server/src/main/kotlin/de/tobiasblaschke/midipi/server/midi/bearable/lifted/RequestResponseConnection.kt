@@ -56,7 +56,7 @@ internal class RequestResponseFuture<T>(
     private val merger: (T, T) -> T,
     private val completedAfterTimeout: Duration? = null,
     private val lastInput: AtomicReference<Instant> = AtomicReference(Instant.now()),
-    private val partialResponses: ArrayBlockingQueue<T> = ArrayBlockingQueue<T>(20)): Future<T> by delegate {
+    private val partialResponses: ArrayBlockingQueue<T> = ArrayBlockingQueue<T>(100)): Future<T> by delegate {
 
     fun completePartially(value: T) {
         lastInput.set(Instant.now())

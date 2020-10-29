@@ -21,21 +21,28 @@ object MidiServerMain {
         integra7.withConnection { connection ->
             val con = RolandIntegra7(connection)
 
-            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
 
-            IntegraPart.values()
-                .forEach { part ->
-                    println("Part $part: " +
-                            con.part(part)
-                                .sound.pcm.common)
-                }
+// -----------------------------------------------------
+//            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
+//
+//            IntegraPart.values()
+//                .forEach { part ->
+//                    println("Part $part: " +
+//                            con.part(part)
+//                                .sound.pcm.common)
+//                }
 
+// -----------------------------------------------------
 
+            val undoc = con.request { it.undocumented }
+            println(undoc.get())
 
-
+// -----------------------------------------------------
 //            val identity = con.identity().get()
 //            println("Successful response! $identity")
 //
+
+// -----------------------------------------------------
 //            con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
 
             // con.request { it.tone1.pcmSynthTone.common }

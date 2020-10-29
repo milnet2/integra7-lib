@@ -51,6 +51,7 @@ fun UInt.toByteArrayMsbFirst(): UByteArray {
 // ----------------------------------------------------
 
 class AddressRequestBuilder(private val deviceId: DeviceId) {
+    val undocumented = UndocumentedRequestBuilder(deviceId, Integra7Address(0x0F000402))
     val setup = SetupRequestBuilder(deviceId, Integra7Address(0x01000000))
     val system = SystemCommonRequestBuilder(deviceId, Integra7Address(0x02000000))
     val studioSet = StudioSetAddressRequestBuilder(deviceId, Integra7Address(0x18000000))
@@ -73,6 +74,40 @@ class AddressRequestBuilder(private val deviceId: DeviceId) {
     data class Values(
         val tone: Map<IntegraPart, ToneAddressRequestBuilder.TemporaryTone>
     )
+}
+
+data class UndocumentedRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<UndocumentedRequestBuilder.Setup>() {
+    override val size: UInt = 0x5F400040u
+
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: UByteArray): Setup {
+        assert(startAddress.address >= address.address)
+        assert(length <= size.toInt())
+        assert(payload.size <= length)
+
+        return Setup(
+            soundMode = when(payload[0].toUInt()) {
+                0x01u -> SoundMode.STUDIO
+                0x02u -> SoundMode.GM1
+                0x03u -> SoundMode.GM2
+                0x04u -> SoundMode.GS
+                else -> throw IllegalArgumentException()
+            },
+            studioSetBsMsb = payload[0x04],
+            studioSetBsLsb = payload[0x05],
+            studioSetPc = payload[0x06]
+        )
+    }
+
+    data class Setup(
+        val soundMode: SoundMode,
+        val studioSetBsMsb: UByte,
+        val studioSetBsLsb: UByte,
+        val studioSetPc: UByte,
+    )
+
+    enum class SoundMode {
+        STUDIO, GM1, GM2, GS
+    }
 }
 
 data class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<SetupRequestBuilder.Setup>() {
