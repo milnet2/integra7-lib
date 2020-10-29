@@ -267,7 +267,7 @@ sealed class MBGenericMidiMessage: MBUnidirectionalMidiMessage {
 
             data class ManufacturerSpecific(val manufacturer: ManufacturerId, val payload: UByteArray): SystemExclusive() {
                 init {
-                    assert(payload.all { it in 0x00u .. 0x7Fu })
+                    assert(payload.all { it in 0x00u .. 0x7Fu }) { "Payload contains illegal value: ${payload.toHexString()}" }
                 }
                 override fun toString(): String =
                     "SystemExclusive(to=$manufacturer payload=${payload.toHexString()})"
@@ -354,7 +354,7 @@ sealed class DeviceId: UByteSerializable {
     }
     data class Short(val deviceId: UByte): DeviceId() {
         init {
-            assert(deviceId in 1 .. 0x7F)
+            assert(deviceId in 0x01u .. 0x7Fu)
         }
         override fun bytes() = ubyteArrayOf(deviceId)
     }
@@ -370,7 +370,7 @@ sealed class ManufacturerId: UByteSerializable {
     }
     data class Short(val manufacturer: UByte): ManufacturerId() {
         init {
-            assert(manufacturer in 1 .. 0x7F)
+            assert(manufacturer in 0x01u .. 0x7Fu) { String.format("Manufacturer 0x02X not in the expected range!", manufacturer) }
         }
         override fun bytes() = ubyteArrayOf(manufacturer)
 
@@ -383,8 +383,8 @@ sealed class ManufacturerId: UByteSerializable {
     }
     data class Triplet(val first: UByte, val second: UByte): ManufacturerId() {
         init {
-            assert(first in 0x00 .. 0x80)
-            assert(second in 0x00 .. 0x80)
+            assert(first in 0x00u .. 0x7Fu)
+            assert(second in 0x00u .. 0x7Fu)
         }
         override fun bytes() = ubyteArrayOf(0x00u, first, second)
     }

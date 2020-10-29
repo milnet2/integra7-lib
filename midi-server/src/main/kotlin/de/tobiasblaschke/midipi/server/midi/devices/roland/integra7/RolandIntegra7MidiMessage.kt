@@ -425,11 +425,11 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
     /**
      * @param checkSum starting with COMMAND, excluding EOX
      */
-    internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val address: Integra7Address, val size: UInt, val checkSum: UByte): MBRequestResponseMidiMessage, RolandIntegra7MidiMessage() {
+    internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val address: Integra7Address, val size: Integra7Size, val checkSum: UByte): MBRequestResponseMidiMessage, RolandIntegra7MidiMessage() {
         override val completeAfter = Duration.ofMillis(50)
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
             manufacturer = ROLAND,
-            payload = deviceId.bytes() + INTEGRA7 + 0x11u + address.bytes() + size.toByteArrayMsbFirst() + checkSum)
+            payload = deviceId.bytes() + INTEGRA7 + 0x11u + address.bytes() + size.bytes() + checkSum)
         override fun bytes() = delegate.bytes()
         override fun isExpectingResponse(message: MBResponseMidiMessage): Boolean {
             // There may only be one message out in the wild at a time, so it's sufficient to test the type
@@ -438,10 +438,10 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
 
         override fun isComplete(message: MBResponseMidiMessage): Boolean {
             val response = message as IntegraSysExDataSet1Response
-            val expectedEndAddress = Integra7Address(address.address + size.toInt() - 1)
-            val actualEndAddress = Integra7Address(response.startAddress.address + response.payload.size)
+            val expectedEndAddress = address.offsetBy(size - 1)
+            val actualEndAddress = response.startAddress.offsetBy(response.payload.size)
             val complete = expectedEndAddress == actualEndAddress
-            println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.toInt()} Bytes => complete = $complete")
+            println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.fullByteSize()} Bytes => complete = $complete")
             return complete
         }
 
@@ -449,7 +449,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
             try {
                 val l = left as IntegraSysExDataSet1Response
                 val r = right as IntegraSysExDataSet1Response
-                val paddingLength = r.startAddress.address - l.startAddress.address + l.payload.size
+                val paddingLength = ((r.startAddress - l.startAddress) + l.payload.size).fullByteSize()
                 val padding = UByteArray(paddingLength) { 0x00u }
 
                 val payload: UByteArray = l.payload + padding + r.payload

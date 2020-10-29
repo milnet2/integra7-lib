@@ -25,17 +25,17 @@ object MidiServerMain {
 // -----------------------------------------------------
 //            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
 //
-//            IntegraPart.values()
-//                .forEach { part ->
-//                    println("Part $part: " +
-//                            con.part(part)
-//                                .sound.pcm.common)
-//                }
+            IntegraPart.values()
+                .forEach { part ->
+                    println("Part $part: " +
+                            con.part(part)
+                                .sound.pcm.common)
+                }
 
 // -----------------------------------------------------
 
-            val undoc = con.request { it.undocumented }
-            println(undoc.get())
+//            val undoc = con.request { it.undocumented }
+//            println(undoc.get())
 
 // -----------------------------------------------------
 //            val identity = con.identity().get()

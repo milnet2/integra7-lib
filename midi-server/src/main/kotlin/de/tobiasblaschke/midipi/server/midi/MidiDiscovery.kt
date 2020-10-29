@@ -254,3 +254,12 @@ fun UByteArray.toHexString() =
             separator = " ",
             transform = { String.format("0x%02X", it.toInt()) }
         )
+
+fun UByteArray.toAsciiString(skip: Int = 0, length: Int = this.size) =
+    this.toList()
+        .drop(skip)
+        .take(length)
+        .takeWhile { it != 0x00u.toUByte() }
+        .joinToString(
+            separator = "",
+            transform = { if (it in 0x20u .. 0x7Du) it.toByte().toChar().toString() else "." })
