@@ -3,7 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 import de.tobiasblaschke.midipi.server.midi.toAsciiString
-import de.tobiasblaschke.midipi.server.midi.utils.IndexedCollection
+import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import kotlin.math.min
@@ -40,17 +40,16 @@ abstract class Integra7MemoryIO<T> {
         return if (reminder < 128u) (128u - reminder).toUByte() else (reminder - 128u).toUByte()
     }
 
-    abstract fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): T
+    abstract fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): T
 
     @ExperimentalUnsignedTypes
     data class AsciiStringField(override val deviceId: DeviceId, override val address: Integra7Address, val length: Int): Integra7MemoryIO<String>() {
         override val size = Integra7Size(length.toUInt())
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): String {
+        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): String {
             assert(startAddress >= address)
 
-            // TODO: Apply the offset
-            return payload.toAsciiString(skip = 0, length = size.fullByteSize()).trim()
+            return payload[IntRange(startAddress.fullByteAddress(), startAddress.fullByteAddress() + length)].toAsciiString().trim()
         }
     }
 
@@ -58,11 +57,10 @@ abstract class Integra7MemoryIO<T> {
     data class UnsignedValueField(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<Int>() {
         override val size = Integra7Size.ONE_BYTE
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): Int {
+        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
             assert(startAddress >= address)
 
             try {
-                //return payload[address.fullByteAddress()].toInt()
                 return payload[startAddress.fullByteAddress()].toInt()
             } catch (e: NoSuchElementException) {
                 throw IllegalStateException("When reading address $address (sa=$startAddress, len=$length)", e)
@@ -75,7 +73,7 @@ abstract class Integra7MemoryIO<T> {
         private val delegate = UnsignedValueField(deviceId, address)
         override val size = delegate.size
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): Int =
+        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int =
             delegate.interpret(startAddress, length, payload) - 64
     }
 }
@@ -92,7 +90,7 @@ class AddressRequestBuilder(private val deviceId: DeviceId) {
         .map { it to ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000).offsetBy(0x200000, it.zeroBased)) }
         .toMap()
 
-    fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, Collection<UByte>>): Values {
+    fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Values {
         //assert(length <= size.toInt())
         assert(payload.size <= length)
 
@@ -111,7 +109,7 @@ class AddressRequestBuilder(private val deviceId: DeviceId) {
 data class UndocumentedRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<UndocumentedRequestBuilder.Setup>() {
     override val size = Integra7Size(0x5Fu, 0x40u, 0x00u, 0x40u)
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): Setup {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Setup {
         assert(startAddress >= address)
 
         return Setup(
@@ -143,7 +141,7 @@ data class UndocumentedRequestBuilder(override val deviceId: DeviceId, override 
 data class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<SetupRequestBuilder.Setup>() {
     override val size = Integra7Size(38u)
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): Setup {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Setup {
         assert(startAddress >= address)
 
         return Setup(
@@ -175,7 +173,7 @@ data class SetupRequestBuilder(override val deviceId: DeviceId, override val add
 data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<SystemCommonRequestBuilder.SystemCommon>() {
     override val size= Integra7Size(0x2Fu)
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): SystemCommon {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): SystemCommon {
         assert(startAddress >= address)
 
         val systemControl1Source = SystemControlSourceAddress(deviceId, address.offsetBy(0x20))
@@ -189,10 +187,10 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
             masterLevel = payload[0x05].toInt(),
             scaleTuneSwitch = (payload[0x05] > 0x0u),
             studioSetControlChannel = if (payload[0x11] < 0x0Fu) payload[0x11].toInt() else null,
-            systemControl1Source = systemControl1Source.interpret(startAddress.offsetBy(0x20), 1, payload.subRange(0x20, 0x21)),
-            systemControl2Source = systemControl2Source.interpret(startAddress.offsetBy(0x21), 1, payload.subRange(0x21, 0x22)),
-            systemControl3Source = systemControl3Source.interpret(startAddress.offsetBy(0x22), 1, payload.subRange(0x22, 0x23)),
-            systemControl4Source = systemControl4Source.interpret(startAddress.offsetBy(0x23), 1, payload.subRange(0x23, 0x24)),
+            systemControl1Source = ControlSource.CC01, // TODO: systemControl1Source.interpret(startAddress.offsetBy(0x20), 1, payload.subRange(0x20, 0x21)),
+            systemControl2Source = ControlSource.CC01, // TODO: systemControl2Source.interpret(startAddress.offsetBy(0x21), 1, payload.subRange(0x21, 0x22)),
+            systemControl3Source = ControlSource.CC01, // TODO: systemControl3Source.interpret(startAddress.offsetBy(0x22), 1, payload.subRange(0x22, 0x23)),
+            systemControl4Source = ControlSource.CC01, // TODO: systemControl4Source.interpret(startAddress.offsetBy(0x23), 1, payload.subRange(0x23, 0x24)),
             controlSource = if (payload[0x24] == 0x00u.toUByte()) ControlSourceType.SYSTEM else ControlSourceType.STUDIO_SET,
             systemClockSource = if (payload[0x25] == 0x00u.toUByte()) ClockSource.MIDI else ClockSource.USB,
             systemTempo = ((payload[0x26] and 0x0Fu) * 0x10u + (payload[0x27] and 0x0Fu)).toInt(),
@@ -241,7 +239,7 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
     private data class SystemControlSourceAddress(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<ControlSource>() {
         override val size = Integra7Size(0x01u)
 
-        override fun  interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): ControlSource {
+        override fun  interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): ControlSource {
             assert(startAddress >= address)
 
             return ControlSource.values()
@@ -294,11 +292,11 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     // ..
     // partEQ16
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): StudioSet {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): StudioSet {
         assert(startAddress >= address)
 
         return StudioSet(
-            common = common.interpret(startAddress, min(payload.size, 0x54), payload.subRange(0, min(payload.size, 0x54)))
+            common = common.interpret(startAddress, min(payload.size, 0x54), payload)
         )
     }
 
@@ -311,11 +309,11 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
 
         val name = StudioSetCommonName(deviceId, address.offsetBy(0x000000))
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): StudioSetCommon {
+        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): StudioSetCommon {
             assert(startAddress >= address)
 
             return StudioSetCommon(
-                name = name.interpret(startAddress, min(payload.size, 0x0F), payload.subRange(0, min(payload.size, 0x0F))),
+                name = name.interpret(startAddress, min(payload.size, 0x0F), payload),
                 voiceReserve01 = payload[0x18].toInt(),
                 voiceReserve02 = payload[0x19].toInt(),
                 voiceReserve03 = payload[0x1A].toInt(),
@@ -393,7 +391,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetCommonName(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<String>() {
         override val size = Integra7Size(0x0Fu)
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): String {
+        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): String {
             assert(startAddress >= address)
 
             return payload.toAsciiString(skip = 0, length = size.fullByteSize()).trim()
@@ -406,7 +404,7 @@ data class ToneAddressRequestBuilder(override val deviceId: DeviceId, override v
 
     val pcmSynthTone = PcmSynthToneBuilder(deviceId, address.offsetBy(0x000000))
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): TemporaryTone {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): TemporaryTone {
         assert(startAddress >= address)
 
         return TemporaryTone(
@@ -424,7 +422,7 @@ data class ToneAddressRequestBuilder(override val deviceId: DeviceId, override v
 
     val common = PcmSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): PcmSynthTone {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): PcmSynthTone {
         assert(startAddress >= address)
         //assert(length <= size.toInt())
 //        assert(payload.size <= length)
@@ -446,7 +444,7 @@ data class ToneAddressRequestBuilder(override val deviceId: DeviceId, override v
     val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
     val pan = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): PcmSynthToneCommon {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): PcmSynthToneCommon {
         assert(startAddress >= address)
 
         return PcmSynthToneCommon(
@@ -467,7 +465,7 @@ data class ToneAddressRequestBuilder(override val deviceId: DeviceId, override v
 /* internal */ data class PcmSynthToneCommonName constructor(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<String>() {
     override val size = Integra7Size(0x0Cu)
 
-    override fun interpret(startAddress: Integra7Address, length: Int, payload: IndexedCollection<UByte, out Collection<UByte>>): String {
+    override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): String {
         assert(startAddress >= address)
 
         return payload.toAsciiString(skip = 0, length = size.fullByteSize()).trim()

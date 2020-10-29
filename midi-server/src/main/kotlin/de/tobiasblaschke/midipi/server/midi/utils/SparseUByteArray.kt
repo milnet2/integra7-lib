@@ -5,7 +5,7 @@ import kotlin.Comparator
 import kotlin.NoSuchElementException
 
 class SparseUByteArray(): Collection<UByte> {
-    internal val values = TreeMap<IntRange, UByteArray>(Comparator.comparing(IntRange::first))
+    private val values = TreeMap<IntRange, UByteArray>(Comparator.comparing(IntRange::first))
     override val size: Int
         get() = if (values.isEmpty()) 0 else values.lastEntry().key.last + 1
 
@@ -20,17 +20,25 @@ class SparseUByteArray(): Collection<UByte> {
     operator fun contains(key: Int): Boolean =
         findInternal(key) != null
 
-    /**
-     * Gets the Object mapped from the specified key, or `null`
-     * if no such mapping has been made.
-     */
-    @JvmOverloads
-    operator fun get(key: Int, valueIfKeyNotFound: UByte? = null): UByte? {
+    operator fun get(key: Int): UByte {
         val entry = findInternal(key)
         return if (entry == null) {
-            valueIfKeyNotFound
+            throw NoSuchElementException("When accessing $key")
         } else {
             entry.value[key - entry.key.first]
+        }
+    }
+
+    operator fun get(rng: IntRange): UByteArray {
+        val relevantExistingEntries = this.values.entries
+            .filter { it.key.first >= rng.first && it.key.last <= rng.last }
+        return if (relevantExistingEntries.isEmpty()) {
+            throw NoSuchElementException("When accessing $rng")
+        } else if (relevantExistingEntries.size == 1) {
+            val entry = relevantExistingEntries[0]
+            return entry.value.copyOfRange(rng.first - entry.key.first, rng.last - entry.key.last)
+        } else {
+            TODO()
         }
     }
 

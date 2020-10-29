@@ -24,7 +24,6 @@ class RequestResponseConnection<T: UByteSerializable, L: UByteSerializable>(
                     if (matchedPair.first.isComplete(message)) {
                         matchedPair.second.complete(message)
                     } else {
-                        println("Waiting for more data")
                         matchedPair.second.completePartially(message)
                     }
                 }

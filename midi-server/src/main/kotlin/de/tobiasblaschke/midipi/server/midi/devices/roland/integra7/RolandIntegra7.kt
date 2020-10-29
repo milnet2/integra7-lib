@@ -24,7 +24,7 @@ class RolandIntegra7(
     init {
         device.subscribe {
             val message = midiMapper.lift(it)
-            println("Received $message")
+//            println("Received $message")
         }
     }
 
@@ -41,7 +41,7 @@ class RolandIntegra7(
         val sysEx: RolandIntegra7MidiMessage = addressRange.asDataRequest1()
         return device.send(sysEx as MBRequestResponseMidiMessage, -1)
             .map { it as RolandIntegra7MidiMessage.IntegraSysExDataSet1Response }
-            .map { addressRange.interpret(it.startAddress, it.payload.size, IndexedCollection(it.payload, SparseUByteArray::get)) }
+            .map { addressRange.interpret(it.startAddress, it.payload.size, it.payload) }
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {
