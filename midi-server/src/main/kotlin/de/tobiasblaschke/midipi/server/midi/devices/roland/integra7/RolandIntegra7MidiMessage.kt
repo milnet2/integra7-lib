@@ -440,7 +440,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
             val expectedEndAddress = address.offsetBy(size - 1)
             val actualEndAddress = response.startAddress.offsetBy(response.payload.size)
             val complete = expectedEndAddress == actualEndAddress
-            println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.fullByteSize()} Bytes => complete = $complete")
+//            println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.fullByteSize()} Bytes => complete = $complete")
             return complete
         }
 

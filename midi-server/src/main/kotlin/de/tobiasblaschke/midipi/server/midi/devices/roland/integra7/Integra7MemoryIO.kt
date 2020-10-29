@@ -53,9 +53,9 @@ abstract class Integra7MemoryIO<T> {
             assert(startAddress >= address)
 
             try {
-                return payload[IntRange(startAddress.fullByteAddress(), startAddress.fullByteAddress() + length)].toAsciiString().trim()
+                return payload[IntRange(startAddress.fullByteAddress(), startAddress.fullByteAddress() + this.length)].toAsciiString().trim()
             } catch (e: NoSuchElementException) {
-                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(length)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from $payload", e)
+                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.length)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from $payload", e)
             }
         }
     }

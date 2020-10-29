@@ -34,12 +34,19 @@ class SparseUByteArray(): Collection<UByte> {
     operator fun get(rng: IntRange): UByteArray {
         synchronized(this.values) {
             val relevantExistingEntries = this.values.entries
-                .filter { it.key.first >= rng.first && it.key.last <= rng.last }
+                .filter {
+                    // TODO: Needs an "overlaps"
+                    val ret = it.key.contains(rng.first) || it.key.contains(rng.last)
+                    //println("  ${it.key} contains(${rng.first}) == ${it.key.contains(rng.first)} && .contains(${rng.last}) == ${it.key.contains(rng.last)}")
+                    ret
+                }
             return if (relevantExistingEntries.isEmpty()) {
                 throw NoSuchElementException("When accessing $rng")
             } else if (relevantExistingEntries.size == 1) {
                 val entry = relevantExistingEntries[0]
-                return entry.value.copyOfRange(rng.first - entry.key.first, rng.last - entry.key.last)
+                val readFrom = rng.first - entry.key.first
+                val readTo = rng.last - entry.key.first
+                return entry.value.copyOfRange(readFrom, readTo)
             } else {
                 TODO()
             }
