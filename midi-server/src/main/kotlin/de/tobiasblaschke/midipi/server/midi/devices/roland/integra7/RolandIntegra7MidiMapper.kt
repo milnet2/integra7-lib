@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
 import de.tobiasblaschke.midipi.server.midi.toHexString
+import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
 import java.lang.IllegalArgumentException
 
 class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7MidiMessage> {
@@ -140,11 +141,14 @@ class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7Midi
             val command = message.payload[4]
 
             return when(command.toUInt()) {
-                0x12u -> RolandIntegra7MidiMessage.IntegraSysExDataSet1Response(
-                    deviceId = deviceId,
-                    startAddress = Integra7Address((message.payload[5] * 0x1000000u + message.payload[6] * 0x10000u + message.payload[7] * 0x100u + message.payload[8]).toInt()),
-                    payload = message.payload.toList().drop(9).dropLast(2).toUByteArray(),
-                    checkSum = message.payload[message.payload.size - 2])
+                0x12u -> {
+                    val startAddress = Integra7Address((message.payload[5] * 0x1000000u + message.payload[6] * 0x10000u + message.payload[7] * 0x100u + message.payload[8]).toInt())
+                    RolandIntegra7MidiMessage.IntegraSysExDataSet1Response(
+                        deviceId = deviceId,
+                        startAddress = startAddress,
+                        payload = SparseUByteArray(startAddress = startAddress.fullByteAddress(), message.payload.toList().drop(9).dropLast(2)),
+                        checkSum = message.payload[message.payload.size - 2])
+                }
                 else -> throw IllegalArgumentException("Unsupported command $command in ${message.payload.toHexString()}")
             }
         } else {

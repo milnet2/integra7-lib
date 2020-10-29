@@ -3,7 +3,8 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
-import java.util.*
+import de.tobiasblaschke.midipi.server.midi.utils.IndexedCollection
+import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -40,7 +41,7 @@ class RolandIntegra7(
         val sysEx: RolandIntegra7MidiMessage = addressRange.asDataRequest1()
         return device.send(sysEx as MBRequestResponseMidiMessage, -1)
             .map { it as RolandIntegra7MidiMessage.IntegraSysExDataSet1Response }
-            .map { addressRange.interpret(it.startAddress, it.payload.size, it.payload)  }
+            .map { addressRange.interpret(it.startAddress, it.payload.size, IndexedCollection(it.payload, SparseUByteArray::get)) }
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {

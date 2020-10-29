@@ -4,6 +4,7 @@ import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.lsb
 import de.tobiasblaschke.midipi.server.midi.controller.devices.integra7.msb
+import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
 import java.lang.Exception
 import java.time.Duration
 
@@ -449,12 +450,10 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
             try {
                 val l = left as IntegraSysExDataSet1Response
                 val r = right as IntegraSysExDataSet1Response
-                val paddingLength = ((r.startAddress - l.startAddress) + l.payload.size).fullByteSize()
-                val padding = UByteArray(paddingLength) { 0x00u }
 
-                val payload: UByteArray = l.payload + padding + r.payload
+                l.payload.putAll(r.payload)
 
-                return IntegraSysExDataSet1Response(deviceId, l.startAddress, payload, 0x00u)
+                return IntegraSysExDataSet1Response(deviceId, l.startAddress, l.payload, 0x00u)
             } catch (e: Exception) {
                 e.printStackTrace()
                 throw e
@@ -475,11 +474,15 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
     /**
      * @param payload starting with COMMAND, excluding EOX
      */
-    data class IntegraSysExDataSet1Response(val deviceId: DeviceId, val startAddress: Integra7Address, val payload: UByteArray, val checkSum: UByte): MBResponseMidiMessage, RolandIntegra7MidiMessage() {
-        private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
-            manufacturer = ROLAND,
-            payload = deviceId.bytes() + INTEGRA7 + 0x12u + startAddress.bytes() + payload + checkSum)
-        override fun bytes() = delegate.bytes()
+    data class IntegraSysExDataSet1Response(val deviceId: DeviceId, val startAddress: Integra7Address, val payload: SparseUByteArray, val checkSum: UByte): MBResponseMidiMessage, RolandIntegra7MidiMessage() {
+        init {
+            assert(payload.all { it in 0x00u .. 0x7Fu }) { "Payload contains illegal value" }
+        }
+        override fun toString(): String =
+            "IntegraSysExDataSet1Response()"
+
+        override fun bytes(): UByteArray =
+            ubyteArrayOf(0xF0u) + ROLAND.bytes() + payload.toUByteArray() + ubyteArrayOf(0xF7u)
     }
 }
 

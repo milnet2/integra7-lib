@@ -79,8 +79,8 @@ internal class RequestResponseFuture<T>(
             return try {
                 get(completedAfterTimeout.toMillis(), TimeUnit.MILLISECONDS)
             } catch (e: TimeoutException) {
-                Thread.yield()
                 if (Duration.between(lastInput.get(), Instant.now()).toMillis() < completedAfterTimeout.toMillis()) {
+                    Thread.sleep(1)
                     this.get()
                 } else if (partialResponses.isNotEmpty()) {
                     val finalResult = partialResponses.reduce(merger)

@@ -249,15 +249,14 @@ sealed class MatchedDevice {
     }
 }
 
-fun UByteArray.toHexString() =
+fun Collection<UByte>.toHexString() =
     this.joinToString(
             separator = " ",
             transform = { String.format("0x%02X", it.toInt()) }
         )
 
-fun UByteArray.toAsciiString(skip: Int = 0, length: Int = this.size) =
-    this.toList()
-        .drop(skip)
+fun Collection<UByte>.toAsciiString(skip: Int = 0, length: Int = this.size) =
+    this.drop(skip)
         .take(length)
         .takeWhile { it != 0x00u.toUByte() }
         .joinToString(
