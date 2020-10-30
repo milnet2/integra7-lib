@@ -1281,17 +1281,22 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x00u, 0x00u, 0x22u, 0x7Fu)
 
         val common = SuperNaturalSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
-        // mfx
-        // partial 1
-        // partial 2
-        // partial 3
+        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
+        /*
+        |-------------+----------------------------------------------------------------|
+        | 00 20 00 | SuperNATURAL Synth Tone Partial (1) |
+        | 00 21 00 | SuperNATURAL Synth Tone Partial (2) |
+        | 00 22 00 | SuperNATURAL Synth Tone Partial (3) |
+        +------------------------------------------------------------------------------+
+         */
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): SuperNaturalSynthTone {
             assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
                 "Not a SN-S tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
             return SuperNaturalSynthTone(
-                common = common.interpret(startAddress, 0x50, payload)
+                common = common.interpret(startAddress, length, payload),
+                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), length, payload)
             )
         }
     }
