@@ -1,5 +1,6 @@
 package de.tobiasblaschke.midipi.server.midi.utils
 
+import de.tobiasblaschke.midipi.server.midi.toAsciiString
 import java.util.*
 import kotlin.Comparator
 import kotlin.NoSuchElementException
@@ -134,4 +135,28 @@ class SparseUByteArray(): Collection<UByte> {
 
     override fun toString(): String =
         this.values.toString()
+
+    fun hexDump(addressTransform: (addr: Int) -> String = { String.format("0x%08X", it) }, chunkSize: Int = 0x10): String =
+        this.values.entries
+            .map {
+                it.value
+                    .chunked(chunkSize)
+                    .mapIndexed { idx, vals ->
+                        addressTransform(it.key.first + idx * chunkSize) + ": " +
+                                vals.joinToString(
+                                    separator = " ",
+                                    transform = { byte -> String.format("%02X", byte.toInt() )}
+                                ) +
+                                "  " + vals.joinToString(
+                                    separator = "",
+                                    transform = { byte -> if (byte in 0x20u .. 0x7Du) byte.toByte().toChar().toString() else "." })
+                    }
+                    .joinToString (
+                        separator = "\n"
+                    )
+            }
+            .joinToString(
+                separator = "\n...\n",
+                prefix = "\n"
+            )
 }
