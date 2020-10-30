@@ -13,4 +13,15 @@ class Integra7AddressTest {
         assertEquals(expected, actual)
     }
 
+    @Test
+    fun `should calculate proper offsets with factor`() {
+        val given = Integra7Address(0x1B230000)
+        val actual = given.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 2)
+        val expected = Integra7Address(0x1B231200)
+
+        assertEquals(Integra7Address(0x1B231000), given.offsetBy(mlsb = 0x10u, lsb = 0x00u))
+        assertEquals(expected, actual)
+    }
+
+
 }

@@ -148,14 +148,16 @@ abstract class Integra7MemoryIO<T> {
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
             try {
-                val ret = payload[startAddress.fullByteAddress()].toInt() * 0x1000 +
-                        payload[startAddress.fullByteAddress() + 1].toInt() * 0x100 +
-                        payload[startAddress.fullByteAddress() + 2].toInt() * 0x10 +
-                        payload[startAddress.fullByteAddress() + 3].toInt()
+                val msb = payload[startAddress.fullByteAddress()].toInt()
+                val mmsb = payload[startAddress.fullByteAddress() + 1].toInt()
+                val mlsb = payload[startAddress.fullByteAddress() + 2].toInt()
+                val lsb = payload[startAddress.fullByteAddress() + 3].toInt()
+
+                val ret = ((((msb * 0x10) + mmsb) * 0x10) + mlsb) * 0x10 + lsb
                 if (range.contains(ret)) {
                     return ret
                 } else {
-                    throw IllegalStateException("Valie $ret not in $range, When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
+                    throw IllegalStateException("Value $ret not in $range, When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
                 }
             } catch (e: NoSuchElementException) {
                 throw IllegalStateException("When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
@@ -770,7 +772,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
             length: Int,
             payload: SparseUByteArray
         ): PcmSynthToneMfx {
-            assert(startAddress >= address)
+            assert(this.isCovering(startAddress)) { "Not a MFX definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()} in  ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}" }
 
             try {
             return PcmSynthToneMfx(
@@ -1516,14 +1518,15 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x00u, 0x00u, 0x30u, 0x3Cu)
 
         val common = SuperNaturalAcousticToneCommonBuilder(deviceId, address.offsetBy(0x000000))
-        // mfx
+        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): SuperNaturalAcousticTone {
             assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
                 "Not a SN-A tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
             return SuperNaturalAcousticTone(
-                common = common.interpret(startAddress, 0x50, payload)
+                common = common.interpret(startAddress, length, payload),
+                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), length, payload)
             )
         }
     }
@@ -1535,6 +1538,29 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
 
+        val monoPoly = EnumValueField(deviceId, address.offsetBy(lsb = 0x11u), MonoPoly.values())
+        val portamentoTimeOffset = SignedValueField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
+        val cutoffOffset = SignedValueField(deviceId, address.offsetBy(lsb = 0x13u), -64..63)
+        val resonanceOffset = SignedValueField(deviceId, address.offsetBy(lsb = 0x14u), -64..63)
+        val attackTimeOffset = SignedValueField(deviceId, address.offsetBy(lsb = 0x15u), -64..63)
+        val releaseTimeOffset = SignedValueField(deviceId, address.offsetBy(lsb = 0x16u), -64..63)
+        val vibratoRate = SignedValueField(deviceId, address.offsetBy(lsb = 0x17u), -64..63)
+        val vibratoDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x18u), -64..63)
+        val vibratorDelay = SignedValueField(deviceId, address.offsetBy(lsb = 0x19u), -64..63)
+        val octaveShift = SignedValueField(deviceId, address.offsetBy(lsb = 0x1Au), -3..3)
+        val category = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu))
+        val phraseNumber = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x1Cu), 0..255)
+        val phraseOctaveShift = SignedValueField(deviceId, address.offsetBy(lsb = 0x1Eu), -3..3)
+
+        val tfxSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Fu))
+
+        val instrumentVariation = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x20u))
+        val instrumentNumber = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x21u))
+
+        val modifyParameters = IntRange(0, 31).map {
+            UnsignedValueField(deviceId, address.offsetBy(lsb = 0x22u).offsetBy(lsb = 0x01u, factor = it))
+        }
+
         override fun interpret(
             startAddress: Integra7Address,
             length: Int,
@@ -1544,7 +1570,27 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
             return SupernaturalAcousticToneCommon(
                 name = name.interpret(startAddress, length, payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x0Eu), length, payload),
+                level = level.interpret(startAddress.offsetBy(lsb = 0x10u), length, payload),
+                monoPoly = monoPoly.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
+                portamentoTimeOffset = portamentoTimeOffset.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
+                cutoffOffset = cutoffOffset.interpret(startAddress.offsetBy(lsb = 0x13u), length, payload),
+                resonanceOffset = resonanceOffset.interpret(startAddress.offsetBy(lsb = 0x14u), length, payload),
+                attackTimeOffset = attackTimeOffset.interpret(startAddress.offsetBy(lsb = 0x15u), length, payload),
+                releaseTimeOffset = releaseTimeOffset.interpret(startAddress.offsetBy(lsb = 0x16u), length, payload),
+                vibratoRate = vibratoRate.interpret(startAddress.offsetBy(lsb = 0x17u), length, payload),
+                vibratoDepth = vibratoDepth.interpret(startAddress.offsetBy(lsb = 0x18u), length, payload),
+                vibratorDelay = vibratorDelay.interpret(startAddress.offsetBy(lsb = 0x19u), length, payload),
+                octaveShift = octaveShift.interpret(startAddress.offsetBy(lsb = 0x1Au), length, payload),
+                category = category.interpret(startAddress.offsetBy(lsb = 0x1Bu), length, payload),
+                phraseNumber = phraseNumber.interpret(startAddress.offsetBy(lsb = 0x1Cu), length, payload),
+                phraseOctaveShift = phraseOctaveShift.interpret(startAddress.offsetBy(lsb = 0x1Eu), length, payload),
+
+                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x1Fu), length, payload),
+
+                instrumentVariation = instrumentVariation.interpret(startAddress.offsetBy(lsb = 0x20u), length, payload),
+                instrumentNumber = instrumentNumber.interpret(startAddress.offsetBy(lsb = 0x21u), length, payload),
+                modifyParameters = modifyParameters
+                    .mapIndexed { idx, fd -> fd.interpret(startAddress.offsetBy(lsb = 0x21u).offsetBy(lsb = 0x01u, factor = idx), length, payload) }
             )
         }
     }
@@ -1557,16 +1603,155 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x00u, 0x00u, 0x4Du, 0x7Fu)
 
         val common = SuperNaturalDrumKitCommonBuilder(deviceId, address.offsetBy(0x000000))
-        // mfx
-        // common-comp
-        // note[]
+        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
+        val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u))
+        val note27 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u))
+        val note28 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 1))
+        val note29 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 2))
+
+        val note30 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 3))
+        val note31 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 4))
+        val note32 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 5))
+        val note33 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 6))
+        val note34 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 7))
+        val note35 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 8))
+        val note36 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 9))
+        val note37 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 10))
+        val note38 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 11))
+        val note39 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 12))
+
+        val note40 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 13))
+        val note41 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 14))
+        val note42 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 15))
+        val note43 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 16))
+        val note44 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 17))
+        val note45 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 18))
+        val note46 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 19))
+        val note47 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 20))
+        val note48 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 21))
+        val note49 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 22))
+
+        val note50 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 23))
+        val note51 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 24))
+        val note52 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 25))
+        val note53 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 26))
+        val note54 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 27))
+        val note55 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 28))
+        val note56 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 29))
+        val note57 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 30))
+        val note58 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 31))
+        val note59 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 32))
+
+        val note60 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 33))
+        val note61 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 34))
+        val note62 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 35))
+        val note63 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 36))
+        val note64 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 37))
+        val note65 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 38))
+        val note66 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 39))
+        val note67 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 40))
+        val note68 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 41))
+        val note69 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 42))
+
+        val note70 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 43))
+        val note71 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 44))
+        val note72 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 45))
+        val note73 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 46))
+        val note74 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 47))
+        val note75 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 48))
+        val note76 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 49))
+        val note77 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 50))
+        val note78 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 51))
+        val note79 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 52))
+
+        val note80 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 53))
+        val note81 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 54))
+        val note82 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 55))
+        val note83 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 56))
+        val note84 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 57))
+        val note85 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 58))
+        val note86 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 59))
+        val note87 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 60))
+        val note88 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 61))
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): SuperNaturalDrumKit {
             assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
                 "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
             return SuperNaturalDrumKit(
-                common = common.interpret(startAddress, 0x50, payload)
+                common = common.interpret(startAddress, length, payload),
+                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb=0x00u), length, payload),
+                commonCompEq = commonCompEq.interpret(startAddress.offsetBy(mlsb = 0x08u, lsb = 0x00u), length, payload),
+                notes = listOf(
+                     note27.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u), length, payload),
+                     note28.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 1), length, payload),
+                     note29.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 2), length, payload),
+
+                     note30.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 3), length, payload),
+                     note31.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 4), length, payload),
+                     note32.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 5), length, payload),
+                     note33.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 6), length, payload),
+                     note34.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 7), length, payload),
+                     note35.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 8), length, payload),
+                     note36.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 9), length, payload),
+                     note37.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 10), length, payload),
+                     note38.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 11), length, payload),
+                     note39.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 12), length, payload),
+
+                     note40.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 13), length, payload),
+                     note41.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 14), length, payload),
+                     note42.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 15), length, payload),
+                     note43.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 16), length, payload),
+                     note44.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 17), length, payload),
+                     note45.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 18), length, payload),
+                     note46.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 19), length, payload),
+                     note47.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 20), length, payload),
+                     note48.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 21), length, payload),
+                     note49.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 22), length, payload),
+
+                     note50.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 23), length, payload),
+                     note51.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 24), length, payload),
+                     note52.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 25), length, payload),
+                     note53.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 26), length, payload),
+                     note54.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 27), length, payload),
+                     note55.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 28), length, payload),
+                     note56.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 29), length, payload),
+                     note57.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 30), length, payload),
+                     note58.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 31), length, payload),
+                     note59.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 32), length, payload),
+
+                     note60.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 33), length, payload),
+                     note61.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 34), length, payload),
+                     note62.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 35), length, payload),
+                     note63.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 36), length, payload),
+                     note64.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 37), length, payload),
+                     note65.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 38), length, payload),
+                     note66.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 39), length, payload),
+                     note67.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 40), length, payload),
+                     note68.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 41), length, payload),
+                     note69.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 42), length, payload),
+
+                     note70.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 43), length, payload),
+                     note71.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 44), length, payload),
+                     note72.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 45), length, payload),
+                     note73.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 46), length, payload),
+                     note74.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 47), length, payload),
+                     note75.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 48), length, payload),
+                     note76.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 49), length, payload),
+                     note77.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 50), length, payload),
+                     note78.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 51), length, payload),
+                     note79.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 52), length, payload),
+
+                     note80.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 53), length, payload),
+                     note81.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 54), length, payload),
+                     note82.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 55), length, payload),
+                     note83.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 56), length, payload),
+                     note84.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 57), length, payload),
+                     note85.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 58), length, payload),
+                     note86.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 59), length, payload),
+                     note87.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 60), length, payload),
+                     note88.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 61), length, payload)
+                )
             )
         }
     }
@@ -1594,6 +1779,246 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                 ambienceLevel = ambienceLevel.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
                 phraseNo = phraseNo.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
                 tfx = tfx.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload)
+            )
+        }
+    }
+
+    data class SuperNaturalDrumKitCommonCompEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
+        Integra7MemoryIO<SupernaturalDrumKitCommonCompEq>() {
+        override val size = Integra7Size(0x54u)
+
+        val comp1Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
+        val comp1AttackTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), SupernaturalDrumAttackTime.values())
+        val comp1ReleaseTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x02u), SupernaturalDrumReleaseTime.values())
+        val comp1Threshold = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x03u))
+        val comp1Ratio = EnumValueField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumRatio.values())
+        val comp1OutputGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u), 0..24)
+        val eq1Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x06u))
+        val eq1LowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x07u), SupernaturalDrumLowFrequency.values())
+        val eq1LowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x08u), 0..30) // - 15
+        val eq1MidFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x09u), SupernaturalDrumMidFrequency.values())
+        val eq1MidGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Au), 0..30) // - 15
+        val eq1MidQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Bu), SupernaturalDrumMidQ.values())
+        val eq1HighFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), SupernaturalDrumHighFrequency.values())
+        val eq1HighGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), 0..30) // - 15
+
+        val comp2Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val comp2AttackTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Fu), SupernaturalDrumAttackTime.values())
+        val comp2ReleaseTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x10u), SupernaturalDrumReleaseTime.values())
+        val comp2Threshold = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
+        val comp2Ratio = EnumValueField(deviceId, address.offsetBy(lsb = 0x12u), SupernaturalDrumRatio.values())
+        val comp2OutputGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u), 0..24)
+        val eq2Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x14u))
+        val eq2LowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x15u), SupernaturalDrumLowFrequency.values())
+        val eq2LowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x16u), 0..30) // - 15
+        val eq2MidFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x17u), SupernaturalDrumMidFrequency.values())
+        val eq2MidGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x18u), 0..30) // - 15
+        val eq2MidQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x19u), SupernaturalDrumMidQ.values())
+        val eq2HighFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Au), SupernaturalDrumHighFrequency.values())
+        val eq2HighGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu), 0..30) // - 15
+
+        val comp3Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Cu))
+        val comp3AttackTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Du), SupernaturalDrumAttackTime.values())
+        val comp3ReleaseTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Eu), SupernaturalDrumReleaseTime.values())
+        val comp3Threshold = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Fu))
+        val comp3Ratio = EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), SupernaturalDrumRatio.values())
+        val comp3OutputGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x21u), 0..24)
+        val eq3Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x22u))
+        val eq3LowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x23u), SupernaturalDrumLowFrequency.values())
+        val eq3LowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x24u), 0..30) // - 15
+        val eq3MidFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x25u), SupernaturalDrumMidFrequency.values())
+        val eq3MidGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x26u), 0..30) // - 15
+        val eq3MidQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x27u), SupernaturalDrumMidQ.values())
+        val eq3HighFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x28u), SupernaturalDrumHighFrequency.values())
+        val eq3HighGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x29u), 0..30) // - 15
+
+        val comp4Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Au))
+        val comp4AttackTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x2Bu), SupernaturalDrumAttackTime.values())
+        val comp4ReleaseTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x2Cu), SupernaturalDrumReleaseTime.values())
+        val comp4Threshold = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Du))
+        val comp4Ratio = EnumValueField(deviceId, address.offsetBy(lsb = 0x2Eu), SupernaturalDrumRatio.values())
+        val comp4OutputGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Fu), 0..24)
+        val eq4Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x30u))
+        val eq4LowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x31u), SupernaturalDrumLowFrequency.values())
+        val eq4LowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x32u), 0..30) // - 15
+        val eq4MidFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x33u), SupernaturalDrumMidFrequency.values())
+        val eq4MidGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x34u), 0..30) // - 15
+        val eq4MidQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x35u), SupernaturalDrumMidQ.values())
+        val eq4HighFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x36u), SupernaturalDrumHighFrequency.values())
+        val eq4HighGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x37u), 0..30) // - 15
+
+        val comp5Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x38u))
+        val comp5AttackTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x39u), SupernaturalDrumAttackTime.values())
+        val comp5ReleaseTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Au), SupernaturalDrumReleaseTime.values())
+        val comp5Threshold = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val comp5Ratio = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio.values())
+        val comp5OutputGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Du), 0..24)
+        val eq5Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
+        val eq5LowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Fu), SupernaturalDrumLowFrequency.values())
+        val eq5LowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x40u), 0..30) // - 15
+        val eq5MidFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x41u), SupernaturalDrumMidFrequency.values())
+        val eq5MidGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x42u), 0..30) // - 15
+        val eq5MidQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ.values())
+        val eq5HighFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x44u), SupernaturalDrumHighFrequency.values())
+        val eq5HighGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
+
+        val comp6Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x38u))
+        val comp6AttackTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x39u), SupernaturalDrumAttackTime.values())
+        val comp6ReleaseTime = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Au), SupernaturalDrumReleaseTime.values())
+        val comp6Threshold = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val comp6Ratio = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio.values())
+        val comp6OutputGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Du), 0..24)
+        val eq6Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
+        val eq6LowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Fu), SupernaturalDrumLowFrequency.values())
+        val eq6LowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x40u), 0..30) // - 15
+        val eq6MidFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x41u), SupernaturalDrumMidFrequency.values())
+        val eq6MidGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x42u), 0..30) // - 15
+        val eq6MidQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ.values())
+        val eq6HighFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x44u), SupernaturalDrumHighFrequency.values())
+        val eq6HighGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
+
+        override fun interpret(
+            startAddress: Integra7Address,
+            length: Int,
+            payload: SparseUByteArray
+        ): SupernaturalDrumKitCommonCompEq {
+            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
+                "Not a SN-D kit comp/eq-definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+
+            return SupernaturalDrumKitCommonCompEq(
+                comp1Switch = comp1Switch.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
+                comp1AttackTime = comp1AttackTime.interpret(startAddress.offsetBy(lsb = 0x01u), length, payload),
+                comp1ReleaseTime = comp1ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x02u), length, payload),
+                comp1Threshold = comp1Threshold.interpret(startAddress.offsetBy(lsb = 0x03u), length, payload),
+                comp1Ratio = comp1Ratio.interpret(startAddress.offsetBy(lsb = 0x04u), length, payload),
+                comp1OutputGain = comp1OutputGain.interpret(startAddress.offsetBy(lsb = 0x05u), length, payload),
+                eq1Switch = eq1Switch.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload),
+                eq1LowFrequency = eq1LowFrequency.interpret(startAddress.offsetBy(lsb = 0x07u), length, payload),
+                eq1LowGain = eq1LowGain.interpret(startAddress.offsetBy(lsb = 0x08u), length, payload) - 15,
+                eq1MidFrequency = eq1MidFrequency.interpret(startAddress.offsetBy(lsb = 0x09u), length, payload),
+                eq1MidGain = eq1MidGain.interpret(startAddress.offsetBy(lsb = 0x0Au), length, payload) - 15,
+                eq1MidQ = eq1MidQ.interpret(startAddress.offsetBy(lsb = 0x0Bu), length, payload),
+                eq1HighFrequency = eq1HighFrequency.interpret(startAddress.offsetBy(lsb = 0x0Cu), length, payload),
+                eq1HighGain = eq1HighGain.interpret(startAddress.offsetBy(lsb = 0x0Du), length, payload) - 15,
+
+                comp2Switch = comp2Switch.interpret(startAddress.offsetBy(lsb = 0x0Eu), length, payload),
+                comp2AttackTime = comp2AttackTime.interpret(startAddress.offsetBy(lsb = 0x0Fu), length, payload),
+                comp2ReleaseTime = comp2ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x10u), length, payload),
+                comp2Threshold = comp2Threshold.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
+                comp2Ratio = comp2Ratio.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
+                comp2OutputGain = comp2OutputGain.interpret(startAddress.offsetBy(lsb = 0x13u), length, payload),
+                eq2Switch = eq2Switch.interpret(startAddress.offsetBy(lsb = 0x14u), length, payload),
+                eq2LowFrequency = eq2LowFrequency.interpret(startAddress.offsetBy(lsb = 0x15u), length, payload),
+                eq2LowGain = eq2LowGain.interpret(startAddress.offsetBy(lsb = 0x16u), length, payload) - 15,
+                eq2MidFrequency = eq2MidFrequency.interpret(startAddress.offsetBy(lsb = 0x17u), length, payload),
+                eq2MidGain = eq2MidGain.interpret(startAddress.offsetBy(lsb = 0x18u), length, payload) - 15,
+                eq2MidQ = eq2MidQ.interpret(startAddress.offsetBy(lsb = 0x19u), length, payload),
+                eq2HighFrequency = eq2HighFrequency.interpret(startAddress.offsetBy(lsb = 0x1Au), length, payload),
+                eq2HighGain = eq2HighGain.interpret(startAddress.offsetBy(lsb = 0x1Bu), length, payload) - 15,
+
+                comp3Switch = comp3Switch.interpret(startAddress.offsetBy(lsb = 0x1Cu), length, payload),
+                comp3AttackTime = comp3AttackTime.interpret(startAddress.offsetBy(lsb = 0x1Du), length, payload),
+                comp3ReleaseTime = comp3ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x1Eu), length, payload),
+                comp3Threshold = comp3Threshold.interpret(startAddress.offsetBy(lsb = 0x1Fu), length, payload),
+                comp3Ratio = comp3Ratio.interpret(startAddress.offsetBy(lsb = 0x20u), length, payload),
+                comp3OutputGain = comp3OutputGain.interpret(startAddress.offsetBy(lsb = 0x21u), length, payload),
+                eq3Switch = eq3Switch.interpret(startAddress.offsetBy(lsb = 0x22u), length, payload),
+                eq3LowFrequency = eq3LowFrequency.interpret(startAddress.offsetBy(lsb = 0x23u), length, payload),
+                eq3LowGain = eq3LowGain.interpret(startAddress.offsetBy(lsb = 0x24u), length, payload) - 15,
+                eq3MidFrequency = eq3MidFrequency.interpret(startAddress.offsetBy(lsb = 0x25u), length, payload),
+                eq3MidGain = eq3MidGain.interpret(startAddress.offsetBy(lsb = 0x26u), length, payload) - 15,
+                eq3MidQ = eq3MidQ.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
+                eq3HighFrequency = eq3HighFrequency.interpret(startAddress.offsetBy(lsb = 0x28u), length, payload),
+                eq3HighGain = eq3HighGain.interpret(startAddress.offsetBy(lsb = 0x29u), length, payload) - 15,
+
+                comp4Switch = comp4Switch.interpret(startAddress.offsetBy(lsb = 0x2Au), length, payload),
+                comp4AttackTime = comp4AttackTime.interpret(startAddress.offsetBy(lsb = 0x2Bu), length, payload),
+                comp4ReleaseTime = comp4ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x2Cu), length, payload),
+                comp4Threshold = comp4Threshold.interpret(startAddress.offsetBy(lsb = 0x2Du), length, payload),
+                comp4Ratio = comp4Ratio.interpret(startAddress.offsetBy(lsb = 0x2Eu), length, payload),
+                comp4OutputGain = comp4OutputGain.interpret(startAddress.offsetBy(lsb = 0x2Fu), length, payload),
+                eq4Switch = eq4Switch.interpret(startAddress.offsetBy(lsb = 0x30u), length, payload),
+                eq4LowFrequency = eq4LowFrequency.interpret(startAddress.offsetBy(lsb = 0x31u), length, payload),
+                eq4LowGain = eq4LowGain.interpret(startAddress.offsetBy(lsb = 0x32u), length, payload) - 15,
+                eq4MidFrequency = eq4MidFrequency.interpret(startAddress.offsetBy(lsb = 0x33u), length, payload),
+                eq4MidGain = eq4MidGain.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload) - 15,
+                eq4MidQ = eq4MidQ.interpret(startAddress.offsetBy(lsb = 0x35u), length, payload),
+                eq4HighFrequency = eq4HighFrequency.interpret(startAddress.offsetBy(lsb = 0x36u), length, payload),
+                eq4HighGain = eq4HighGain.interpret(startAddress.offsetBy(lsb = 0x37u), length, payload) - 15,
+
+                comp5Switch = comp5Switch.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
+                comp5AttackTime = comp5AttackTime.interpret(startAddress.offsetBy(lsb = 0x39u), length, payload),
+                comp5ReleaseTime = comp5ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x3Au), length, payload),
+                comp5Threshold = comp5Threshold.interpret(startAddress.offsetBy(lsb = 0x3Bu), length, payload),
+                comp5Ratio = comp5Ratio.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
+                comp5OutputGain = comp5OutputGain.interpret(startAddress.offsetBy(lsb = 0x3Du), length, payload),
+                eq5Switch = eq5Switch.interpret(startAddress.offsetBy(lsb = 0x3Eu), length, payload),
+                eq5LowFrequency = eq5LowFrequency.interpret(startAddress.offsetBy(lsb = 0x3Fu), length, payload),
+                eq5LowGain = eq5LowGain.interpret(startAddress.offsetBy(lsb = 0x40u), length, payload) - 15,
+                eq5MidFrequency = eq5MidFrequency.interpret(startAddress.offsetBy(lsb = 0x41u), length, payload),
+                eq5MidGain = eq5MidGain.interpret(startAddress.offsetBy(lsb = 0x42u), length, payload) - 15,
+                eq5MidQ = eq5MidQ.interpret(startAddress.offsetBy(lsb = 0x43u), length, payload),
+                eq5HighFrequency = eq5HighFrequency.interpret(startAddress.offsetBy(lsb = 0x44u), length, payload),
+                eq5HighGain = eq5HighGain.interpret(startAddress.offsetBy(lsb = 0x45u), length, payload) - 15,
+
+                comp6Switch = comp6Switch.interpret(startAddress.offsetBy(lsb = 0x46u), length, payload),
+                comp6AttackTime = comp6AttackTime.interpret(startAddress.offsetBy(lsb = 0x47u), length, payload),
+                comp6ReleaseTime = comp6ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x48u), length, payload),
+                comp6Threshold = comp6Threshold.interpret(startAddress.offsetBy(lsb = 0x49u), length, payload),
+                comp6Ratio = comp6Ratio.interpret(startAddress.offsetBy(lsb = 0x4Au), length, payload),
+                comp6OutputGain = comp6OutputGain.interpret(startAddress.offsetBy(lsb = 0x4Bu), length, payload),
+                eq6Switch = eq6Switch.interpret(startAddress.offsetBy(lsb = 0x4Cu), length, payload),
+                eq6LowFrequency = eq6LowFrequency.interpret(startAddress.offsetBy(lsb = 0x4Du), length, payload),
+                eq6LowGain = eq6LowGain.interpret(startAddress.offsetBy(lsb = 0x4Eu), length, payload) - 15,
+                eq6MidFrequency = eq6MidFrequency.interpret(startAddress.offsetBy(lsb = 0x4Fu), length, payload),
+                eq6MidGain = eq6MidGain.interpret(startAddress.offsetBy(lsb = 0x50u), length, payload) - 15,
+                eq6MidQ = eq6MidQ.interpret(startAddress.offsetBy(lsb = 0x51u), length, payload),
+                eq6HighFrequency = eq6HighFrequency.interpret(startAddress.offsetBy(lsb = 0x52u), length, payload),
+                eq6HighGain = 0 // TODO eq6HighGain.interpret(startAddress.offsetBy(lsb = 0x53u), length, payload) - 15,
+            )
+        }
+    }
+
+    data class SuperNaturalDrumKitNoteBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
+        Integra7MemoryIO<SuperNaturalDrumKitNote>() {
+        override val size = Integra7Size(0x13u)
+
+        val instrumentNumber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x00u), 0..512)
+        val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u))
+        val pan = SignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
+        val chorusSendLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
+        val reverbSendLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
+        val tune = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x08u), 8..248) // TODO: convert!
+        val attack = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
+        val decay = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), -63..0)
+        val brilliance = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu), -15..12)
+        val variation = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Fu), SuperNaturalDrumToneVariation.values())
+        val dynamicRange = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u), 0..63)
+        val stereoWidth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
+        val outputAssign = EnumValueField(deviceId, address.offsetBy(lsb = 0x12u), SuperNaturalDrumToneOutput.values())
+
+        override fun interpret(
+            startAddress: Integra7Address,
+            length: Int,
+            payload: SparseUByteArray
+        ): SuperNaturalDrumKitNote {
+            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
+                "Not a SN-D kit note-definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+
+            return SuperNaturalDrumKitNote(
+                instrumentNumber = instrumentNumber.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
+                level = level.interpret(startAddress.offsetBy(lsb = 0x04u), length, payload),
+                pan = pan.interpret(startAddress.offsetBy(lsb = 0x05u), length, payload),
+                chorusSendLevel = chorusSendLevel.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload),
+                reverbSendLevel = reverbSendLevel.interpret(startAddress.offsetBy(lsb = 0x07u), length, payload),
+                tune = tune.interpret(startAddress.offsetBy(lsb = 0x08u), length, payload),
+                attack = attack.interpret(startAddress.offsetBy(lsb = 0x0Cu), length, payload),
+                decay = decay.interpret(startAddress.offsetBy(lsb = 0x0Du), length, payload),
+                brilliance = brilliance.interpret(startAddress.offsetBy(lsb = 0x0Eu), length, payload),
+                variation = variation.interpret(startAddress.offsetBy(lsb = 0x0Fu), length, payload),
+                dynamicRange = dynamicRange.interpret(startAddress.offsetBy(lsb = 0x10u), length, payload),
+                stereoWidth = stereoWidth.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
+                outputAssign = SuperNaturalDrumToneOutput.PART // TODO outputAssign.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
             )
         }
     }
@@ -1696,7 +2121,7 @@ data class Integra7Address(val msb: UByte, val mmsb: UByte, val mlsb: UByte, val
             factor < 0 -> throw IllegalArgumentException()
             factor == 0 -> this
             factor == 1 -> Integra7Address(newMsb, newMmsb and 0x7Fu, newMlsb and 0x7Fu, newLsb and 0x7Fu)
-            else -> Integra7Address(newMsb, newMmsb and 0x7Fu, newMlsb and 0x7u, newLsb and 0x7u)
+            else -> Integra7Address(newMsb, newMmsb and 0x7Fu, newMlsb and 0x7Fu, newLsb and 0x7Fu)
                 .offsetBy(msb, mmsb, mlsb, lsb, factor - 1)
         }
     }
