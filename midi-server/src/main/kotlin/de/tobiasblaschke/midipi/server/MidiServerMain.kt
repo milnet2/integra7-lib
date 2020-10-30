@@ -29,7 +29,7 @@ object MidiServerMain {
                 .forEach { part ->
                     println("Part $part: " +
                             con.part(part)
-                                .sound.tone.tone.common)
+                                .sound.tone.tone)
                 }
 
 // -----------------------------------------------------

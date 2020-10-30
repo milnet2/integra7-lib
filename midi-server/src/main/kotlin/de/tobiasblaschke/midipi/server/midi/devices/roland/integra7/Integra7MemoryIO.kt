@@ -21,6 +21,7 @@ abstract class Integra7MemoryIO<T> {
         address >= this.address && address <= this.address.offsetBy(size)
 
     fun asDataRequest1(): RolandIntegra7MidiMessage {
+        println(" ## Requesting $address to ${address.offsetBy(size)}...")
         return RolandIntegra7MidiMessage.IntegraSysExReadRequest(
             deviceId = deviceId,
             address = address,
@@ -58,7 +59,7 @@ abstract class Integra7MemoryIO<T> {
             try {
                 return payload[IntRange(startAddress.fullByteAddress(), startAddress.fullByteAddress() + this.length)].toAsciiString().trim()
             } catch (e: NoSuchElementException) {
-                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.length)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from $payload", e)
+                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.length)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
             }
         }
     }
@@ -72,11 +73,15 @@ abstract class Integra7MemoryIO<T> {
         }
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
-            val ret = payload[startAddress.fullByteAddress()].toInt()
-            if (!range.contains(ret)) {
-                throw IllegalStateException("Value $ret not in $range When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
-            } else {
-                return ret
+            try {
+                val ret = payload[startAddress.fullByteAddress()].toInt()
+                if (!range.contains(ret)) {
+                    throw IllegalStateException("Value $ret not in $range When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
+                } else {
+                    return ret
+                }
+            } catch (e: NoSuchElementException) {
+                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.size)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
             }
         }
     }
@@ -101,7 +106,7 @@ abstract class Integra7MemoryIO<T> {
         override val size = Integra7Size(lsb = 0x02u)
 
         init {
-            assert(range.first >= 0 && range.endInclusive <= 0xFF) { "Impossible range $range" }
+            assert(range.first >= 0 && range.last <= 0xFF) { "Impossible range $range" }
         }
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
@@ -499,23 +504,22 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         val common2 = PcmSynthToneCommon2Builder(deviceId, address.offsetBy(mlsb = 0x30u, lsb = 0x00u))
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): PcmSynthTone {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a PCM synth tone ($address..${
-                    address.offsetBy(
-                        size
-                    )
-                }) for part $part, but $startAddress ${startAddress.rangeName()}"
-            }
+            assert(this.isCovering(startAddress)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
             return PcmSynthTone(
                 common = common.interpret(startAddress, 0x50, payload),
                 mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), length, payload),
                 partialMixTable = partialMixTable.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u), length, payload),
-                partial1 = partial1.interpret(startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u), length, payload),
-                partial2 = partial2.interpret(startAddress.offsetBy(mlsb = 0x22u, lsb = 0x00u), length, payload),
-                partial3 = partial3.interpret(startAddress.offsetBy(mlsb = 0x24u, lsb = 0x00u), length, payload),
-                partial4 = partial4.interpret(startAddress.offsetBy(mlsb = 0x26u, lsb = 0x00u), length, payload),
-                common2 = common2.interpret(startAddress.offsetBy(mlsb = 0x30u, lsb = 0x00u), length, payload),
+                partial1 = // if (payload.size >= startAddress.offsetBy(msb = 0x20u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
+                    partial1.interpret(startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u), length, payload), // else null,
+                partial2 = // if (payload.size >= startAddress.offsetBy(msb = 0x22u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
+                    partial2.interpret(startAddress.offsetBy(mlsb = 0x22u, lsb = 0x00u), length, payload), // else null,
+                partial3 = // if (payload.size >= startAddress.offsetBy(msb = 0x24u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
+                    partial3.interpret(startAddress.offsetBy(mlsb = 0x24u, lsb = 0x00u), length, payload), // else null,
+                partial4 = // if (payload.size >= startAddress.offsetBy(msb = 0x26u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
+                    partial4.interpret(startAddress.offsetBy(mlsb = 0x26u, lsb = 0x00u), length, payload), // else null,
+                common2 = // if (payload.size >= startAddress.offsetBy(msb = 0x30u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
+                    common2.interpret(startAddress.offsetBy(mlsb = 0x30u, lsb = 0x00u), length, payload), //else null,
             )
         }
     }
@@ -988,7 +992,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         // TODO val tvfCutoffKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Au), -200..200)
         val tvfCutoffVelocityCurve = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..7)
         val tvfCutoffVelocitySens = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Cu))
-        val tvfResonance = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Du))
+        val tvfResonance = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Du))
         val tvfResonanceVelocitySens = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu))
         val tvfEnvDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Fu))
         val tvfEnvVelocityCurve = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x50u), 0..7)
@@ -1007,7 +1011,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         val tvfEnvLevel4 = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Du))
 
         // TODO val biasLevel = SignedValueField(deviceId, address.offsetBy(lsb = 0x5Eu), -100..100)
-        val biasPosition = SignedValueField(deviceId, address.offsetBy(lsb = 0x5Fu))
+        val biasPosition = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Fu))
         val biasDirection = EnumValueField(deviceId, address.offsetBy(lsb = 0x60u), BiasDirection.values())
         val tvaLevelVelocityCurve = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x61u), 0..7)
         val tvaLevelVelocitySens = SignedValueField(deviceId, address.offsetBy(lsb = 0x62u))
@@ -1115,21 +1119,21 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     partialControl4Switch3 = partialControl4Switch3.interpret(startAddress.offsetBy(lsb = 0x25u), length, payload),
                     partialControl4Switch4 = partialControl4Switch4.interpret(startAddress.offsetBy(lsb = 0x26u), length, payload),
 
-                    waveGroupType = waveGroupType.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveGroupId = waveGroupId.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveNumberL = waveNumberL.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveNumberR = waveNumberR.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveGain = waveGain.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveFXMSwitch = waveFXMSwitch.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveFXMColor = waveFXMColor.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveFXMDepth = waveFXMDepth.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    waveTempoSync = waveTempoSync.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
-                    // wavePitchKeyfollow = wavePitchKeyfollow.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
+                    waveGroupType = waveGroupType.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
+                    waveGroupId = waveGroupId.interpret(startAddress.offsetBy(lsb = 0x28u), length, payload),
+                    waveNumberL = waveNumberL.interpret(startAddress.offsetBy(lsb = 0x2Cu), length, payload),
+                    waveNumberR = waveNumberR.interpret(startAddress.offsetBy(lsb = 0x30u), length, payload),
+                    waveGain = waveGain.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
+                    waveFXMSwitch = waveFXMSwitch.interpret(startAddress.offsetBy(lsb = 0x35u), length, payload),
+                    waveFXMColor = waveFXMColor.interpret(startAddress.offsetBy(lsb = 0x36u), length, payload),
+                    waveFXMDepth = waveFXMDepth.interpret(startAddress.offsetBy(lsb = 0x37u), length, payload),
+                    waveTempoSync = waveTempoSync.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
+                    // wavePitchKeyfollow = wavePitchKeyfollow.interpret(startAddress.offsetBy(lsb = 0x39u), length, payload),
 
-                    pitchEnvDepth = pitchEnvDepth.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
-                    pitchEnvVelocitySens = pitchEnvVelocitySens.interpret(startAddress.offsetBy(lsb = 0x28u), length, payload),
-                    pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.interpret(startAddress.offsetBy(lsb = 0x2Cu), length, payload),
-                    pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.interpret(startAddress.offsetBy(lsb = 0x30u), length, payload),
+                    pitchEnvDepth = pitchEnvDepth.interpret(startAddress.offsetBy(lsb = 0x3Au), length, payload),
+                    pitchEnvVelocitySens = pitchEnvVelocitySens.interpret(startAddress.offsetBy(lsb = 0x3Bu), length, payload),
+                    pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
+                    pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.interpret(startAddress.offsetBy(lsb = 0x3Du), length, payload),
                     // pitchEnvTimeKeyfollow = pitchEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
                     pitchEnvTime1 = pitchEnvTime1.interpret(startAddress.offsetBy(lsb = 0x3Fu), length, payload),
                     pitchEnvTime2 = pitchEnvTime2.interpret(startAddress.offsetBy(lsb = 0x40u), length, payload),
@@ -1224,13 +1228,13 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     lfoStep12 = lfoStep12.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x15u), length, payload),
                     lfoStep13 = lfoStep13.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x16u), length, payload),
                     lfoStep14 = lfoStep14.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x17u), length, payload),
-                    lfoStep15 = lfoStep15.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x18u), length, payload),
-                    lfoStep16 = lfoStep16.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x19u), length, payload),
+                    lfoStep15 = 0, // TODO: lfoStep15.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x18u), length, payload),
+                    lfoStep16 = 0 // TODO: lfoStep16.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x19u), length, payload),
                 )
             } catch (e: AssertionError) {
-                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw AssertionError("When reading $address to ${address.offsetBy(size)} size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
             } catch (e: NoSuchElementException) {
-                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalArgumentException("When reading $address to ${address.offsetBy(size)} size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
             }
         }
     }
@@ -1259,7 +1263,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     undocumented = undocumented.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
                     phraseOctaveShift = phraseOctaveShift.interpret(startAddress.offsetBy(lsb = 0x13u), length, payload),
                     tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x33u), length, payload),
-                    phraseNmber = phraseNmber.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
+                    phraseNmber = 0 // TODO: phraseNmber.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
                 )
             } catch (e: AssertionError) {
                 throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
@@ -1663,5 +1667,5 @@ data class Integra7Size(val msb: UByte = 0x00u, val mmsb: UByte = 0x00u, val mls
         (((((msb * 0x80u) + mmsb) * 0x80u) + mlsb) * 0x80u + lsb).toInt()
 
     override fun toString(): String =
-        fullByteSize().toString()
+        fullByteSize().toString() + String.format(" Integra: 0x%02x%02x%02x%02x", msb.toInt(), mmsb.toInt(), mlsb.toInt(), lsb.toInt())
 }

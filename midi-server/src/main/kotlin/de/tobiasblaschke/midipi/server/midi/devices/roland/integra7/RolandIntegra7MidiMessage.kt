@@ -425,7 +425,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
      * @param checkSum starting with COMMAND, excluding EOX
      */
     internal data class IntegraSysExReadRequest(val deviceId: DeviceId, val address: Integra7Address, val size: Integra7Size, val checkSum: UByte): MBRequestResponseMidiMessage, RolandIntegra7MidiMessage() {
-        override val completeAfter = Duration.ofMillis(50)
+        override val completeAfter = Duration.ofMillis(100)
         private val delegate = MBGenericMidiMessage.SystemCommon.SystemExclusive.ManufacturerSpecific(
             manufacturer = ROLAND,
             payload = deviceId.bytes() + INTEGRA7 + 0x11u + address.bytes() + size.bytes() + checkSum)
@@ -474,6 +474,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
      */
     data class IntegraSysExDataSet1Response(val deviceId: DeviceId, val startAddress: Integra7Address, val payload: SparseUByteArray, val checkSum: UByte): MBResponseMidiMessage, RolandIntegra7MidiMessage() {
         init {
+            println("  ## Received $startAddress to ${Integra7Address.fromFullByteAddress(payload.size)}")
             assert(payload.all { it in 0x00u .. 0x7Fu }) { "Payload contains illegal value" }
         }
         override fun toString(): String =

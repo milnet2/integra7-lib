@@ -6,12 +6,19 @@ data class PcmSynthTone(
     override val common: PcmSynthToneCommon,
     val mfx: PcmSynthToneMfx,
     val partialMixTable: PcmSynthTonePartialMixTable,
-    val partial1: PcmSynthTonePartial,
-    val partial2: PcmSynthTonePartial,
-    val partial3: PcmSynthTonePartial,
-    val partial4: PcmSynthTonePartial,
-    val common2: PcmSynthToneCommon2,
-): IntegraTone
+    val partial1: PcmSynthTonePartial?,
+    val partial2: PcmSynthTonePartial?,
+    val partial3: PcmSynthTonePartial?,
+    val partial4: PcmSynthTonePartial?,
+    val common2: PcmSynthToneCommon2?,
+): IntegraTone {
+    override fun toString(): String =
+        "PcmSynthTone(\n\tcommon = $common\n\tmfx = $mfx\n\tpartial1 = $partial1\n" +
+                "\tpartial2 = $partial2\n" +
+                "\tpartial3 = $partial3\n" +
+                "\tpartial4 = $partial4\n" +
+                "\tcommon2 = $common2\n)"
+}
 
 enum class MatrixControlSource(val hex: UByte) {
     OFF(0x00u),
@@ -597,7 +604,7 @@ data class PcmSynthTonePartial(
         assert(lfo1DelayTime in 0..127 ) { "Value not in range $lfo1DelayTime" }
         // assert(lfo1Keyfollow in -100..100 ) { "Value not in range $lfo1Keyfollow" }
         assert(lfo1FadeTime in 0..127 ) { "Value not in range $lfo1FadeTime" }
-        assert(lfo1PitchDepth in 1..127 ) { "Value not in range $lfo1PitchDepth" }
+        assert(lfo1PitchDepth in -63..63 ) { "Value not in range $lfo1PitchDepth" }
         assert(lfo1TvfDepth in -63..63 ) { "Value not in range $lfo1TvfDepth" }
         assert(lfo1TvaDepth in -63..63 ) { "Value not in range $lfo1TvaDepth" }
         assert(lfo1PanDepth in -63..63 ) { "Value not in range $lfo1PanDepth" }
@@ -607,7 +614,7 @@ data class PcmSynthTonePartial(
         assert(lfo2DelayTime in 0..127 ) { "Value not in range $lfo2DelayTime" }
         // assert(lfo2Keyfollow in -100..100 ) { "Value not in range $lfo2Keyfollow" }
         assert(lfo2FadeTime in 0..127 ) { "Value not in range $lfo2FadeTime" }
-        assert(lfo2PitchDepth in 1..127 ) { "Value not in range $lfo2PitchDepth" }
+        assert(lfo2PitchDepth in -63..63 ) { "Value not in range $lfo2PitchDepth" }
         assert(lfo2TvfDepth in -63..63 ) { "Value not in range $lfo2TvfDepth" }
         assert(lfo2TvaDepth in -63..63 ) { "Value not in range $lfo2TvaDepth" }
         assert(lfo2PanDepth in -63..63 ) { "Value not in range $lfo2PanDepth" }
