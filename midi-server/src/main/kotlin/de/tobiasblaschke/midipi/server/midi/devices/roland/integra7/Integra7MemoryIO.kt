@@ -463,7 +463,7 @@ data class ToneAddressRequestBuilder(
     val snaSynthTone = IntegraToneBuilder.SuperNaturalSynthToneBuilder(deviceId, address.offsetBy(0x010000), part)
     val snaAcousticTone = IntegraToneBuilder.SuperNaturalAcousticToneBuilder(deviceId, address.offsetBy(0x020000), part)
     val snaDrumKit = IntegraToneBuilder.SuperNaturalDrumKitBuilder(deviceId, address.offsetBy(0x030000), part)
-    val pcmDrumKit = IntegraToneBuilder.SuperNaturalAcousticToneBuilder(deviceId, address.offsetBy(0x100000), part)
+    val pcmDrumKit = IntegraToneBuilder.PcmDrumKitBuilder(deviceId, address.offsetBy(0x100000), part)
 
     override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): TemporaryTone {
         assert(this.isCovering(startAddress)) { "Not a tone definition ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
@@ -2031,17 +2031,25 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x00u, 0x02u, 0x7Fu, 0x7Fu)
 
         val common = PcmDrumKitCommonBuilder(deviceId, address.offsetBy(0x000000))
-        // mfx
-        // common-comp
-        // note[]
-        // common2
+        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
+        val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u)) // Same as SN-D
+        val keys = IntRange(0, 78) // key 21 .. 108
+            .map { PcmDrumKitPartialBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x02u, lsb = 0x00u, factor = it))  }
+//        | 00 10 00 | PCM Drum Kit Partial (Key # 21) |
+//        | 00 12 00 | PCM Drum Kit Partial (Key # 22) |
+//        | : | |
+//        | 01 3E 00 | PCM Drum Kit Partial (Key # 108) |
+//        | 02 00 00 | PCM Drum Kit Common 2
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): PcmDrumKit {
             assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
                 "Not a PCM Drum kit ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
             return PcmDrumKit(
-                common = common.interpret(startAddress, 0x50, payload)
+                common = common.interpret(startAddress, length, payload),
+                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb=0x00u), length, payload),
+                keys = keys
+                    .mapIndexed { index, b -> b.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x02u, lsb = 0x00u, factor = index), length, payload) }
             )
         }
     }
@@ -2063,6 +2071,325 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
             return PcmDrumKitCommon(
                 name = name.interpret(startAddress, length, payload),
                 level = level.interpret(startAddress.offsetBy(lsb = 0x0Cu), length, payload),
+            )
+        }
+    }
+
+    data class PcmDrumKitPartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
+        Integra7MemoryIO<PcmDrumKitPartial>() {
+        override val size = Integra7Size(mlsb = 0x01u, lsb = 0x43u)
+
+        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+
+        val assignType = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType.values())
+        val muteGroup = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0D0u), 0..31)
+
+        val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val coarseTune = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val fineTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x10u), -50..50)
+        val randomPitchDepth = EnumValueField(deviceId, address.offsetBy(lsb = 0x11u), RandomPithDepth.values())
+        val pan = SignedValueField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
+        val randomPanDepth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u), 0..63)
+        val alternatePanDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x14u))
+        val envMode = EnumValueField(deviceId, address.offsetBy(lsb = 0x15u), EnvMode.values())
+
+        val outputLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x16u))
+        val chorusSendLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x19u))
+        val reverbSendLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Au))
+        val outputAssign = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Bu), SuperNaturalDrumToneOutput.values())
+
+        val pitchBendRange = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..48)
+        val receiveExpression = BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Du))
+        val receiveHold1 = BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
+
+        val wmtVelocityControl = EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), WmtVelocityControl.values())
+
+        val wmt1WaveSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x21u))
+        val wmt1WaveGroupType = EnumValueField(deviceId, address.offsetBy(lsb = 0x22u), WaveGroupType.values())
+        val wmt1WaveGroupId = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x23u), 0..16384)
+        val wmt1WaveNumberL = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x27u), 0..16384)
+        val wmt1WaveNumberR = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Bu), 0..16384)
+        val wmt1WaveGain = EnumValueField(deviceId, address.offsetBy(lsb = 0x2Fu), WaveGain.values())
+        val wmt1WaveFxmSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x30u))
+        val wmt1WaveFxmColor = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x31u), 0..3)
+        val wmt1WaveFxmDepth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x32u), 0..16)
+        val wmt1WaveTempoSync = BooleanValueField(deviceId, address.offsetBy(lsb = 0x33u))
+        val wmt1WaveCoarseTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x34u), -48..48)
+        val wmt1WaveFineTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x35u), -50..50)
+        val wmt1WavePan = SignedValueField(deviceId, address.offsetBy(lsb = 0x36u), -64..63)
+        val wmt1WaveRandomPanSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x37u))
+        val wmt1WaveAlternatePanSwitch = EnumValueField(deviceId, address.offsetBy(lsb = 0x38u), OffOnReverse.values())
+        val wmt1WaveLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x39u))
+        val wmt1VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Au))
+        val wmt1VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Cu))
+
+        val wmt2WaveSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
+        val wmt2WaveGroupType = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Fu), WaveGroupType.values())
+        val wmt2WaveGroupId = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x40u), 0..16384)
+        val wmt2WaveNumberL = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x44u), 0..16384)
+        val wmt2WaveNumberR = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x48u), 0..16384)
+        val wmt2WaveGain = EnumValueField(deviceId, address.offsetBy(lsb = 0x4Cu), WaveGain.values())
+        val wmt2WaveFxmSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x4Du))
+        val wmt2WaveFxmColor = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..3)
+        val wmt2WaveFxmDepth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Fu), 0..16)
+        val wmt2WaveTempoSync = BooleanValueField(deviceId, address.offsetBy(lsb = 0x50u))
+        val wmt2WaveCoarseTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x51u), -48..48)
+        val wmt2WaveFineTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x52u), -50..50)
+        val wmt2WavePan = SignedValueField(deviceId, address.offsetBy(lsb = 0x53u), -64..63)
+        val wmt2WaveRandomPanSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x54u))
+        val wmt2WaveAlternatePanSwitch = EnumValueField(deviceId, address.offsetBy(lsb = 0x55u), OffOnReverse.values())
+        val wmt2WaveLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x56u))
+        val wmt2VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x57u))
+        val wmt2VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x59u))
+
+        val wmt3WaveSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x5Bu))
+        val wmt3WaveGroupType = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), WaveGroupType.values())
+        val wmt3WaveGroupId = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du), 0..16384)
+        val wmt3WaveNumberL = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u), 0..16384)
+        val wmt3WaveNumberR = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u), 0..16384)
+        val wmt3WaveGain = EnumValueField(deviceId, address.offsetBy(lsb = 0x69u), WaveGain.values())
+        val wmt3WaveFxmSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x6Au))
+        val wmt3WaveFxmColor = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Bu), 0..3)
+        val wmt3WaveFxmDepth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Cu), 0..16)
+        val wmt3WaveTempoSync = BooleanValueField(deviceId, address.offsetBy(lsb = 0x6Du))
+        val wmt3WaveCoarseTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x6Eu), -48..48)
+        val wmt3WaveFineTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x6Fu), -50..50)
+        val wmt3WavePan = SignedValueField(deviceId, address.offsetBy(lsb = 0x70u), -64..63)
+        val wmt3WaveRandomPanSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x71u))
+        val wmt3WaveAlternatePanSwitch = EnumValueField(deviceId, address.offsetBy(lsb = 0x72u), OffOnReverse.values())
+        val wmt3WaveLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x73u))
+        val wmt3VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x74u))
+        val wmt3VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x76u))
+
+        val wmt4WaveSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x78u))
+        val wmt4WaveGroupType = EnumValueField(deviceId, address.offsetBy(lsb = 0x79u), WaveGroupType.values())
+        val wmt4WaveGroupId = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Au), 0..16384)
+        val wmt4WaveNumberL = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Eu), 0..16384)
+        val wmt4WaveNumberR = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x02u), 0..16384)
+        val wmt4WaveGain = EnumValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u), WaveGain.values())
+        val wmt4WaveFxmSwitch = BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
+        val wmt4WaveFxmColor = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x08u), 0..3)
+        val wmt4WaveFxmDepth = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..16)
+        val wmt4WaveTempoSync = BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au))
+        val wmt4WaveCoarseTune = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -48..48)
+        val wmt4WaveFineTune = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -50..50)
+        val wmt4WavePan = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -64..63)
+        val wmt4WaveRandomPanSwitch = BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu))
+        val wmt4WaveAlternatePanSwitch = EnumValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), OffOnReverse.values())
+        val wmt4WaveLevel = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u))
+        val wmt4VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u))
+        val wmt4VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u))
+
+        val pitchEnvDepth = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -12..12)
+        val pitchEnvVelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u))
+        val pitchEnvTime1VelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u))
+        val pitchEnvTime4VelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u))
+
+        val pitchEnvTime1 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u))
+        val pitchEnvTime2 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Au))
+        val pitchEnvTime3 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Bu))
+        val pitchEnvTime4 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Cu))
+
+        val pitchEnvLevel0 = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Du))
+        val pitchEnvLevel1 = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Eu))
+        val pitchEnvLevel2 = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Fu))
+        val pitchEnvLevel3 = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x20u))
+        val pitchEnvLevel4 = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x21u))
+
+        val tvfFilterType = EnumValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x22u), TvfFilterType.values())
+        val tvfCutoffFrequency = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x23u))
+        val tvfCutoffVelocityCurve = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x24u), 0..7)
+        val tvfCutoffVelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x25u))
+        val tvfResonance = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x26u))
+        val tvfResonanceVelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x27u))
+        val tvfEnvDepth = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x28u))
+        val tvfEnvVelocityCurveType = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x29u), 0..7)
+        val tvfEnvVelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Au))
+        val tvfEnvTime1VelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Bu))
+        val tvfEnvTime4VelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Cu))
+        val tvfEnvTime1 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Du))
+        val tvfEnvTime2 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Eu))
+        val tvfEnvTime3 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Fu))
+        val tvfEnvTime4 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x30u))
+        val tvfEnvLevel0 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x31u))
+        val tvfEnvLevel1 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x32u))
+        val tvfEnvLevel2 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x33u))
+        val tvfEnvLevel3 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x34u))
+        val tvfEnvLevel4 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x35u))
+
+        val tvaLevelVelocityCurve = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x36u), 0..7)
+        val tvaLevelVelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x37u))
+        val tvaEnvTime1VelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x38u))
+        val tvaEnvTime4VelocitySens = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x39u))
+        val tvaEnvTime1 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Au))
+        val tvaEnvTime2 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Bu))
+        val tvaEnvTime3 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Cu))
+        val tvaEnvTime4 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Du))
+        val tvaEnvLevel1 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Eu))
+        val tvaEnvLevel2 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Fu))
+        val tvaEnvLevel3 = UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x40u))
+
+        val oneShotMode = BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x41u))
+
+        override fun interpret(
+            startAddress: Integra7Address,
+            length: Int,
+            payload: SparseUByteArray
+        ): PcmDrumKitPartial {
+            assert(startAddress >= address)
+
+            return PcmDrumKitPartial(
+                name = name.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
+
+                assignType = assignType.interpret(startAddress.offsetBy(lsb = 0x0Cu), length, payload),
+                muteGroup = muteGroup.interpret(startAddress.offsetBy(lsb = 0x0Du), length, payload),
+
+                level = level.interpret(startAddress.offsetBy(lsb = 0x0Eu), length, payload),
+                coarseTune = coarseTune.interpret(startAddress.offsetBy(lsb = 0x0Fu), length, payload),
+                fineTune = fineTune.interpret(startAddress.offsetBy(lsb = 0x10u), length, payload),
+                randomPitchDepth = randomPitchDepth.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
+                pan = pan.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
+                randomPanDepth = randomPanDepth.interpret(startAddress.offsetBy(lsb = 0x13u), length, payload),
+                alternatePanDepth = alternatePanDepth.interpret(startAddress.offsetBy(lsb = 0x14u), length, payload),
+                envMode = envMode.interpret(startAddress.offsetBy(lsb = 0x15u), length, payload),
+
+                outputLevel = outputLevel.interpret(startAddress.offsetBy(lsb = 0x16u), length, payload),
+                chorusSendLevel = chorusSendLevel.interpret(startAddress.offsetBy(lsb = 0x19u), length, payload),
+                reverbSendLevel = reverbSendLevel.interpret(startAddress.offsetBy(lsb = 0x1Au), length, payload),
+                outputAssign = outputAssign.interpret(startAddress.offsetBy(lsb = 0x1Bu), length, payload),
+
+                pitchBendRange = pitchBendRange.interpret(startAddress.offsetBy(lsb = 0x1Cu), length, payload),
+                receiveExpression = receiveExpression.interpret(startAddress.offsetBy(lsb = 0x1Du), length, payload),
+                receiveHold1 = receiveHold1.interpret(startAddress.offsetBy(lsb = 0x1Eu), length, payload),
+
+                wmtVelocityControl = wmtVelocityControl.interpret(startAddress.offsetBy(lsb = 0x20u), length, payload),
+
+                wmt1WaveSwitch = wmt1WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x21u), length, payload),
+                wmt1WaveGroupType = wmt1WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x22u), length, payload),
+                wmt1WaveGroupId = wmt1WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x23u), length, payload),
+                wmt1WaveNumberL = wmt1WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
+                wmt1WaveNumberR = wmt1WaveNumberR.interpret(startAddress.offsetBy(lsb = 0x2Bu), length, payload),
+                wmt1WaveGain = wmt1WaveGain.interpret(startAddress.offsetBy(lsb = 0x2Fu), length, payload),
+                wmt1WaveFxmSwitch = wmt1WaveFxmSwitch.interpret(startAddress.offsetBy(lsb = 0x30u), length, payload),
+                wmt1WaveFxmColor = wmt1WaveFxmColor.interpret(startAddress.offsetBy(lsb = 0x31u), length, payload),
+                wmt1WaveFxmDepth = wmt1WaveFxmDepth.interpret(startAddress.offsetBy(lsb = 0x32u), length, payload),
+                wmt1WaveTempoSync = wmt1WaveTempoSync.interpret(startAddress.offsetBy(lsb = 0x33u), length, payload),
+                wmt1WaveCoarseTune = wmt1WaveCoarseTune.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
+                wmt1WaveFineTune = wmt1WaveFineTune.interpret(startAddress.offsetBy(lsb = 0x35u), length, payload),
+                wmt1WavePan = wmt1WavePan.interpret(startAddress.offsetBy(lsb = 0x36u), length, payload),
+                wmt1WaveRandomPanSwitch = wmt1WaveRandomPanSwitch.interpret(startAddress.offsetBy(lsb = 0x37u), length, payload),
+                wmt1WaveAlternatePanSwitch = wmt1WaveAlternatePanSwitch.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
+                wmt1WaveLevel = wmt1WaveLevel.interpret(startAddress.offsetBy(lsb = 0x39u), length, payload),
+                wmt1VelocityRange = wmt1VelocityRange.interpret(startAddress.offsetBy(lsb = 0x3Au), length, payload),
+                wmt1VelocityFadeWidth = wmt1VelocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
+
+                wmt2WaveSwitch = wmt2WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x3Eu), length, payload),
+                wmt2WaveGroupType = wmt2WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x3Fu), length, payload),
+                wmt2WaveGroupId = wmt2WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x40u), length, payload),
+                wmt2WaveNumberL = wmt2WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x44u), length, payload),
+                wmt2WaveNumberR = wmt2WaveNumberR.interpret(startAddress.offsetBy(lsb = 0x48u), length, payload),
+                wmt2WaveGain = wmt2WaveGain.interpret(startAddress.offsetBy(lsb = 0x4Cu), length, payload),
+                wmt2WaveFxmSwitch = wmt2WaveFxmSwitch.interpret(startAddress.offsetBy(lsb = 0x4Du), length, payload),
+                wmt2WaveFxmColor = wmt2WaveFxmColor.interpret(startAddress.offsetBy(lsb = 0x4Eu), length, payload),
+                wmt2WaveFxmDepth = wmt2WaveFxmDepth.interpret(startAddress.offsetBy(lsb = 0x4Fu), length, payload),
+                wmt2WaveTempoSync = wmt2WaveTempoSync.interpret(startAddress.offsetBy(lsb = 0x50u), length, payload),
+                wmt2WaveCoarseTune = wmt2WaveCoarseTune.interpret(startAddress.offsetBy(lsb = 0x51u), length, payload),
+                wmt2WaveFineTune = wmt2WaveFineTune.interpret(startAddress.offsetBy(lsb = 0x52u), length, payload),
+                wmt2WavePan = wmt2WavePan.interpret(startAddress.offsetBy(lsb = 0x53u), length, payload),
+                wmt2WaveRandomPanSwitch = wmt2WaveRandomPanSwitch.interpret(startAddress.offsetBy(lsb = 0x54u), length, payload),
+                wmt2WaveAlternatePanSwitch = wmt2WaveAlternatePanSwitch.interpret(startAddress.offsetBy(lsb = 0x55u), length, payload),
+                wmt2WaveLevel = wmt2WaveLevel.interpret(startAddress.offsetBy(lsb = 0x56u), length, payload),
+                wmt2VelocityRange = wmt2VelocityRange.interpret(startAddress.offsetBy(lsb = 0x57u), length, payload),
+                wmt2VelocityFadeWidth = wmt2VelocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x59u), length, payload),
+
+                wmt3WaveSwitch = wmt3WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x5Bu), length, payload),
+                wmt3WaveGroupType = wmt3WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x5Cu), length, payload),
+                wmt3WaveGroupId = wmt3WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x5Du), length, payload),
+                wmt3WaveNumberL = wmt3WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x61u), length, payload),
+                wmt3WaveNumberR = wmt3WaveNumberR.interpret(startAddress.offsetBy(lsb = 0x65u), length, payload),
+                wmt3WaveGain = wmt3WaveGain.interpret(startAddress.offsetBy(lsb = 0x69u), length, payload),
+                wmt3WaveFxmSwitch = wmt3WaveFxmSwitch.interpret(startAddress.offsetBy(lsb = 0x6Au), length, payload),
+                wmt3WaveFxmColor = wmt3WaveFxmColor.interpret(startAddress.offsetBy(lsb = 0x6Bu), length, payload),
+                wmt3WaveFxmDepth = wmt3WaveFxmDepth.interpret(startAddress.offsetBy(lsb = 0x6Cu), length, payload),
+                wmt3WaveTempoSync = wmt3WaveTempoSync.interpret(startAddress.offsetBy(lsb = 0x6Du), length, payload),
+                wmt3WaveCoarseTune = wmt3WaveCoarseTune.interpret(startAddress.offsetBy(lsb = 0x6Eu), length, payload),
+                wmt3WaveFineTune = wmt3WaveFineTune.interpret(startAddress.offsetBy(lsb = 0x6Fu), length, payload),
+                wmt3WavePan = wmt3WavePan.interpret(startAddress.offsetBy(lsb = 0x70u), length, payload),
+                wmt3WaveRandomPanSwitch = wmt3WaveRandomPanSwitch.interpret(startAddress.offsetBy(lsb = 0x71u), length, payload),
+                wmt3WaveAlternatePanSwitch = wmt3WaveAlternatePanSwitch.interpret(startAddress.offsetBy(lsb = 0x72u), length, payload),
+                wmt3WaveLevel = wmt3WaveLevel.interpret(startAddress.offsetBy(lsb = 0x73u), length, payload),
+                wmt3VelocityRange = wmt3VelocityRange.interpret(startAddress.offsetBy(lsb = 0x74u), length, payload),
+                wmt3VelocityFadeWidth = wmt3VelocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x76u), length, payload),
+
+                wmt4WaveSwitch = wmt4WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x78u), length, payload),
+                wmt4WaveGroupType = wmt4WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x79u), length, payload),
+                wmt4WaveGroupId = wmt4WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x7Au), length, payload),
+                wmt4WaveNumberL = wmt4WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x7Eu), length, payload),
+                wmt4WaveNumberR = wmt4WaveNumberR.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x02u), length, payload),
+                wmt4WaveGain = wmt4WaveGain.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x06u), length, payload),
+                wmt4WaveFxmSwitch = wmt4WaveFxmSwitch.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x07u), length, payload),
+                wmt4WaveFxmColor = wmt4WaveFxmColor.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x08u), length, payload),
+                wmt4WaveFxmDepth = wmt4WaveFxmDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x09u), length, payload),
+                wmt4WaveTempoSync = wmt4WaveTempoSync.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Au), length, payload),
+                wmt4WaveCoarseTune = wmt4WaveCoarseTune.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), length, payload),
+                wmt4WaveFineTune = wmt4WaveFineTune.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), length, payload),
+                wmt4WavePan = wmt4WavePan.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Du), length, payload),
+                wmt4WaveRandomPanSwitch = wmt4WaveRandomPanSwitch.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Eu), length, payload),
+                wmt4WaveAlternatePanSwitch = wmt4WaveAlternatePanSwitch.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), length, payload),
+                wmt4WaveLevel = wmt4WaveLevel.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x10u), length, payload),
+                wmt4VelocityRange = wmt4VelocityRange.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x11u), length, payload),
+                wmt4VelocityFadeWidth = wmt4VelocityFadeWidth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x13u), length, payload),
+
+                pitchEnvDepth = pitchEnvDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x15u), length, payload),
+                pitchEnvVelocitySens = pitchEnvVelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x16u), length, payload),
+                pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x17u), length, payload),
+                pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x18u), length, payload),
+
+                pitchEnvTime1 = pitchEnvTime1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x19u), length, payload),
+                pitchEnvTime2 = pitchEnvTime2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Au), length, payload),
+                pitchEnvTime3 = pitchEnvTime3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Bu), length, payload),
+                pitchEnvTime4 = pitchEnvTime4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Cu), length, payload),
+
+                pitchEnvLevel0 = pitchEnvLevel0.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Du), length, payload),
+                pitchEnvLevel1 = pitchEnvLevel1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Eu), length, payload),
+                pitchEnvLevel2 = pitchEnvLevel2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Fu), length, payload),
+                pitchEnvLevel3 = pitchEnvLevel3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x20u), length, payload),
+                pitchEnvLevel4 = pitchEnvLevel4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x21u), length, payload),
+
+                tvfFilterType = tvfFilterType.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x22u), length, payload),
+                tvfCutoffFrequency = tvfCutoffFrequency.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x23u), length, payload),
+                tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x24u), length, payload),
+                tvfCutoffVelocitySens = tvfCutoffVelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x25u), length, payload),
+                tvfResonance = tvfResonance.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x26u), length, payload),
+                tvfResonanceVelocitySens = tvfResonanceVelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x27u), length, payload),
+                tvfEnvDepth = tvfEnvDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x28u), length, payload),
+                tvfEnvVelocityCurveType = tvfEnvVelocityCurveType.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x29u), length, payload),
+                tvfEnvVelocitySens = tvfEnvVelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Au), length, payload),
+                tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Bu), length, payload),
+                tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Cu), length, payload),
+                tvfEnvTime1 = tvfEnvTime1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Du), length, payload),
+                tvfEnvTime2 = tvfEnvTime2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Eu), length, payload),
+                tvfEnvTime3 = tvfEnvTime3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Fu), length, payload),
+                tvfEnvTime4 = tvfEnvTime4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x30u), length, payload),
+                tvfEnvLevel0 = tvfEnvLevel0.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x31u), length, payload),
+                tvfEnvLevel1 = tvfEnvLevel1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x32u), length, payload),
+                tvfEnvLevel2 = tvfEnvLevel2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x33u), length, payload),
+                tvfEnvLevel3 = tvfEnvLevel3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x34u), length, payload),
+                tvfEnvLevel4 = tvfEnvLevel4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x35u), length, payload),
+
+                tvaLevelVelocityCurve = tvaLevelVelocityCurve.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x36u), length, payload),
+                tvaLevelVelocitySens = tvaLevelVelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x37u), length, payload),
+                tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x38u), length, payload),
+                tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x39u), length, payload),
+                tvaEnvTime1 = tvaEnvTime1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Au), length, payload),
+                tvaEnvTime2 = tvaEnvTime2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Bu), length, payload),
+                tvaEnvTime3 = tvaEnvTime3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Cu), length, payload),
+                tvaEnvTime4 = tvaEnvTime4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Du), length, payload),
+                tvaEnvLevel1 = tvaEnvLevel1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Eu), length, payload),
+                tvaEnvLevel2 = tvaEnvLevel2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Fu), length, payload),
+                tvaEnvLevel3 = tvaEnvLevel3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x40u), length, payload),
+
+                oneShotMode = oneShotMode.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x41u), length, payload),
             )
         }
     }
