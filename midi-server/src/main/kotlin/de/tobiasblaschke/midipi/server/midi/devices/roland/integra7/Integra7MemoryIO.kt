@@ -173,7 +173,7 @@ abstract class Integra7MemoryIO<T> {
         override val size = delegate.size
 
         init {
-            assert(range.first >= -63 && range.endInclusive <= 63) { "Impossible range $range" }
+            assert(range.first >= -64 && range.endInclusive <= 63) { "Impossible range $range" }
         }
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
@@ -1282,13 +1282,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
         val common = SuperNaturalSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
-        /*
-        |-------------+----------------------------------------------------------------|
-        | 00 20 00 | SuperNATURAL Synth Tone Partial (1) |
-        | 00 21 00 | SuperNATURAL Synth Tone Partial (2) |
-        | 00 22 00 | SuperNATURAL Synth Tone Partial (3) |
-        +------------------------------------------------------------------------------+
-         */
+        val partial1 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u))
+        val partial2 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x21u, lsb = 0x00u))
+        val partial3 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u))
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): SuperNaturalSynthTone {
             assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
@@ -1296,7 +1292,10 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
             return SuperNaturalSynthTone(
                 common = common.interpret(startAddress, length, payload),
-                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), length, payload)
+                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), length, payload),
+                partial1 = partial1.interpret(startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u), length, payload),
+                partial2 = partial2.interpret(startAddress.offsetBy(mlsb = 0x21u, lsb = 0x00u), length, payload),
+                partial3 = partial3.interpret(startAddress.offsetBy(mlsb = 0x22u, lsb = 0x00u), length, payload),
             )
         }
     }
@@ -1307,6 +1306,32 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
         val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
+        val portamentoSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x12u))
+        val portamentoTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u))
+        val monoSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x14u))
+        val octaveShift = SignedValueField(deviceId, address.offsetBy(lsb = 0x15u), -3..3)
+        val pithBendRangeUp = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x16u), 0..24)
+        val pitchBendRangeDown = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x17u), 0..24)
+
+        val partial1Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x19u))
+        val partial1Select = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Au))
+        val partial2Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Bu))
+        val partial2Select = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Cu))
+        val partial3Switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Du))
+        val partial3Select = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Eu))
+
+        val ringSwitch = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Fu), RingSwitch.values())
+        val tfxSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x20u))
+
+        val unisonSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Eu))
+        val portamentoMode = EnumValueField(deviceId, address.offsetBy(lsb = 0x31u), PortamentoMode.values())
+        val legatoSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x32u))
+        val analogFeel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x34u))
+        val waveShape = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x35u))
+        val toneCategory = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x36u))
+        val phraseNumber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x37u), 0..65535)
+        val phraseOctaveShift = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu), -3..3)
+        val unisonSize = EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), UnisonSize.values())
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -1317,7 +1342,168 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
             return SupernaturalSynthToneCommon(
                 name = name.interpret(startAddress, length, payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x0Eu), length, payload),
+                level = level.interpret(startAddress.offsetBy(lsb = 0x0Cu), length, payload),
+                portamentoSwitch = portamentoSwitch.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
+                portamentoTime = portamentoTime.interpret(startAddress.offsetBy(lsb = 0x13u), length, payload),
+                monoSwitch = monoSwitch.interpret(startAddress.offsetBy(lsb = 0x14u), length, payload),
+                octaveShift = octaveShift.interpret(startAddress.offsetBy(lsb = 0x15u), length, payload),
+                pithBendRangeUp = pithBendRangeUp.interpret(startAddress.offsetBy(lsb = 0x16u), length, payload),
+                pitchBendRangeDown = pitchBendRangeDown.interpret(startAddress.offsetBy(lsb = 0x17u), length, payload),
+
+                partial1Switch = partial1Switch.interpret(startAddress.offsetBy(lsb = 0x19u), length, payload),
+                partial1Select = partial1Select.interpret(startAddress.offsetBy(lsb = 0x1Au), length, payload),
+                partial2Switch = partial2Switch.interpret(startAddress.offsetBy(lsb = 0x1Bu), length, payload),
+                partial2Select = partial2Select.interpret(startAddress.offsetBy(lsb = 0x1Cu), length, payload),
+                partial3Switch = partial3Switch.interpret(startAddress.offsetBy(lsb = 0x1Du), length, payload),
+                partial3Select = partial3Select.interpret(startAddress.offsetBy(lsb = 0x1Eu), length, payload),
+
+                ringSwitch = ringSwitch.interpret(startAddress.offsetBy(lsb = 0x1Fu), length, payload),
+                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x20u), length, payload),
+
+                unisonSwitch = unisonSwitch.interpret(startAddress.offsetBy(lsb = 0x2Eu), length, payload),
+                portamentoMode = portamentoMode.interpret(startAddress.offsetBy(lsb = 0x31u), length, payload),
+                legatoSwitch = legatoSwitch.interpret(startAddress.offsetBy(lsb = 0x32u), length, payload),
+                analogFeel = analogFeel.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
+                waveShape = waveShape.interpret(startAddress.offsetBy(lsb = 0x35u), length, payload),
+                toneCategory = toneCategory.interpret(startAddress.offsetBy(lsb = 0x36u), length, payload),
+                phraseNumber = phraseNumber.interpret(startAddress.offsetBy(lsb = 0x37u), length, payload),
+                phraseOctaveShift = phraseOctaveShift.interpret(startAddress.offsetBy(lsb = 0x3Bu), length, payload),
+                unisonSize = unisonSize.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
+            )
+        }
+    }
+
+    data class SuperNaturalSynthTonePartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
+        Integra7MemoryIO<SuperNaturalSynthTonePartial>() {
+        override val size = Integra7Size(0x3Du)
+
+        val oscWaveForm = EnumValueField(deviceId, address.offsetBy(lsb = 0x00u), SnSWaveForm.values())
+        val oscWaveFormVariation = EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), SnsWaveFormVariation.values())
+        val oscPitch = SignedValueField(deviceId, address.offsetBy(lsb = 0x03u), -24..24)
+        val oscDetune = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Cu), -50..50)
+        val oscPulseWidthModulationDepth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
+        val oscPulseWidth = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
+        val oscPitchAttackTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
+        val oscPitchEnvDecay = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x08u))
+        val oscPitchEnvDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x09u))
+
+        val filterMode = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Au), SnsFilterMode.values())
+        val filterSlope = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Bu), SnsFilterSlope.values())
+        val filterCutoff = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
+//        val filterCutoffKeyflow = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), -100..100)
+        val filterEnvVelocitySens = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val filterResonance = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val filterEnvAttackTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
+        val filterEnvDecayTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
+        val filterEnvSustainLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x12u))
+        val filterEnvReleaseTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u))
+        val filterEnvDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x14u))
+        val ampLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x15u))
+        val ampVelocitySens = SignedValueField(deviceId, address.offsetBy(lsb = 0x16u))
+        val ampEnvAttackTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x17u))
+        val ampEnvDecayTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x18u))
+        val ampEnvSustainLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x19u))
+        val ampEnvReleaseTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Au))
+        val ampPan = SignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu), -64..63)
+
+        val lfoShape = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Cu), SnsLfoShape.values())
+        val lfoRate = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Du))
+        val lfoTempoSyncSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Eu))
+        val lfoTempoSyncNote = EnumValueField(deviceId, address.offsetBy(lsb = 0x1Fu), SnsLfoTempoSyncNote.values())
+        val lfoFadeTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x20u))
+        val lfoKeyTrigger = BooleanValueField(deviceId, address.offsetBy(lsb = 0x21u))
+        val lfoPitchDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x22u))
+        val lfoFilterDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x23u))
+        val lfoAmpDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x24u))
+        val lfoPanDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x25u))
+
+        val modulationShape = EnumValueField(deviceId, address.offsetBy(lsb = 0x26u), SnsLfoShape.values())
+        val modulationLfoRate = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x27u))
+        val modulationLfoTempoSyncSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x28u))
+        val modulationLfoTempoSyncNote = EnumValueField(deviceId, address.offsetBy(lsb = 0x29u), SnsLfoTempoSyncNote.values())
+        val oscPulseWidthShift = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Au))
+        val modulationLfoPitchDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x2Cu))
+        val modulationLfoFilterDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x2Du))
+        val modulationLfoAmpDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x2Eu))
+        val modulationLfoPanDepth = SignedValueField(deviceId, address.offsetBy(lsb = 0x2Fu))
+
+        val cutoffAftertouchSens = SignedValueField(deviceId, address.offsetBy(lsb = 0x30u))
+        val levelAftertouchSens = SignedValueField(deviceId, address.offsetBy(lsb = 0x31u))
+
+        val waveGain = EnumValueField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
+        val waveNumber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u), 0..16384)
+        val hpfCutoff = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x39u))
+        val superSawDetune = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Au))
+        val modulationLfoRateControl = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
+//        val ampLevelKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Cu), 100..100)
+
+        override fun interpret(
+            startAddress: Integra7Address,
+            length: Int,
+            payload: SparseUByteArray
+        ): SuperNaturalSynthTonePartial {
+            assert(this.isCovering(startAddress)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+
+            return SuperNaturalSynthTonePartial(
+                oscWaveForm = oscWaveForm.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
+                oscWaveFormVariation = oscWaveFormVariation.interpret(startAddress.offsetBy(lsb = 0x01u), length, payload),
+                oscPitch = oscPitch.interpret(startAddress.offsetBy(lsb = 0x03u), length, payload),
+                oscDetune = oscDetune.interpret(startAddress.offsetBy(lsb = 0x04u), length, payload),
+                oscPulseWidthModulationDepth = oscPulseWidthModulationDepth.interpret(startAddress.offsetBy(lsb = 0x05u), length, payload),
+                oscPulseWidth = oscPulseWidth.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload),
+                oscPitchAttackTime = oscPitchAttackTime.interpret(startAddress.offsetBy(lsb = 0x07u), length, payload),
+                oscPitchEnvDecay = oscPitchEnvDecay.interpret(startAddress.offsetBy(lsb = 0x08u), length, payload),
+                oscPitchEnvDepth = oscPitchEnvDepth.interpret(startAddress.offsetBy(lsb = 0x09u), length, payload),
+
+                filterMode = filterMode.interpret(startAddress.offsetBy(lsb = 0x0Au), length, payload),
+                filterSlope = filterSlope.interpret(startAddress.offsetBy(lsb = 0x0Bu), length, payload),
+                filterCutoff = filterCutoff.interpret(startAddress.offsetBy(lsb = 0x0Cu), length, payload),
+//                filterCutoffKeyflow = filterCutoffKeyflow.interpret(startAddress.offsetBy(lsb = 0x0Du), length, payload),
+                filterEnvVelocitySens = filterEnvVelocitySens.interpret(startAddress.offsetBy(lsb = 0x0Eu), length, payload),
+                filterResonance = filterResonance.interpret(startAddress.offsetBy(lsb = 0x0Fu), length, payload),
+                filterEnvAttackTime = filterEnvAttackTime.interpret(startAddress.offsetBy(lsb = 0x10u), length, payload),
+                filterEnvDecayTime = filterEnvDecayTime.interpret(startAddress.offsetBy(lsb = 0x11u), length, payload),
+                filterEnvSustainLevel = filterEnvSustainLevel.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
+                filterEnvReleaseTime = filterEnvReleaseTime.interpret(startAddress.offsetBy(lsb = 0x13u), length, payload),
+                filterEnvDepth = filterEnvDepth.interpret(startAddress.offsetBy(lsb = 0x14u), length, payload),
+                ampLevel = ampLevel.interpret(startAddress.offsetBy(lsb = 0x15u), length, payload),
+                ampVelocitySens = ampVelocitySens.interpret(startAddress.offsetBy(lsb = 0x16u), length, payload),
+                ampEnvAttackTime = ampEnvAttackTime.interpret(startAddress.offsetBy(lsb = 0x17u), length, payload),
+                ampEnvDecayTime = ampEnvDecayTime.interpret(startAddress.offsetBy(lsb = 0x18u), length, payload),
+                ampEnvSustainLevel = ampEnvSustainLevel.interpret(startAddress.offsetBy(lsb = 0x19u), length, payload),
+                ampEnvReleaseTime = ampEnvReleaseTime.interpret(startAddress.offsetBy(lsb = 0x1Au), length, payload),
+                ampPan = ampPan.interpret(startAddress.offsetBy(lsb = 0x1Bu), length, payload),
+
+                lfoShape = lfoShape.interpret(startAddress.offsetBy(lsb = 0x1Cu), length, payload),
+                lfoRate = lfoRate.interpret(startAddress.offsetBy(lsb = 0x1Du), length, payload),
+                lfoTempoSyncSwitch = lfoTempoSyncSwitch.interpret(startAddress.offsetBy(lsb = 0x1Eu), length, payload),
+                lfoTempoSyncNote = lfoTempoSyncNote.interpret(startAddress.offsetBy(lsb = 0x1Fu), length, payload),
+                lfoFadeTime = lfoFadeTime.interpret(startAddress.offsetBy(lsb = 0x20u), length, payload),
+                lfoKeyTrigger = lfoKeyTrigger.interpret(startAddress.offsetBy(lsb = 0x21u), length, payload),
+                lfoPitchDepth = lfoPitchDepth.interpret(startAddress.offsetBy(lsb = 0x22u), length, payload),
+                lfoFilterDepth = lfoFilterDepth.interpret(startAddress.offsetBy(lsb = 0x23u), length, payload),
+                lfoAmpDepth = lfoAmpDepth.interpret(startAddress.offsetBy(lsb = 0x24u), length, payload),
+                lfoPanDepth = lfoPanDepth.interpret(startAddress.offsetBy(lsb = 0x25u), length, payload),
+
+                modulationShape = modulationShape.interpret(startAddress.offsetBy(lsb = 0x26u), length, payload),
+                modulationLfoRate = modulationLfoRate.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
+                modulationLfoTempoSyncSwitch = modulationLfoTempoSyncSwitch.interpret(startAddress.offsetBy(lsb = 0x28u), length, payload),
+                modulationLfoTempoSyncNote = modulationLfoTempoSyncNote.interpret(startAddress.offsetBy(lsb = 0x29u), length, payload),
+                oscPulseWidthShift = oscPulseWidthShift.interpret(startAddress.offsetBy(lsb = 0x2Au), length, payload),
+                modulationLfoPitchDepth = modulationLfoPitchDepth.interpret(startAddress.offsetBy(lsb = 0x2Cu), length, payload),
+                modulationLfoFilterDepth = modulationLfoFilterDepth.interpret(startAddress.offsetBy(lsb = 0x2Du), length, payload),
+                modulationLfoAmpDepth = modulationLfoAmpDepth.interpret(startAddress.offsetBy(lsb = 0x2Eu), length, payload),
+                modulationLfoPanDepth = modulationLfoPanDepth.interpret(startAddress.offsetBy(lsb = 0x2Fu), length, payload),
+
+                cutoffAftertouchSens = cutoffAftertouchSens.interpret(startAddress.offsetBy(lsb = 0x30u), length, payload),
+                levelAftertouchSens = levelAftertouchSens.interpret(startAddress.offsetBy(lsb = 0x31u), length, payload),
+
+                waveGain = waveGain.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
+                waveNumber = waveNumber.interpret(startAddress.offsetBy(lsb = 0x35u), length, payload),
+                hpfCutoff = hpfCutoff.interpret(startAddress.offsetBy(lsb = 0x39u), length, payload),
+                superSawDetune = superSawDetune.interpret(startAddress.offsetBy(lsb = 0x3Au), length, payload),
+                modulationLfoRateControl = modulationLfoRateControl.interpret(startAddress.offsetBy(lsb = 0x3Bu), length, payload),
+//                ampLevelKeyfollow = ampLevelKeyfollow.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
             )
         }
     }
