@@ -105,7 +105,8 @@ data class SetupRequestBuilder(override val deviceId: DeviceId, override val add
     override val size = Integra7Size(38u)
 
     val soundMode = Integra7FieldType.UnsignedValueField(deviceId, address)
-    val studioSetBs = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x04u))
+    val studioSetBankSelectMsb = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u)) // #CC 0
+    val studioSetBankSelectLsb = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u)) // #CC 32
     val studioSetPc = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
 
     override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Setup {
@@ -119,7 +120,8 @@ data class SetupRequestBuilder(override val deviceId: DeviceId, override val add
                 0x04 -> SoundMode.GS
                 else -> throw IllegalArgumentException("Unsupported sound-mode $sm")
             },
-            studioSetBs = studioSetBs.interpret(startAddress.offsetBy(lsb =0x04u), payload),
+            studioSetBankSelectMsb = studioSetBankSelectMsb.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
+            studioSetBankSelectLsb = studioSetBankSelectLsb.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
             studioSetPc = studioSetPc.interpret(startAddress.offsetBy(lsb = 0x06u), payload))
     }
 }
@@ -130,10 +132,10 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
     val masterKeyShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x04u))
     val masterLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
     val scaleTuneSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x06u))
-    val systemControl1Source = SystemControlSourceAddress(deviceId, address.offsetBy(lsb = 0x20u))
-    val systemControl2Source = SystemControlSourceAddress(deviceId, address.offsetBy(lsb = 0x21u))
-    val systemControl3Source = SystemControlSourceAddress(deviceId, address.offsetBy(lsb = 0x22u))
-    val systemControl4Source = SystemControlSourceAddress(deviceId, address.offsetBy(lsb = 0x23u))
+    val systemControl1Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), ControlSource::fromValue)
+    val systemControl2Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x21u), ControlSource::fromValue)
+    val systemControl3Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x22u), ControlSource::fromValue)
+    val systemControl4Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x23u), ControlSource::fromValue)
     val controlSource =
         Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x24u), ControlSourceType.values())
     val systemClockSource =
@@ -171,17 +173,6 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
             subWooferSwitch = subWooferSwitch.interpret(startAddress.offsetBy(lsb = 0x2Cu), payload),
             twoChOutputMode = twoChOutputMode.interpret(startAddress.offsetBy(lsb = 0x2Du), payload),
         )
-    }
-
-    data class SystemControlSourceAddress(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<ControlSource>() {
-        override val size = Integra7Size(0x01u)
-
-        override fun  interpret(startAddress: Integra7Address, payload: SparseUByteArray): ControlSource {
-            assert(startAddress >= address)
-
-            return ControlSource.values()
-                .first { it.hex == payload[0] }!!
-        }
     }
 }
 
@@ -325,11 +316,11 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
         val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
         val outputSelect =
             Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x03u), ChorusOutputSelect.values())
-        val parameters = IntRange(1, 19) // TODO: Access last element 20)
+        val parameters = IntRange(0, 18) // TODO: Access last element 19)
             .map {
                 Integra7FieldType.SignedMsbLsbFourNibbles(
                     deviceId,
-                    address.offsetBy(lsb = 0x04u, factor = it),
+                    address.offsetBy(lsb = 0x04u).offsetBy(lsb = 0x04u, factor = it),
                     -20000..20000
                 )
             }
@@ -339,8 +330,8 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
 
             return StudioSetCommonChorus(
                 type = type.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                outputSelect = outputSelect.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
+                level = level.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
+                outputSelect = outputSelect.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
                 parameters = parameters
                     .mapIndexed { idx, p -> p.interpret(
                         address.offsetBy(lsb = 0x04u).offsetBy(lsb = 0x04u, factor = idx),
@@ -371,8 +362,8 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
 
             return StudioSetCommonReverb(
                 type = type.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                outputSelect = outputSelect.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
+                level = level.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
+                outputSelect = outputSelect.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
                 parameters = parameters
                     .mapIndexed { idx, p -> p.interpret(
                         address.offsetBy(lsb = 0x03u).offsetBy(lsb = 0x04u, factor = idx),
@@ -854,7 +845,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     analogFeel = analogFeel.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
                     monoPoly = monoPoly.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
                     legatoSwitch = legatoSwitch.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                    legatoRetrigger = legatoRetrigger.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
+                    legatoRetrigger = legatoRetrigger.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
                     portamentoSwitch = portamentoSwitch.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
                     portamentoMode = portamentoMode.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
                     portamentoType = portamentoType.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
@@ -950,25 +941,25 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                         startAddress.offsetBy(lsb = 0x45u), payload
                     ),
 
-                    matrixControl4Source = matrixControl1Source.interpret(
+                    matrixControl4Source = matrixControl4Source.interpret(
                         startAddress.offsetBy(lsb = 0x46u), payload
                     ),
-                    matrixControl4Destination1 = matrixControl1Destination1.interpret(
+                    matrixControl4Destination1 = matrixControl4Destination1.interpret(
                         startAddress.offsetBy(lsb = 0x47u), payload
                     ),
-                    matrixControl4Sens1 = matrixControl1Sens1.interpret(
+                    matrixControl4Sens1 = matrixControl4Sens1.interpret(
                         startAddress.offsetBy(lsb = 0x48u), payload
                     ),
-                    matrixControl4Destination2 = matrixControl1Destination2.interpret(
+                    matrixControl4Destination2 = matrixControl4Destination2.interpret(
                         startAddress.offsetBy(lsb = 0x49u), payload
                     ),
-                    matrixControl4Sens2 = matrixControl1Sens2.interpret(
+                    matrixControl4Sens2 = matrixControl4Sens2.interpret(
                         startAddress.offsetBy(lsb = 0x4Au), payload
                     ),
-                    matrixControl4Destination3 = matrixControl1Destination3.interpret(
+                    matrixControl4Destination3 = matrixControl4Destination3.interpret(
                         startAddress.offsetBy(lsb = 0x4Bu), payload
                     ),
-                    matrixControl4Sens3 = matrixControl1Sens3.interpret(
+                    matrixControl4Sens3 = matrixControl4Sens3.interpret(
                         startAddress.offsetBy(lsb = 0x4Cu), payload
                     ),
                     matrixControl4Destination4 = matrixControl4Destination4.interpret(
@@ -1211,27 +1202,27 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01.toUByte7(), lsb = 0x1Au.toUByte7()))
 
         val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val chorusTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u), -48..48)
-        val fineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u), -50..50)
+        val chorusTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x01u), -48..48)
+        val fineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x02u), -50..50)
         val randomPithDepth =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x00u), RandomPithDepth.values())
-        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        // TODO val panKeyFollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x00u), -100..100)
-        val panDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val alternatePanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val envMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x00u), EnvMode.values())
-        val delayMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x00u), DelayMode.values())
+            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x03u), RandomPithDepth.values())
+        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x04u))
+        // TODO val panKeyFollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x05u), -100..100)
+        val panDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
+        val alternatePanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
+        val envMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x08u), EnvMode.values())
+        val delayMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x09u), DelayMode.values())
         val delayTime = Integra7FieldType.UnsignedMsbLsbNibbles(
             deviceId,
-            address.offsetBy(lsb = 0x00u),
+            address.offsetBy(lsb = 0x0Au),
             0..149
         ) // TODO: 0 - 127, MUSICAL-NOTES |
 
-        val outputLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val chorusSendLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val reverbSendLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
+        val outputLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
+        val chorusSendLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val reverbSendLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
 
-        val receiveBender = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
+        val receiveBender = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x12u))
         val receiveExpression = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x13u))
         val receiveHold1 = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x14u))
         val redamper = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x16u))
@@ -1282,7 +1273,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         // TODO val wavePitchKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x37u), -200..200)
 
         val pitchEnvDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Au), -12..12)
-        val pitchEnvVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0xBAu))
+        val pitchEnvVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
         val pitchEnvTime1VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Cu))
         val pitchEnvTime4VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Du))
         // TODO val pitchEnvTimeKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Eu), -100..100)
@@ -1434,7 +1425,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     receiveBender = receiveBender.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
                     receiveExpression = receiveExpression.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
                     receiveHold1 = receiveHold1.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                    redamper = redamper.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
+                    redamper = redamper.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
 
                     partialControl1Switch1 = partialControl1Switch1.interpret(
                         startAddress.offsetBy(lsb = 0x17u),
@@ -1791,7 +1782,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         val oscWaveFormVariation =
             Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), SnsWaveFormVariation.values())
         val oscPitch = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x03u), -24..24)
-        val oscDetune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Cu), -50..50)
+        val oscDetune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x04u), -50..50)
         val oscPulseWidthModulationDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
         val oscPulseWidth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
         val oscPitchAttackTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
@@ -2021,7 +2012,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                 instrumentNumber = instrumentNumber.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
                 modifyParameters = modifyParameters
                     .mapIndexed { idx, fd -> fd.interpret(
-                        startAddress.offsetBy(lsb = 0x21u).offsetBy(lsb = 0x01u, factor = idx),
+                        startAddress.offsetBy(lsb = 0x22u).offsetBy(lsb = 0x01u, factor = idx),
                         payload
                     ) }
             )
@@ -2393,7 +2384,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                 level = level.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
                 ambienceLevel = ambienceLevel.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
                 phraseNo = phraseNo.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                tfx = tfx.interpret(startAddress.offsetBy(lsb = 0x12u), payload)
+                tfx = tfx.interpret(startAddress.offsetBy(lsb = 0x13u), payload)
             )
         }
     }
@@ -2587,42 +2578,42 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         )
         val eq5HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
 
-        val comp6Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x38u))
+        val comp6Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x46u))
         val comp6AttackTime = Integra7FieldType.EnumValueField(
             deviceId,
-            address.offsetBy(lsb = 0x39u),
+            address.offsetBy(lsb = 0x47u),
             SupernaturalDrumAttackTime.values()
         )
         val comp6ReleaseTime = Integra7FieldType.EnumValueField(
             deviceId,
-            address.offsetBy(lsb = 0x3Au),
+            address.offsetBy(lsb = 0x48u),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp6Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val comp6Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x49u))
         val comp6Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio.values())
-        val comp6OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Du), 0..24)
-        val eq6Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
+            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x4Au), SupernaturalDrumRatio.values())
+        val comp6OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..24)
+        val eq6Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x4Cu))
         val eq6LowFrequency = Integra7FieldType.EnumValueField(
             deviceId,
-            address.offsetBy(lsb = 0x3Fu),
+            address.offsetBy(lsb = 0x4Du),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq6LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x40u), 0..30) // - 15
+        val eq6LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..30) // - 15
         val eq6MidFrequency = Integra7FieldType.EnumValueField(
             deviceId,
-            address.offsetBy(lsb = 0x41u),
+            address.offsetBy(lsb = 0x4Fu),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq6MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x42u), 0..30) // - 15
+        val eq6MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x50u), 0..30) // - 15
         val eq6MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ.values())
+            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x51u), SupernaturalDrumMidQ.values())
         val eq6HighFrequency = Integra7FieldType.EnumValueField(
             deviceId,
-            address.offsetBy(lsb = 0x44u),
+            address.offsetBy(lsb = 0x52u),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq6HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
+        val eq6HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x53u), 0..30) // - 15
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -2840,7 +2831,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
         val assignType =
             Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType.values())
-        val muteGroup = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0D0u), 0..31)
+        val muteGroup = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), 0..31)
 
         val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
         val coarseTune = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
@@ -2861,9 +2852,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
             SuperNaturalDrumToneOutput.values()
         )
 
-        val pitchBendRange = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..48)
-        val receiveExpression = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Du))
-        val receiveHold1 = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val pitchBendRange = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Cu), 0..48)
+        val receiveExpression = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Du))
+        val receiveHold1 = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Eu))
 
         val wmtVelocityControl =
             Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), WmtVelocityControl.values())
@@ -2918,7 +2909,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
         val wmt3WaveSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x5Bu))
         val wmt3WaveGroupType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), WaveGroupType.values())
+            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x5Cu), WaveGroupType.values())
         val wmt3WaveGroupId =
             Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du), 0..16384)
         val wmt3WaveNumberL =
@@ -3301,7 +3292,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
             return PcmDrumKitCommon2(
                 phraseNumber = phraseNumber.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
+                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
             )
         }
     }
