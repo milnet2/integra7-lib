@@ -6,8 +6,8 @@ import org.junit.Test
 class UInt7Test {
     @Test
     fun `should overflow at 0x8000`() {
-        assertEquals(0x0000.toUInt7(), (0x7FFFFFFF.toUInt7() + 0x01u).toUInt7())
-        assertEquals(UInt7(0x00.toUByte7(), 0x00.toUByte7(), 0x01.toUByte7(), 0x00.toUByte7()), (0x7FFFFFFF.toUInt7() + 0x81u).toUInt7())
+        assertEquals(0x0000.toUInt7(), (0x7FFFFFFF.toUInt7() + 0x01u).toUInt7UsingValue())
+        assertEquals(UInt7(0x00.toUByte7(), 0x00.toUByte7(), 0x01.toUByte7(), 0x00.toUByte7()), (0x7FFFFFFF.toUInt7() + 0x81u).toUInt7UsingValue())
         assertEquals(0x80000000u, (0x7FFFFFFF.toUInt7() + 0x01u))
         assertEquals(0x80000080u, (0x7FFFFFFF.toUInt7() + 0x81u))
     }

@@ -7,7 +7,7 @@ import java.lang.IllegalArgumentException
  */
 @Suppress("NON_PUBLIC_PRIMARY_CONSTRUCTOR_OF_INLINE_CLASS")
 public class UInt7 @PublishedApi internal constructor(@PublishedApi internal val data: Int) : Comparable<UInt7> {
-    public constructor(msb: UByte7, mmsb: UByte7, mlsb: UByte7, lsb: UByte7):
+    public constructor(msb: UByte7 = UByte7.MIN_VALUE, mmsb: UByte7 = UByte7.MIN_VALUE, mlsb: UByte7 = UByte7.MIN_VALUE, lsb: UByte7 = UByte7.MIN_VALUE):
             this((((msb * 0x80u + mmsb.toUInt()) * 0x80u + mlsb.toUInt()) * 0x80u + lsb.toUInt()).toInt())
 
     companion object {
@@ -113,12 +113,20 @@ public class UInt7 @PublishedApi internal constructor(@PublishedApi internal val
         String.format("0x%02X%02X%02X%02X (%d)", msb.toInt(), mmsb.toInt(), mlsb.toInt(), lsb.toInt(), data.toUShort().toInt())
 }
 
-public inline fun Byte.toUInt7(): UInt7 = this.toUInt().toUInt7()
-public inline fun Short.toUInt7(): UInt7 = this.toUInt().toUInt7()
-public inline fun Int.toUInt7(): UInt7 = this.toUInt().toUInt7()
-public inline fun Long.toUInt7(): UInt7 = this.toUInt().toUInt7()
+public inline fun Byte.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
+public inline fun Short.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
+public inline fun Int.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
+public inline fun Long.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
 
-public inline fun UByte.toUInt7(): UInt7 = this.toUInt().toUInt7()
-public inline fun UShort.toUInt7(): UInt7 = this.toUInt().toUInt7()
-public inline fun UInt.toUInt7(): UInt7 = UInt7((this % 0x80000000u).toInt())
-public inline fun ULong.toUInt7(): UInt7 = this.toUInt().toUInt7()
+public inline fun UByte.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
+public inline fun UShort.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
+public inline fun UInt.toUInt7UsingValue(): UInt7 = UInt7((this % 0x80000000u).toInt())
+public inline fun UInt.toUInt7UsingByteRepresentation(): UInt7 {
+    assert(this and 0x7F7F7F7Fu == this)
+    return UInt7(
+        (this / 0x1000000u).toUByte7(),
+        (this / 0x10000u).toUByte7(),
+        (this / 0x100u).toUByte7(),
+        (this.toUByte7()))
+}
+public inline fun ULong.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
