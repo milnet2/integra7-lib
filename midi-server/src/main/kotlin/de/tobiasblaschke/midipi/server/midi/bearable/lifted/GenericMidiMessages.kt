@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.bearable.lifted
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId.Companion.ALL_DEVICES
 import de.tobiasblaschke.midipi.server.midi.toHexString
+import de.tobiasblaschke.midipi.server.utils.toUShort7
 import java.time.Duration
 
 fun interface MidiMapper<I: UByteSerializable, O: UByteSerializable> {
@@ -199,12 +200,8 @@ sealed class MBGenericMidiMessage: MBUnidirectionalMidiMessage {
                 assert(channel in 0..15)
                 assert(value in -16384/2 .. 16384/2)
             }
-            override fun bytes(): UByteArray {
-                val low: UByte = ((value + 0x2000).toUInt() and 0x7Fu).toUByte()
-                val high: UByte = ((value + 0x2000) / 0x80).toUByte()
-                return ubyteArrayOf(
-                    0xE0.toUByte() or channel.toUByte(), low, high)
-            }
+            override fun bytes(): UByteArray =
+                (value + 2000).toUShort7().toUByteArrayLittleEndian()
         }
     }
 
@@ -290,11 +287,8 @@ sealed class MBGenericMidiMessage: MBUnidirectionalMidiMessage {
             init {
                 assert(beats in 0 .. 0x3FFF)
             }
-            override fun bytes(): UByteArray {
-                val low = (beats and 0x7F).toUByte()
-                val high = (beats / 0x80).toUByte()
-                return ubyteArrayOf(0xF2u, low, high)
-            }
+            override fun bytes(): UByteArray =
+                beats.toUShort7().toUByteArrayLittleEndian()
         }
 
         data class SongSelect(override val song: Int) : SystemCommon(), MBUnidirectionalMidiMessage.SongSelect {
