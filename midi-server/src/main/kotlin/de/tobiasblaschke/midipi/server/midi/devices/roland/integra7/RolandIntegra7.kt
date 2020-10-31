@@ -3,7 +3,9 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.Setup
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.StudioSet
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.SystemCommon
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -17,6 +19,10 @@ class RolandIntegra7(
             .map { it as RolandIntegra7MidiMessage.IdentityReply }
             .map { AddressRequestBuilder(it.deviceId) }
 
+    val setup: Setup
+        get() = request({ it.setup }).get()
+    val system: SystemCommon
+        get() = request({ it.system }).get()
     val studioSet: StudioSet
         get() = request({ it.studioSet }).get()
 

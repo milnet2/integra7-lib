@@ -12,12 +12,12 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(length.toUInt7())
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): String {
-            assert(startAddress >= address)
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
 
             try {
-                return payload[IntRange(startAddress.fullByteAddress(), startAddress.fullByteAddress() + this.length)].toAsciiString().trim()
+                return payload[IntRange(address.fullByteAddress(), address.fullByteAddress() + this.length)].toAsciiString().trim()
             } catch (e: NoSuchElementException) {
-                throw FieldReadException(startAddress, size, payload, "", e)
+                throw FieldReadException(address, size, payload, "", e)
             }
         }
     }
@@ -34,8 +34,10 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
-            val ret = readByte(startAddress, payload).toInt()
-            return checkRange(ret, startAddress, payload, range)
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val ret = readByte(address, payload).toInt()
+            return checkRange(ret, address, payload, range)
         }
     }
 
@@ -51,12 +53,14 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): IntRange {
-            val min = readByte(startAddress, payload).toInt()
-            val max = readByte(startAddress, payload).toInt()
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val min = readByte(address, payload).toInt()
+            val max = readByte(address, payload).toInt()
 
             return IntRange(
-                checkRange(min, startAddress, payload, range),
-                checkRange(max, startAddress, payload, range))
+                checkRange(min, address, payload, range),
+                checkRange(max, address, payload, range))
         }
     }
 
@@ -71,11 +75,13 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size.ONE_BYTE
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): T {
-            val elem = readByte(startAddress, payload).toInt()
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val elem = readByte(address, payload).toInt()
             return try {
                 getter(elem)
             } catch (e: ArrayIndexOutOfBoundsException) {
-                throw NoSuchElementException("When reading address ${startAddress}: No element $elem")
+                throw NoSuchElementException("When reading address ${address}: No element $elem")
             }
         }
     }
@@ -92,8 +98,10 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
-            val msn = readByte(startAddress, payload)
-            val lsn = readByte(startAddress.successor(), payload)
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val msn = readByte(address, payload)
+            val lsn = readByte(address.successor(), payload)
             val value = msn.toInt() * 0x10 + lsn.toInt()
             return checkRange(value, startAddress, payload, range)
         }
@@ -111,10 +119,12 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
-            val msb = readByte(startAddress, payload)
-            val lsb = readByte(startAddress.successor(), payload)
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val msb = readByte(address, payload)
+            val lsb = readByte(address.successor(), payload)
             val value = msb.toInt() * 0x80 + lsb.toInt()
-            return checkRange(value, startAddress, payload, range)
+            return checkRange(value, address, payload, range)
         }
     }
 
@@ -130,13 +140,15 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
-            val msb = readByte(startAddress, payload).toInt()
-            val mmsb = readByte(startAddress.successor(), payload).toInt()
-            val mlsb = readByte(startAddress.successor().successor(), payload).toInt()
-            val lsb = readByte(startAddress.successor().successor().successor(), payload).toInt()
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val msb = readByte(address, payload).toInt()
+            val mmsb = readByte(address.successor(), payload).toInt()
+            val mlsb = readByte(address.successor().successor(), payload).toInt()
+            val lsb = readByte(address.successor().successor().successor(), payload).toInt()
 
             val ret = ((((msb * 0x10) + mmsb) * 0x10) + mlsb) * 0x10 + lsb
-            return checkRange(ret, startAddress, payload, range)
+            return checkRange(ret, address, payload, range)
         }
     }
 
@@ -152,8 +164,10 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
-            val ret = readByte(startAddress, payload).toInt() - 64
-            return checkRange(ret, startAddress, payload, range)
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val ret = readByte(address, payload).toInt() - 64
+            return checkRange(ret, address, payload, range)
         }
     }
 
@@ -168,13 +182,15 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
-            val msb = readByte(startAddress, payload).toInt()
-            val mmsb = readByte(startAddress.successor(), payload).toInt()
-            val mlsb = readByte(startAddress.successor().successor(), payload).toInt()
-            val lsb = readByte(startAddress.successor().successor().successor(), payload).toInt()
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            val msb = readByte(address, payload).toInt()
+            val mmsb = readByte(address.successor(), payload).toInt()
+            val mlsb = readByte(address.successor().successor(), payload).toInt()
+            val lsb = readByte(address.successor().successor().successor(), payload).toInt()
 
             val ret = ((((msb * 0x10) + mmsb) * 0x10) + mlsb) * 0x10 + lsb - 0x8000
-            return checkRange(ret, startAddress, payload, range)
+            return checkRange(ret, address, payload, range)
         }
     }
 
@@ -185,12 +201,15 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
     data class BooleanValueField(override val deviceId: DeviceId, override val address: Integra7Address): Integra7FieldType<Boolean>() {
         override val size = Integra7Size.ONE_BYTE
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Boolean =
-            when(readByte(startAddress, payload).toInt()) {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Boolean {
+            assert(startAddress == address) { "Address mismatch $address - $startAddress" }
+
+            return when(readByte(address, payload).toInt()) {
                 0 -> false
                 1 -> true
-                else -> throw FieldReadException(startAddress, size, payload, "Will only encode 0,1 to boolean")
+                else -> true // TODO: throw FieldReadException(startAddress, size, payload, "Will only encode 0,1 to boolean")
             }
+        }
     }
 
     // -------------------------------------------------------------
@@ -213,7 +232,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
 
     class FieldReadException(val startAddress: Integra7Address, val size: Integra7Size, payload: SparseUByteArray, message: String, cause: Throwable? = null):
         RuntimeException(
-            "When reading range $startAddress..${startAddress.offsetBy(size)}: $message from ${payload.hexDump()}", cause)
+            "$message - When reading range $startAddress..${startAddress.offsetBy(size)} (${startAddress.rangeName()}) from ${payload.hexDump()}", cause)
 
     protected fun SparseUByteArray.hexDump() =
         this.hexDump(

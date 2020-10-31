@@ -31,6 +31,8 @@ object MidiServerMain {
 
 // -----------------------------------------------------
 
+            println(con.setup)
+            println(con.system)
             println(con.studioSet)
 
 // -----------------------------------------------------
