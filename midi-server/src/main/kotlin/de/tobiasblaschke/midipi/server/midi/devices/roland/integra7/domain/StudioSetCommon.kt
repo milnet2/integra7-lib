@@ -8,7 +8,8 @@ data class StudioSet(
     val motionalSurround: StudioSetMotionalSurround,
     val masterEq: StudioSetMasterEq,
     val midiChannelPhaseLocks: List<Boolean>,
-    val parts: List<StudioSetPart>
+    val parts: List<StudioSetPart>,
+    val partEqs: List<StudioSetPartEq>
 ) {
     override fun toString(): String =
         "StudioSet(\n\tcommon = $common\n" +
@@ -18,6 +19,10 @@ data class StudioSet(
                 "\tmasterEq = $masterEq\n" +
                 "\tmidiChannelPhaseLocks = $midiChannelPhaseLocks\n" +
                 "\tparts = ${parts.joinToString(
+                    prefix = "\n\t  ",
+                    separator = "\n\t  ",
+                    postfix = "\n")}" +
+                "\tpartEqs = ${partEqs.joinToString(
                     prefix = "\n\t  ",
                     separator = "\n\t  ",
                     postfix = "\n")}" +
@@ -303,4 +308,21 @@ enum class ScaleTuneType {
 enum class NoteKey {
     C, C_SHARP, D, D_SHARP, E, F, F_SHARP, G, G_SHARP,
     A, A_SHARP, B
+}
+
+data class StudioSetPartEq(
+    val switch: Boolean,
+    val lowFrequency: SupernaturalDrumLowFrequency,
+    val lowGain: Int,
+    val midFrequency: SupernaturalDrumMidFrequency,
+    val midGain: Int,
+    val midQ: SupernaturalDrumMidQ,
+    val highFrequency: SupernaturalDrumHighFrequency,
+    val highGain: Int
+) {
+    init {
+        assert(lowGain in -15..15 ) { "Value not in range $lowGain" }
+        assert(midGain in -15..15 ) { "Value not in range $midGain" }
+        assert(highGain in -15..15 ) { "Value not in range $highGain" }
+    }
 }

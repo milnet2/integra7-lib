@@ -188,10 +188,6 @@ abstract class Integra7MemoryIO<T> {
                 val mmsb = payload[startAddress.fullByteAddress() + 1].toInt()
                 val mlsb = payload[startAddress.fullByteAddress() + 2].toInt()
                 val lsb = payload[startAddress.fullByteAddress() + 3].toInt()
-//                val lsb = payload[startAddress.fullByteAddress()].toInt()
-//                val mlsb = payload[startAddress.fullByteAddress() + 1].toInt()
-//                val mmsb = payload[startAddress.fullByteAddress() + 2].toInt()
-//                val msb = payload[startAddress.fullByteAddress() + 3].toInt()
 
                 val ret = ((((msb * 0x10) + mmsb) * 0x10) + mlsb) * 0x10 + lsb
                 if (range.contains(ret)) {
@@ -247,7 +243,6 @@ abstract class Integra7MemoryIO<T> {
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Boolean =
             delegate.interpret(startAddress, length, payload) > 0
     }
-
 }
 
 // ----------------------------------------------------
@@ -368,8 +363,6 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
         )
     }
 
-
-
     data class SystemControlSourceAddress(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<ControlSource>() {
         override val size = Integra7Size(0x01u)
 
@@ -396,24 +389,8 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
         .map { BooleanValueField(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
     val parts = IntRange(0, 15)
         .map { StudioSetPartBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
-
-//    | Offset | |
-//    | Address | Description |
-//    |-------------+----------------------------------------------------------------|
-//    | 00 09 00 | Studio Set Master EQ |
-//    | 00 10 00 | Studio Set MIDI (Channel 1) |
-//    | 00 11 00 | Studio Set MIDI (Channel 2) |
-//    | : | |
-//    | 00 1F 00 | Studio Set MIDI (Channel 16) |
-//    | 00 20 00 | Studio Set Part (Part 1) |
-//    | 00 21 00 | Studio Set Part (Part 2) |
-//    | : | |
-//    | 00 2F 00 | Studio Set Part (Part 16) |
-//    | 00 50 00 | Studio Set Part EQ (Part 1) | <<-- TODO
-//    | 00 51 00 | Studio Set Part EQ (Part 2) |
-//    | : | |
-//    | 00 5F 00 | Studio Set Part EQ (Part 16) |
-//    +------------------------------------------------------------------------------+
+    val partEqs = IntRange(0, 15)
+        .map { StudioSetPartEqBuilder(deviceId, address.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
 
     override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): StudioSet {
         assert(this.isCovering(startAddress)) { "Expected Studio-Set address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -428,6 +405,8 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
                 .mapIndexed { index, p -> p.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = index), length, payload) },
             parts = parts
                 .mapIndexed { index, p -> p.interpret(startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = index), length, payload) },
+            partEqs = partEqs
+                .mapIndexed { index, p -> p.interpret(startAddress.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = index), length, payload) },
         )
     }
 
@@ -588,7 +567,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
                 extPartWidth.interpret(startAddress.offsetBy(lsb = 0x09u), length, payload),
                 extPartAmbienceSendLevel.interpret(startAddress.offsetBy(lsb = 0x0Au), length, payload),
                 extPartControlChannel.interpret(startAddress.offsetBy(lsb = 0x0Bu), length, payload),
-                0 // TODO: depth.interpret(startAddress.offsetBy(lsb = 0xC0u), length, payload),
+                0 // depth.interpret(startAddress.offsetBy(lsb = 0xC0u), length, payload),
             )
         }
     }
@@ -614,7 +593,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
                 midGain = midGain.interpret(startAddress.offsetBy(lsb = 0x03u), length, payload) - 15,
                 midQ = midQ.interpret(startAddress.offsetBy(lsb = 0x04u), length, payload),
                 highFrequency = highFrequency.interpret(startAddress.offsetBy(lsb = 0x05u), length, payload),
-                highGain = 0 // TODO: highGain.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload) - 15,
+                highGain = highGain.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload) - 15,
             )
         }
     }
@@ -763,6 +742,34 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
                 motionalSurroundFB.interpret(startAddress.offsetBy(lsb = 0x46u), length, payload),
                 motionalSurroundWidth.interpret(startAddress.offsetBy(lsb = 0x48u), length, payload),
                 motionalSurroundAmbienceSend.interpret(startAddress.offsetBy(lsb = 0x49u), length, payload)
+            )
+        }
+    }
+
+    data class StudioSetPartEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetPartEq>() {
+        override val size = Integra7Size(8u)
+
+        val switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
+        val lowFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), SupernaturalDrumLowFrequency.values())
+        val lowGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x02u), 0..30) // -15
+        val midFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x03u), SupernaturalDrumMidFrequency.values())
+        val midGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u), 0..30) // -15
+        val midQ = EnumValueField(deviceId, address.offsetBy(lsb = 0x05u), SupernaturalDrumMidQ.values())
+        val highFrequency = EnumValueField(deviceId, address.offsetBy(lsb = 0x06u), SupernaturalDrumHighFrequency.values())
+        val highGain = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u), 0..30) // -15
+
+        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): StudioSetPartEq {
+            assert(this.isCovering(startAddress)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+
+            return StudioSetPartEq(
+                switch = switch.interpret(startAddress.offsetBy(lsb = 0x00u), length, payload),
+                lowFrequency = lowFrequency.interpret(startAddress.offsetBy(lsb = 0x01u), length, payload),
+                lowGain = lowGain.interpret(startAddress.offsetBy(lsb = 0x02u), length, payload) - 15,
+                midFrequency = midFrequency.interpret(startAddress.offsetBy(lsb = 0x03u), length, payload),
+                midGain = midGain.interpret(startAddress.offsetBy(lsb = 0x04u), length, payload) - 15,
+                midQ = midQ.interpret(startAddress.offsetBy(lsb = 0x05u), length, payload),
+                highFrequency = highFrequency.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload),
+                highGain = highGain.interpret(startAddress.offsetBy(lsb = 0x07u), length, payload) - 15,
             )
         }
     }
