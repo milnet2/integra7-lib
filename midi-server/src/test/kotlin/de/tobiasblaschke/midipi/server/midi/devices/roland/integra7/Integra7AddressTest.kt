@@ -1,5 +1,7 @@
 package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Size
 import org.junit.Assert.*
 import org.junit.Test
 

@@ -2,6 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
 import de.tobiasblaschke.midipi.server.midi.toHexString
 import de.tobiasblaschke.midipi.server.utils.SparseUByteArray
 import java.lang.IllegalArgumentException
