@@ -1,13 +1,13 @@
 package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
-import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.*
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Size
 import de.tobiasblaschke.midipi.server.midi.toAsciiString
-import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
+import de.tobiasblaschke.midipi.server.utils.*
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
-import kotlin.Comparator
 import kotlin.NoSuchElementException
 
 
@@ -39,7 +39,8 @@ abstract class Integra7MemoryIO<T> {
     }
 
     private fun checkSum(payload: UByteArray): UByte {
-        val addrSum = ((address.lsb + address.mlsb + address.mmsb + address.msb) and 0xFFu).toUByte()
+        val addrSum = address.address.toUByteArrayLittleEndian()
+            .sum().toUByte()
         val payloadSum = payload.reduce { a, b -> ((a + b) and 0xFFu).toUByte() }
         val totalSum = ((addrSum + payloadSum) and 0xFFu).toUByte()
         val reminder = (totalSum % 128u).toUByte()
@@ -58,7 +59,8 @@ abstract class Integra7MemoryIO<T> {
             try {
                 return payload[IntRange(startAddress.fullByteAddress(), startAddress.fullByteAddress() + this.length)].toAsciiString().trim()
             } catch (e: NoSuchElementException) {
-                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.length)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.size)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
@@ -75,19 +77,21 @@ abstract class Integra7MemoryIO<T> {
             try {
                 val ret = payload[startAddress.fullByteAddress()].toInt()
                 if (!range.contains(ret)) {
-                    throw IllegalStateException("Value $ret not in $range When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
+                    throw IllegalStateException("Value $ret not in $range When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address(
+                        it.toUInt7()).toString() }, 0x10)}")
                 } else {
                     return ret
                 }
             } catch (e: NoSuchElementException) {
-                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.size)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalStateException("When reading range $startAddress..${startAddress.offsetBy(this.size)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
 
     @ExperimentalUnsignedTypes
     data class UnsignedRangeFields(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = 0..127): Integra7MemoryIO<IntRange>() {
-        override val size = Integra7Size(lsb = 0x02u)
+        override val size = Integra7Size(0x02u.toUInt7UsingValue())
 
         init {
             assert(range.first >= 0 && range.last <= 127) { "Impossible range $range" }
@@ -101,7 +105,7 @@ abstract class Integra7MemoryIO<T> {
                     throw IllegalStateException(
                         "Value $min or $max not in $range When reading address $startAddress, len=$size from ${
                             payload.hexDump(
-                                { Integra7Address.fromFullByteAddress(it).toString() },
+                                { Integra7Address(it.toUInt7()).toString() },
                                 0x10
                             )}")
                 } else {
@@ -111,7 +115,7 @@ abstract class Integra7MemoryIO<T> {
                 throw IllegalStateException(
                     "When reading range $startAddress..${startAddress.offsetBy(this.size)} (${startAddress.fullByteAddress()}, ${startAddress.fullByteAddress() + length}) from ${
                         payload.hexDump(
-                            { Integra7Address.fromFullByteAddress(it).toString() },
+                            { Integra7Address(it.toUInt7()).toString() },
                             0x10
                         )}", e
                 )
@@ -139,7 +143,7 @@ abstract class Integra7MemoryIO<T> {
 
     @ExperimentalUnsignedTypes
     data class UnsignedMsbLsbNibbles(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = 0..0xFF): Integra7MemoryIO<Int>() {
-        override val size = Integra7Size(lsb = 0x02u)
+        override val size = Integra7Size(0x02u.toUInt7UsingValue())
 
         init {
             assert(range.first >= 0 && range.last <= 0xFF) { "Impossible range $range" }
@@ -162,7 +166,7 @@ abstract class Integra7MemoryIO<T> {
 
     @ExperimentalUnsignedTypes
     data class UnsignedLsbMsbBytes(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<Int>() {
-        override val size = Integra7Size(lsb = 0x02u)
+        override val size = Integra7Size(0x02u.toUInt7UsingValue())
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
             try {
@@ -176,7 +180,7 @@ abstract class Integra7MemoryIO<T> {
 
     @ExperimentalUnsignedTypes
     data class UnsignedMsbLsbFourNibbles(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = 0..0xFFFF): Integra7MemoryIO<Int>() {
-        override val size = Integra7Size(lsb = 0x04u)
+        override val size = Integra7Size(0x04u.toUInt7UsingValue())
 
         init {
             assert(range.first >= 0 && range.last <= 0xFFFF) { "Impossible range $range for this datatype" }
@@ -193,10 +197,12 @@ abstract class Integra7MemoryIO<T> {
                 if (range.contains(ret)) {
                     return ret
                 } else {
-                    throw IllegalStateException("Value $ret not in $range, When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
+                    throw IllegalStateException("Value $ret not in $range, When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address(
+                        it.toUInt7()).toString() }, 0x10)}")
                 }
             } catch (e: NoSuchElementException) {
-                throw IllegalStateException("When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalStateException("When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
@@ -217,7 +223,8 @@ abstract class Integra7MemoryIO<T> {
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
             val ret = delegate.interpret(startAddress, length, payload) - 64
             if (!range.contains(ret)) {
-                throw IllegalStateException("Value $ret not in $range When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}")
+                throw IllegalStateException("Value $ret not in $range When reading address $startAddress, len=$size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}")
             } else {
                 return ret
             }
@@ -230,7 +237,8 @@ abstract class Integra7MemoryIO<T> {
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
             val ret = delegate.interpret(startAddress, length, payload) - 0x8000
-            assert(ret in range) { "Value $ret (${String.format("0x%08x", ret)}) from address $address not in $range when reading ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}" }
+            assert(ret in range) { "Value $ret (${String.format("0x%08x", ret)}) from address $address not in $range when reading ${payload.hexDump({ Integra7Address(
+                it.toUInt7()).toString() }, 0x10)}" }
             return ret
         }
     }
@@ -249,12 +257,13 @@ abstract class Integra7MemoryIO<T> {
 
 class AddressRequestBuilder(private val deviceId: DeviceId) {
 //    val undocumented = UndocumentedRequestBuilder(deviceId, Integra7Address(0x0F000402))    // TODO: This is not a typical address-request!!
-    val setup = SetupRequestBuilder(deviceId, Integra7Address(0x01000000))
-    val system = SystemCommonRequestBuilder(deviceId, Integra7Address(0x02000000))
-    val studioSet = StudioSetAddressRequestBuilder(deviceId, Integra7Address(0x18000000))
+    val setup = SetupRequestBuilder(deviceId, Integra7Address.Integra7Ranges.SETUP.begin())
+    val system = SystemCommonRequestBuilder(deviceId, Integra7Address.Integra7Ranges.SYSTEM.begin())
+    val studioSet = StudioSetAddressRequestBuilder(deviceId, Integra7Address.Integra7Ranges.STUDIO_SET.begin())
 
     val tones: Map<IntegraPart, ToneAddressRequestBuilder> = IntegraPart.values()
-        .map { it to ToneAddressRequestBuilder(deviceId, Integra7Address(0x19000000).offsetBy(0x200000, it.zeroBased), it) }
+        .map { it to ToneAddressRequestBuilder(deviceId, Integra7Address.Integra7Ranges.PART_1_PCM_SYNTH_TONE.begin()
+            .offsetBy(UInt7(mmsb = 0x20u.toUByte7()), it.zeroBased), it) }
         .toMap()
 
     fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Values {
@@ -313,7 +322,7 @@ data class SetupRequestBuilder(override val deviceId: DeviceId, override val add
                 0x04 -> SoundMode.GS
                 else -> throw IllegalArgumentException("Unsupported sound-mode $sm")
             },
-            studioSetBs = studioSetBs.interpret(startAddress.offsetBy(0x04), length, payload),
+            studioSetBs = studioSetBs.interpret(startAddress.offsetBy(lsb =0x04u), length, payload),
             studioSetPc = studioSetPc.interpret(startAddress.offsetBy(lsb = 0x06u), length, payload))
     }
 }
@@ -378,9 +387,9 @@ data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override 
 // -----------------------------------------------------
 
 data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSet>() {
-    override val size = Integra7Size(0x1u, 0x00u, 0x00u, 0x00u)
+    override val size = Integra7Size(UInt7(mlsb = 0x57u.toUByte7(), lsb = UByte7.MAX_VALUE))
 
-    val common = StudioSetCommonAddressRequestBuilder(deviceId, address.offsetBy(0x000000))
+    val common = StudioSetCommonAddressRequestBuilder(deviceId, address)
     val commonChorus = StudioSetCommonChorusBuilder(deviceId, address.offsetBy(mlsb = 0x04u, lsb = 0x00u))
     val commonReverb = StudioSetCommonReverbBuilder(deviceId, address.offsetBy(mlsb = 0x06u, lsb = 0x00u))
     val motionalSourround = StudioSetMotionalSurroundBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u))
@@ -413,7 +422,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetCommon>() {
         override val size = Integra7Size(54u)
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), 0x0F)
+        val name = AsciiStringField(deviceId, address, 0x0F)
         val voiceReserve01 = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x18u), 0..64)
         val voiceReserve02 = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x19u), 0..64)
         val voiceReserve03 = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Au), 0..64)
@@ -535,7 +544,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     }
 
     data class StudioSetMotionalSurroundBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetMotionalSurround>() {
-        override val size = Integra7Size(lsb = 0x10u)
+        override val size = Integra7Size(0x10u.toUInt7UsingValue())
 
         val switch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
         val roomType = EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), RoomType.values())
@@ -780,13 +789,13 @@ data class ToneAddressRequestBuilder(
     override val address: Integra7Address,
     val part: IntegraPart
 ): Integra7MemoryIO<ToneAddressRequestBuilder.TemporaryTone>() {
-    override val size: Integra7Size = Integra7Size(0x00u, 0x20u, 0x00u, 0x00u)
+    override val size: Integra7Size = Integra7Size(UInt7(mmsb = 0x20.toUByte7()))
 
-    val pcmSynthTone = IntegraToneBuilder.PcmSynthToneBuilder(deviceId, address.offsetBy(0x000000), part)
-    val snaSynthTone = IntegraToneBuilder.SuperNaturalSynthToneBuilder(deviceId, address.offsetBy(0x010000), part)
-    val snaAcousticTone = IntegraToneBuilder.SuperNaturalAcousticToneBuilder(deviceId, address.offsetBy(0x020000), part)
-    val snaDrumKit = IntegraToneBuilder.SuperNaturalDrumKitBuilder(deviceId, address.offsetBy(0x030000), part)
-    val pcmDrumKit = IntegraToneBuilder.PcmDrumKitBuilder(deviceId, address.offsetBy(0x100000), part)
+    val pcmSynthTone = IntegraToneBuilder.PcmSynthToneBuilder(deviceId, address, part)
+    val snaSynthTone = IntegraToneBuilder.SuperNaturalSynthToneBuilder(deviceId, address.offsetBy(mmsb = 0x01u.toUByte7()), part)
+    val snaAcousticTone = IntegraToneBuilder.SuperNaturalAcousticToneBuilder(deviceId, address.offsetBy(mmsb = 0x02u.toUByte7()), part)
+    val snaDrumKit = IntegraToneBuilder.SuperNaturalDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x03u.toUByte7()), part)
+    val pcmDrumKit = IntegraToneBuilder.PcmDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x10u.toUByte7()), part)
 
     override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): TemporaryTone {
         assert(this.isCovering(startAddress)) { "Not a tone definition ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
@@ -817,9 +826,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         val part: IntegraPart
     ) : IntegraToneBuilder<PcmSynthTone>() {
-        override val size = Integra7Size(0x00u, 0x00u, 0x30u, 0x3Cu)
+        override val size = Integra7Size(UInt7(mlsb = 0x30u. toUByte7(), lsb = 0x3Cu.toUByte7()))
 
-        val common = PcmSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
+        val common = PcmSynthToneCommonBuilder(deviceId, address)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u))
         val partialMixTable = PcmSynthTonePartialMixTableBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u))
         val partial1 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u))
@@ -853,7 +862,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmSynthToneCommon>() {
         override val size = Integra7Size(0x50u)
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
         val pan = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
         val priority = EnumValueField(deviceId, address.offsetBy(lsb = 0x10u), Priority.values())
@@ -1028,16 +1037,17 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                         startAddress.offsetBy(lsb = 0x4Eu), length, payload),
                 )
             } catch (e: AssertionError) {
-                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address(it.toUInt7()).toString() }, 0x10)}", e)
             } catch (e: NoSuchElementException) {
-                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
 
     data class PcmSynthToneMfxBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
         Integra7MemoryIO<PcmSynthToneMfx>() {
-        override val size = Integra7Size(mlsb = 0x01u, lsb = 0x11u)
+        override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x11u.toUByte7()))
 
         val mfxType = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
         val mfxChorusSend = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x02u))
@@ -1095,7 +1105,8 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
             length: Int,
             payload: SparseUByteArray
         ): PcmSynthToneMfx {
-            assert(this.isCovering(startAddress)) { "Not a MFX definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()} in  ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}" }
+            assert(this.isCovering(startAddress)) { "Not a MFX definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()} in  ${payload.hexDump({ Integra7Address(
+                it.toUInt7()).toString() }, 0x10)}" }
 
             try {
             return PcmSynthToneMfx(
@@ -1154,16 +1165,17 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                 mfxParameter32 = 0 // mfxParameter32.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Du), length, payload),  // TODO!!
             )
             } catch (e: AssertionError) {
-                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address(it.toUInt7()).toString() }, 0x10)}", e)
             } catch (e: NoSuchElementException) {
-                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
 
     data class PcmSynthTonePartialMixTableBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
         Integra7MemoryIO<PcmSynthTonePartialMixTable>() {
-        override val size = Integra7Size(lsb = 0x29u)
+        override val size = Integra7Size(0x29u.toUInt7UsingValue())
 
         val structureType12 = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
         val booster12 = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x01u)) // ENUM
@@ -1237,16 +1249,17 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     pmt4VelocityFade = 0 // TODO = pmt4VelocityFade.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
                 )
             } catch (e: AssertionError) {
-                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address(it.toUInt7()).toString() }, 0x10)}", e)
             } catch (e: NoSuchElementException) {
-                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
 
     data class PcmSynthTonePartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
         Integra7MemoryIO<PcmSynthTonePartial>() {
-        override val size = Integra7Size(mlsb = 0x01u, lsb = 0x1Au)
+        override val size = Integra7Size(UInt7(mlsb = 0x01.toUByte7(), lsb = 0x1Au.toUByte7()))
 
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
         val chorusTune = SignedValueField(deviceId, address.offsetBy(lsb = 0x00u), -48..48)
@@ -1557,16 +1570,18 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     lfoStep16 = 0 // TODO: lfoStep16.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x19u), length, payload),
                 )
             } catch (e: AssertionError) {
-                throw AssertionError("When reading $address to ${address.offsetBy(size)} size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw AssertionError("When reading $address to ${address.offsetBy(size)} size $size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             } catch (e: NoSuchElementException) {
-                throw IllegalArgumentException("When reading $address to ${address.offsetBy(size)} size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalArgumentException("When reading $address to ${address.offsetBy(size)} size $size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
 
     data class PcmSynthToneCommon2Builder(override val deviceId: DeviceId, override val address: Integra7Address) :
         Integra7MemoryIO<PcmSynthToneCommon2>() {
-        override val size = Integra7Size(lsb = 0x3Cu)
+        override val size = Integra7Size(0x3Cu.toUInt7UsingValue())
 
         val toneCategory = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
         val undocumented = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x11u), 0..255)
@@ -1591,9 +1606,10 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
                     phraseNmber = 0 // TODO: phraseNmber.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
                 )
             } catch (e: AssertionError) {
-                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address(it.toUInt7()).toString() }, 0x10)}", e)
             } catch (e: NoSuchElementException) {
-                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address.fromFullByteAddress(it).toString() }, 0x10)}", e)
+                throw IllegalArgumentException("When reading $address size $size from ${payload.hexDump({ Integra7Address(
+                    it.toUInt7()).toString() }, 0x10)}", e)
             }
         }
     }
@@ -1603,9 +1619,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         val part: IntegraPart
     ) : IntegraToneBuilder<SuperNaturalSynthTone>() {
-        override val size = Integra7Size(0x00u, 0x00u, 0x22u, 0x7Fu)
+        override val size = Integra7Size(UInt7(mlsb = 0x22.toUByte7(), lsb = 0x7Fu.toUByte7()))
 
-        val common = SuperNaturalSynthToneCommonBuilder(deviceId, address.offsetBy(0x000000))
+        val common = SuperNaturalSynthToneCommonBuilder(deviceId, address)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
         val partial1 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u))
         val partial2 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x21u, lsb = 0x00u))
@@ -1629,7 +1645,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalSynthToneCommon>() {
         override val size = Integra7Size(0x40u)
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
         val portamentoSwitch = BooleanValueField(deviceId, address.offsetBy(lsb = 0x12u))
         val portamentoTime = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u))
@@ -1838,9 +1854,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         val part: IntegraPart
     ) : IntegraToneBuilder<SuperNaturalAcousticTone>() {
-        override val size = Integra7Size(0x00u, 0x00u, 0x30u, 0x3Cu)
+        override val size = Integra7Size(UInt7(mlsb = 0x30u.toUByte7(), lsb = 0x3Cu.toUByte7()))
 
-        val common = SuperNaturalAcousticToneCommonBuilder(deviceId, address.offsetBy(0x000000))
+        val common = SuperNaturalAcousticToneCommonBuilder(deviceId, address)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
 
         override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): SuperNaturalAcousticTone {
@@ -1858,7 +1874,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalAcousticToneCommon>() {
         override val size = Integra7Size(0x46u)
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
 
         val monoPoly = EnumValueField(deviceId, address.offsetBy(lsb = 0x11u), MonoPoly.values())
@@ -1923,9 +1939,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         val part: IntegraPart
     ) : IntegraToneBuilder<SuperNaturalDrumKit>() {
-        override val size = Integra7Size(0x00u, 0x00u, 0x4Du, 0x7Fu)
+        override val size = Integra7Size(UInt7(mlsb = 0x4D.toUByte7(), lsb = 0x7Fu.toUByte7()))
 
-        val common = SuperNaturalDrumKitCommonBuilder(deviceId, address.offsetBy(0x000000))
+        val common = SuperNaturalDrumKitCommonBuilder(deviceId, address)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
         val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u))
         val note27 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u))
@@ -2083,7 +2099,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalDrumKitCommon>() {
         override val size = Integra7Size(0x46u)
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
         val ambienceLevel = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
         val phraseNo = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x12u))
@@ -2351,9 +2367,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         val part: IntegraPart
     ) : IntegraToneBuilder<PcmDrumKit>() {
-        override val size = Integra7Size(0x00u, 0x02u, 0x7Fu, 0x7Fu)
+        override val size = Integra7Size(UInt7(mmsb = 0x02u.toUByte7(), mlsb = 0x07Fu.toUByte7() , lsb = 0x7Fu.toUByte7()))
 
-        val common = PcmDrumKitCommonBuilder(deviceId, address.offsetBy(0x000000))
+        val common = PcmDrumKitCommonBuilder(deviceId, address)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u)) // Same as PCM
         val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u)) // Same as SN-D
         val keys = IntRange(0, 78) // key 21 .. 108
@@ -2378,7 +2394,7 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmDrumKitCommon>() {
         override val size = Integra7Size(0x46u)
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
 
         override fun interpret(
@@ -2397,9 +2413,9 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
 
     data class PcmDrumKitPartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address) :
         Integra7MemoryIO<PcmDrumKitPartial>() {
-        override val size = Integra7Size(mlsb = 0x01u, lsb = 0x43u)
+        override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x43u.toUByte7()))
 
-        val name = AsciiStringField(deviceId, address.offsetBy(0x000000), length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
 
         val assignType = EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType.values())
         val muteGroup = UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0D0u), 0..31)
@@ -2736,220 +2752,3 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
     }
 }
 
-// ----------------------------------------------------
-
-
-data class Integra7Address(val msb: UByte, val mmsb: UByte, val mlsb: UByte, val lsb: UByte): UByteSerializable, Comparable<Integra7Address> {
-    companion object {
-        fun fromFullByteAddress(address: Int): Integra7Address {
-            val msb: UByte = (address / (0x80 * 0x80 * 0x80)).toUByte()
-            val mmsb: UByte = ((address / (0x80 * 0x80)).toUInt() and 0x7Fu).toUByte()
-            val mlsb: UByte = ((address / 0x80).toUInt() and 0x7Fu).toUByte()
-            val lsb: UByte = (address.toUInt() and 0x7Fu).toUByte()
-            return Integra7Address(msb, mmsb, mlsb, lsb)
-        }
-    }
-
-    constructor(address: Int): this(
-        msb = (address / 0x1000000).toUByte(),
-        mmsb = ((address / 0x10000).toUInt() and 0xFFu).toUByte(),
-        mlsb = ((address / 0x100).toUInt() and 0xFFu).toUByte(),
-        lsb = (address.toUInt() and 0xFFu).toUByte())
-
-    init {
-        assert(msb < 0x80u)
-        assert(mmsb < 0x80u)
-        assert(mlsb < 0x80u)
-        assert(lsb < 0x80u)
-    }
-
-    override fun bytes(): UByteArray =
-        ubyteArrayOf(msb, mmsb, mlsb, lsb)
-
-    fun offsetBy(offset: Integra7Size, factor: Int = 1): Integra7Address =
-        offsetBy(offset.msb, offset.mmsb, offset.mlsb, offset.lsb, factor)
-
-    fun offsetBy(offset: Int, factor: Int = 1): Integra7Address =
-        offsetBy(
-            msb = (offset / 0x1000000).toUByte(),
-            mmsb = ((offset / 0x10000).toUInt() and 0xFFu).toUByte(),
-            mlsb = ((offset / 0x100).toUInt() and 0xFFu).toUByte(),
-            lsb = (offset.toUInt() and 0xFFu).toUByte(),
-            factor
-        )
-
-    fun offsetBy(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte, factor: Int = 1): Integra7Address {
-        val newLsb: UByte = (this.lsb + lsb).toUByte()
-        val newMlsb: UByte = (this.mlsb + mlsb + if (newLsb > 0x7Fu) 0x01u else 0x00u).toUByte()
-        val newMmsb: UByte = (this.mmsb + mmsb + if (newMlsb > 0x7Fu) 0x01u else 0x00u).toUByte()
-        val newMsb: UByte = (this.msb + msb + if (newMmsb > 0x7Fu) 0x01u else 0x00u).toUByte()
-        assert(newMsb < 0x80u)
-
-        return when {
-            factor < 0 -> throw IllegalArgumentException()
-            factor == 0 -> this
-            factor == 1 -> Integra7Address(newMsb, newMmsb and 0x7Fu, newMlsb and 0x7Fu, newLsb and 0x7Fu)
-            else -> Integra7Address(newMsb, newMmsb and 0x7Fu, newMlsb and 0x7Fu, newLsb and 0x7Fu)
-                .offsetBy(msb, mmsb, mlsb, lsb, factor - 1)
-        }
-    }
-
-    /*
-     * Returns the size of the address-range
-     */
-    operator fun minus(other: Integra7Address): Integra7Size {
-        val ourLength = ((((msb * 0x80u) + mmsb) * 0x80u) + mlsb) * 0x80u + lsb
-        val otherLength = ((((other.msb * 0x80u) + other.mmsb) * 0x80u) + other.mlsb) * 0x80u + other.lsb
-        return Integra7Size(ourLength - otherLength)
-    }
-
-    fun fullByteAddress(): Int =
-        (((((msb * 0x80u) + mmsb) * 0x80u) + mlsb) * 0x80u + lsb).toInt()
-
-    override fun compareTo(other: Integra7Address): Int =
-        Comparator
-            .comparing(Integra7Address::msb)
-            .thenComparing(Integra7Address::mmsb)
-            .thenComparing(Integra7Address::mlsb)
-            .thenComparing(Integra7Address::lsb)
-            .compare(this, other)
-
-    fun rangeName(): String =
-        when (msb * 0x1000000u + mmsb * 0x10000u + mlsb * 0x100u + lsb) {
-            in 0x19000000u..0x1900FFFFu -> "'Part 1 PCM Synth tone'"
-            in 0x19010000u..0x1901FFFFu -> "'Part 1 superNATURAL Synth tone'"
-            in 0x19020000u..0x1902FFFFu -> "'Part 1 superNATURAL Acoustic tone'"
-            in 0x19030000u..0x190FFFFFu -> "'Part 1 superNATURAL Drum kit'"
-            in 0x19100000u..0x191FFFFFu -> "'Part 1 PCM Drum kit'"
-
-            in 0x19200000u..0x1920FFFFu -> "'Part 2 PCM Synth tone'"
-            in 0x19210000u..0x1921FFFFu -> "'Part 2 superNATURAL Synth tone'"
-            in 0x19220000u..0x1922FFFFu -> "'Part 2 superNATURAL Acoustic tone'"
-            in 0x19230000u..0x192FFFFFu -> "'Part 2 superNATURAL Drum kit'"
-            in 0x19300000u..0x193FFFFFu -> "'Part 2 PCM Drum kit'"
-
-            in 0x19400000u..0x1940FFFFu -> "'Part 3 PCM Synth tone'"
-            in 0x19410000u..0x1941FFFFu -> "'Part 3 superNATURAL Synth tone'"
-            in 0x19420000u..0x1942FFFFu -> "'Part 3 superNATURAL Acoustic tone'"
-            in 0x19430000u..0x194FFFFFu -> "'Part 3 superNATURAL Drum kit'"
-            in 0x19500000u..0x195FFFFFu -> "'Part 3 PCM Drum kit'"
-
-            in 0x19600000u..0x1960FFFFu -> "'Part 4 PCM Synth tone'"
-            in 0x19610000u..0x1961FFFFu -> "'Part 4 superNATURAL Synth tone'"
-            in 0x19620000u..0x1962FFFFu -> "'Part 4 superNATURAL Acoustic tone'"
-            in 0x19630000u..0x196FFFFFu -> "'Part 4 superNATURAL Drum kit'"
-            in 0x19700000u..0x197FFFFFu -> "'Part 4 PCM Drum kit'"
-
-            in 0x1A000000u..0x1A00FFFFu -> "'Part 5 PCM Synth tone'"
-            in 0x1A010000u..0x1A01FFFFu -> "'Part 5 superNATURAL Synth tone'"
-            in 0x1A020000u..0x1A02FFFFu -> "'Part 5 superNATURAL Acoustic tone'"
-            in 0x1A030000u..0x1A0FFFFFu -> "'Part 5 superNATURAL Drum kit'"
-            in 0x1A100000u..0x1A1FFFFFu -> "'Part 5 PCM Drum kit'"
-
-            in 0x1A200000u..0x1A20FFFFu -> "'Part 6 PCM Synth tone'"
-            in 0x1A210000u..0x1A21FFFFu -> "'Part 6 superNATURAL Synth tone'"
-            in 0x1A220000u..0x1A22FFFFu -> "'Part 6 superNATURAL Acoustic tone'"
-            in 0x1A230000u..0x1A2FFFFFu -> "'Part 6 superNATURAL Drum kit'"
-            in 0x1A300000u..0x1A3FFFFFu -> "'Part 6 PCM Drum kit'"
-
-            in 0x1A400000u..0x1A40FFFFu -> "'Part 7 PCM Synth tone'"
-            in 0x1A410000u..0x1A41FFFFu -> "'Part 7 superNATURAL Synth tone'"
-            in 0x1A420000u..0x1A42FFFFu -> "'Part 7 superNATURAL Acoustic tone'"
-            in 0x1A430000u..0x1A4FFFFFu -> "'Part 7 superNATURAL Drum kit'"
-            in 0x1A500000u..0x1A5FFFFFu -> "'Part 7 PCM Drum kit'"
-
-            in 0x1A600000u..0x1A60FFFFu -> "'Part 8 PCM Synth tone'"
-            in 0x1A610000u..0x1A61FFFFu -> "'Part 8 superNATURAL Synth tone'"
-            in 0x1A620000u..0x1A62FFFFu -> "'Part 8 superNATURAL Acoustic tone'"
-            in 0x1A630000u..0x1A6FFFFFu -> "'Part 8 superNATURAL Drum kit'"
-            in 0x1A700000u..0x1A7FFFFFu -> "'Part 8 PCM Drum kit'"
-
-            in 0x1B000000u..0x1B00FFFFu -> "'Part 9 PCM Synth tone'"
-            in 0x1B010000u..0x1B01FFFFu -> "'Part 9 superNATURAL Synth tone'"
-            in 0x1B020000u..0x1B02FFFFu -> "'Part 9 superNATURAL Acoustic tone'"
-            in 0x1B030000u..0x1B0FFFFFu -> "'Part 9 superNATURAL Drum kit'"
-            in 0x1B100000u..0x1B1FFFFFu -> "'Part 9 PCM Drum kit'"
-
-            in 0x1B200000u..0x1B20FFFFu -> "'Part 10 PCM Synth tone'"
-            in 0x1B210000u..0x1B21FFFFu -> "'Part 10 superNATURAL Synth tone'"
-            in 0x1B220000u..0x1B22FFFFu -> "'Part 10 superNATURAL Acoustic tone'"
-            in 0x1B230000u..0x1B2FFFFFu -> "'Part 10 superNATURAL Drum kit'"
-            in 0x1B300000u..0x1B3FFFFFu -> "'Part 10 PCM Drum kit'"
-
-            in 0x1B400000u..0x1B40FFFFu -> "'Part 11 PCM Synth tone'"
-            in 0x1B410000u..0x1B41FFFFu -> "'Part 11 superNATURAL Synth tone'"
-            in 0x1B420000u..0x1B42FFFFu -> "'Part 11 superNATURAL Acoustic tone'"
-            in 0x1B430000u..0x1B4FFFFFu -> "'Part 11 superNATURAL Drum kit'"
-            in 0x1B500000u..0x1B5FFFFFu -> "'Part 11 PCM Drum kit'"
-
-            in 0x1B600000u..0x1B60FFFFu -> "'Part 12 PCM Synth tone'"
-            in 0x1B610000u..0x1B61FFFFu -> "'Part 12 superNATURAL Synth tone'"
-            in 0x1B620000u..0x1B62FFFFu -> "'Part 12 superNATURAL Acoustic tone'"
-            in 0x1B630000u..0x1B6FFFFFu -> "'Part 12 superNATURAL Drum kit'"
-            in 0x1B700000u..0x1B7FFFFFu -> "'Part 12 PCM Drum kit'"
-
-            in 0x1C000000u..0x1C00FFFFu -> "'Part 13 PCM Synth tone'"
-            in 0x1C010000u..0x1C01FFFFu -> "'Part 13 superNATURAL Synth tone'"
-            in 0x1C020000u..0x1C02FFFFu -> "'Part 13 superNATURAL Acoustic tone'"
-            in 0x1C030000u..0x1C0FFFFFu -> "'Part 13 superNATURAL Drum kit'"
-            in 0x1C100000u..0x1C1FFFFFu -> "'Part 13 PCM Drum kit'"
-
-            in 0x1C200000u..0x1C20FFFFu -> "'Part 14 PCM Synth tone'"
-            in 0x1C210000u..0x1C21FFFFu -> "'Part 14 superNATURAL Synth tone'"
-            in 0x1C220000u..0x1C22FFFFu -> "'Part 14 superNATURAL Acoustic tone'"
-            in 0x1C230000u..0x1C2FFFFFu -> "'Part 14 superNATURAL Drum kit'"
-            in 0x1C300000u..0x1C3FFFFFu -> "'Part 14 PCM Drum kit'"
-
-            in 0x1C400000u..0x1C40FFFFu -> "'Part 15 PCM Synth tone'"
-            in 0x1C410000u..0x1C41FFFFu -> "'Part 15 superNATURAL Synth tone'"
-            in 0x1C420000u..0x1C42FFFFu -> "'Part 15 superNATURAL Acoustic tone'"
-            in 0x1C430000u..0x1C4FFFFFu -> "'Part 15 superNATURAL Drum kit'"
-            in 0x1C500000u..0x1C5FFFFFu -> "'Part 15 PCM Drum kit'"
-
-            in 0x1C600000u..0x1C60FFFFu -> "'Part 16 PCM Synth tone'"
-            in 0x1C610000u..0x1C61FFFFu -> "'Part 16 superNATURAL Synth tone'"
-            in 0x1C620000u..0x1C62FFFFu -> "'Part 16 superNATURAL Acoustic tone'"
-            in 0x1C630000u..0x1C6FFFFFu -> "'Part 16 superNATURAL Drum kit'"
-            in 0x1C700000u..0x1C7FFFFFu -> "'Part 16 PCM Drum kit'"
-
-            else -> "'Unknown range $this'"
-        }
-
-    override fun toString(): String =
-        String.format("0x%02X%02X%02X%02X", msb.toInt(), mmsb.toInt(), mlsb.toInt(), lsb.toInt())
-}
-
-data class Integra7Size(val msb: UByte = 0x00u, val mmsb: UByte = 0x00u, val mlsb: UByte = 0x00u, val lsb: UByte = 0x00u): UByteSerializable {
-    companion object {
-        val ONE_BYTE = Integra7Size(0x01u)
-    }
-
-    constructor(fullByteSize: UInt) : this(
-        msb = (fullByteSize / (0x80u * 0x80u * 0x80u)).toUByte(),
-        mmsb = ((fullByteSize / (0x80u * 0x80u)) and 0x7Fu).toUByte(),
-        mlsb = ((fullByteSize / 0x80u) and 0x7Fu).toUByte(),
-        lsb = (fullByteSize and 0x7Fu).toUByte()
-    )
-
-    init {
-        assert(msb < 0x80u)
-        assert(mmsb < 0x80u)
-        assert(mlsb < 0x80u)
-        assert(lsb < 0x80u)
-    }
-
-    override fun bytes(): UByteArray =
-        ubyteArrayOf(msb, mmsb, mlsb, lsb)
-
-    operator fun minus(other: Int): Integra7Size =
-        Integra7Size((fullByteSize() - other).toUInt())
-
-    operator fun plus(other: Int): Integra7Size =
-        Integra7Size((fullByteSize() + other).toUInt())
-
-    fun fullByteSize(): Int =
-        (((((msb * 0x80u) + mmsb) * 0x80u) + mlsb) * 0x80u + lsb).toInt()
-
-    override fun toString(): String =
-        fullByteSize().toString() + String.format(" Integra: 0x%02x%02x%02x%02x", msb.toInt(), mmsb.toInt(), mlsb.toInt(), lsb.toInt())
-}

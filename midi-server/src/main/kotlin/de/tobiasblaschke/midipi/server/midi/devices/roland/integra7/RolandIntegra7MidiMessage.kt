@@ -2,7 +2,10 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
-import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Size
+import de.tobiasblaschke.midipi.server.utils.SparseUByteArray
+import de.tobiasblaschke.midipi.server.utils.toUInt7
 import java.lang.Exception
 import java.time.Duration
 
@@ -438,7 +441,7 @@ sealed class RolandIntegra7MidiMessage: UByteSerializable {
         override fun isComplete(message: MBResponseMidiMessage): Boolean {
             val response = message as IntegraSysExDataSet1Response
             val expectedEndAddress = address.offsetBy(size - 1)
-            val actualEndAddress = response.startAddress.offsetBy(response.payload.size)
+            val actualEndAddress = response.startAddress.offsetBy(response.payload.size.toUInt7())
             val complete = expectedEndAddress == actualEndAddress
 //            println("  Got from start ${response.startAddress} to $actualEndAddress (size=${response.payload.size} Bytes) expecting a total of ${size.fullByteSize()} Bytes => complete = $complete")
             return complete

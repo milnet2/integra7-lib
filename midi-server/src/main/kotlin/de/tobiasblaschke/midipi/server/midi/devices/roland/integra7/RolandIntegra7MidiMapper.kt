@@ -2,8 +2,11 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
 import de.tobiasblaschke.midipi.server.midi.toHexString
-import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
+import de.tobiasblaschke.midipi.server.utils.SparseUByteArray
+import de.tobiasblaschke.midipi.server.utils.UInt7
+import de.tobiasblaschke.midipi.server.utils.toUByte7
 import java.lang.IllegalArgumentException
 
 class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7MidiMessage> {
@@ -142,7 +145,7 @@ class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7Midi
 
             return when(command.toUInt()) {
                 0x12u -> {
-                    val startAddress = Integra7Address((message.payload[5] * 0x1000000u + message.payload[6] * 0x10000u + message.payload[7] * 0x100u + message.payload[8]).toInt())
+                    val startAddress = Integra7Address(UInt7(message.payload[5].toUByte7(),message.payload[6].toUByte7(), message.payload[7].toUByte7(), message.payload[8].toUByte7()))
                     RolandIntegra7MidiMessage.IntegraSysExDataSet1Response(
                         deviceId = deviceId,
                         startAddress = startAddress,

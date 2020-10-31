@@ -1,4 +1,4 @@
-package de.tobiasblaschke.midipi.server.midi.utils
+package de.tobiasblaschke.midipi.server.utils
 
 class IndexedCollection<T, C: Collection<out T>>(private val collection: C, private val getter: (C, Int) -> T?, private val offset: Int = 0, override val size: Int = collection.size): Collection<T> by collection {
     operator fun get(int: Int): T =

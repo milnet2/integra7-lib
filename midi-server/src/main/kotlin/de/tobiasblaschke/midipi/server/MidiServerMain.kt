@@ -36,12 +36,12 @@ object MidiServerMain {
 // -----------------------------------------------------
 //            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
 //
-//            IntegraPart.values()
-//                .forEach { part ->
-//                    println("Part $part: " +
-//                            con.part(part)
-//                                .sound.tone.tone)
-//                }
+            IntegraPart.values()
+                .forEach { part ->
+                    println("Part $part: " +
+                            con.part(part)
+                                .sound.tone.tone)
+                }
 
 // -----------------------------------------------------
 
