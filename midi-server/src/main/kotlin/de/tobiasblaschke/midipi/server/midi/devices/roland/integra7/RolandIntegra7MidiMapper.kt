@@ -146,8 +146,8 @@ class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7Midi
                     RolandIntegra7MidiMessage.IntegraSysExDataSet1Response(
                         deviceId = deviceId,
                         startAddress = startAddress,
-                        payload = SparseUByteArray(startAddress = startAddress.fullByteAddress(), message.payload.toList().drop(9).dropLast(2)),
-                        checkSum = message.payload[message.payload.size - 2])
+                        payload = SparseUByteArray(startAddress = startAddress.fullByteAddress(), message.payload.toList().drop(9).dropLast(1)), // TODO: Drop checksum
+                        checkSum = message.payload[message.payload.size - 1])
                 }
                 else -> throw IllegalArgumentException("Unsupported command $command in ${message.payload.toHexString()}")
             }

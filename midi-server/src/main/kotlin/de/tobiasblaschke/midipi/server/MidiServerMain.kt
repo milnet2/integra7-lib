@@ -4,6 +4,8 @@ import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiDiscover
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.IntegraPart
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7
+import java.lang.System.exit
+import kotlin.system.exitProcess
 
 object MidiServerMain {
     @JvmStatic
@@ -12,9 +14,14 @@ object MidiServerMain {
         devices.forEach { println("Device $it") }
 
         val integra7 = // TODO: Pretty!
-            devices
-                .filterIsInstance<MBJavaMidiEndpoint.MBJavaMidiReadWriteEndpoint>()
-                .first { it.name.contains("INTEGRA7") }!!
+            try {
+                devices
+                    .filterIsInstance<MBJavaMidiEndpoint.MBJavaMidiReadWriteEndpoint>()
+                    .first { it.name.contains("INTEGRA7") }!!
+            } catch (e: NoSuchElementException) {
+                println("No integra7 fround!")
+                exitProcess(1)
+            }
 
         println("Integra: $integra7")
 
@@ -23,14 +30,18 @@ object MidiServerMain {
 
 
 // -----------------------------------------------------
+
+            println(con.studioSet)
+
+// -----------------------------------------------------
 //            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
 //
-            IntegraPart.values()
-                .forEach { part ->
-                    println("Part $part: " +
-                            con.part(part)
-                                .sound.tone.tone)
-                }
+//            IntegraPart.values()
+//                .forEach { part ->
+//                    println("Part $part: " +
+//                            con.part(part)
+//                                .sound.tone.tone)
+//                }
 
 // -----------------------------------------------------
 

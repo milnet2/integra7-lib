@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.StudioSet
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
@@ -15,6 +16,9 @@ class RolandIntegra7(
         device.send(RolandIntegra7MidiMessage.IdentityRequest())
             .map { it as RolandIntegra7MidiMessage.IdentityReply }
             .map { AddressRequestBuilder(it.deviceId) }
+
+    val studioSet: StudioSet
+        get() = request({ it.studioSet }).get()
 
     fun part(p: IntegraPart) =
         Integra7PartFacade(p, this)

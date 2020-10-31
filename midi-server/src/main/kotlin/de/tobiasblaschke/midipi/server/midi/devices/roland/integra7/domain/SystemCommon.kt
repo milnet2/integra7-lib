@@ -1,7 +1,5 @@
 package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain
 
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.SystemCommonRequestBuilder
-
 data class SystemCommon(
     // val masterTune: String
     val masterKeyShift: Int,
@@ -56,5 +54,11 @@ enum class ControlSource(val hex: UByte) {
     CC81(81u), CC82(82u), CC83(83u), CC84(84u), CC85(85u),
     CC86(86u), CC87(87u), CC88(88u), CC89(89u), CC90(90u),
     CC91(91u), CC92(92u), CC93(93u), CC94(94u), CC95(95u),
-    BEND(95u), AFT(97u)
+    BEND(95u), AFT(97u);
+
+    companion object {
+        fun fromValue(value: Int): ControlSource =
+            ControlSource.values()
+                .first { it.hex.toInt() == value }
+    }
 }

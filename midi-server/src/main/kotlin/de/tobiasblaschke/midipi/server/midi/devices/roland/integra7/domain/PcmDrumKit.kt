@@ -3,8 +3,19 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain
 data class PcmDrumKit(
     override val common: PcmDrumKitCommon,
     val mfx: PcmSynthToneMfx,
-    val keys: List<PcmDrumKitPartial>
-): IntegraTone
+    val keys: List<PcmDrumKitPartial>,
+    val common2: PcmDrumKitCommon2
+): IntegraTone {
+    override fun toString(): String =
+        "PcmDrumKit(\n" +
+                "\tcommon = $common\n" +
+                "\tmfx = $mfx\n" +
+                "\tkeys = ${keys.joinToString(
+                    prefix = "\t  ",
+                    separator = "\n\t  ",
+                    postfix = "\n")}" +
+                "\tcommon2 = $common2\n)"
+}
 
 data class PcmDrumKitCommon(
     override val name: String,
@@ -282,3 +293,8 @@ data class PcmDrumKitPartial(
         assert(tvaEnvLevel3 in 0..127 ) { "Value not in range $tvaEnvLevel3" }
     }
 }
+
+data class PcmDrumKitCommon2(
+    val phraseNumber: Int,
+    val tfxSwitch: Boolean
+)

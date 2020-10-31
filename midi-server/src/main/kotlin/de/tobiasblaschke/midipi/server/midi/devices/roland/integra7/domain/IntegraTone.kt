@@ -11,6 +11,8 @@ interface IntegraToneCommon {
 
 enum class Priority { LAST, LOUDEST }
 enum class MonoPoly { MONO, POLY }
+enum class MonoPolyTone { MONO, POLY, TONE }
+enum class OffOnTone { OFF, ON, TONE }
 enum class PortamentoMode { NORMAL, LEGATO }
 enum class PortamentoType { RATE, TIME }
 enum class PortamentoStart { PITCH, NOTE }
