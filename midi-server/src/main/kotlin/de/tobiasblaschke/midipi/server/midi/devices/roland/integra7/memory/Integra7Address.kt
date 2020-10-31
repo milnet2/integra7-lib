@@ -200,6 +200,9 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
     override fun bytes(): UByteArray =
         address.toUByteArrayLittleEndian()
 
+    fun successor(): Integra7Address =
+        Integra7Address((address + 1u).toUInt7UsingValue())
+
     @Deprecated("Switch to UInt7")
     fun offsetBy(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte, factor: Int = 1): Integra7Address =
         offsetBy(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7())
@@ -251,6 +254,8 @@ data class Integra7Size(val size: UInt7): UByteSerializable {
 
     companion object {
         val ONE_BYTE = Integra7Size(0x01u.toUInt7UsingValue())
+        val TWO_BYTES = Integra7Size(0x02u.toUInt7UsingValue())
+        val FOUR_BYTES = Integra7Size(0x04u.toUInt7UsingValue())
     }
 
     override fun bytes(): UByteArray =
