@@ -3,7 +3,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.*
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7FieldType
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7FieldType.*
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Size
 import de.tobiasblaschke.midipi.server.utils.*
 import java.lang.IllegalArgumentException
@@ -104,10 +104,10 @@ class AddressRequestBuilder(private val deviceId: DeviceId) {
 data class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<Setup>() {
     override val size = Integra7Size(38u)
 
-    val soundMode = Integra7FieldType.UnsignedValueField(deviceId, address)
-    val studioSetBankSelectMsb = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u)) // #CC 0
-    val studioSetBankSelectLsb = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u)) // #CC 32
-    val studioSetPc = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
+    val soundMode = UByteField(deviceId, address)
+    val studioSetBankSelectMsb = UByteField(deviceId, address.offsetBy(lsb = 0x04u)) // #CC 0
+    val studioSetBankSelectLsb = UByteField(deviceId, address.offsetBy(lsb = 0x05u)) // #CC 32
+    val studioSetPc = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
 
     override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Setup {
         assert(this.isCovering(startAddress)) { "Expected Setup-range ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -129,26 +129,26 @@ data class SetupRequestBuilder(override val deviceId: DeviceId, override val add
 data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<SystemCommon>() {
     override val size= Integra7Size(0x2Fu)
 
-    val masterKeyShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x04u))
-    val masterLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
-    val scaleTuneSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x06u))
-    val systemControl1Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), ControlSource::fromValue)
-    val systemControl2Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x21u), ControlSource::fromValue)
-    val systemControl3Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x22u), ControlSource::fromValue)
-    val systemControl4Source = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x23u), ControlSource::fromValue)
+    val masterKeyShift = ByteField(deviceId, address.offsetBy(lsb = 0x04u))
+    val masterLevel = UByteField(deviceId, address.offsetBy(lsb = 0x05u))
+    val scaleTuneSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x06u))
+    val systemControl1Source = EnumField(deviceId, address.offsetBy(lsb = 0x20u), ControlSource::fromValue)
+    val systemControl2Source = EnumField(deviceId, address.offsetBy(lsb = 0x21u), ControlSource::fromValue)
+    val systemControl3Source = EnumField(deviceId, address.offsetBy(lsb = 0x22u), ControlSource::fromValue)
+    val systemControl4Source = EnumField(deviceId, address.offsetBy(lsb = 0x23u), ControlSource::fromValue)
     val controlSource =
-        Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x24u), ControlSourceType.values())
+        EnumField(deviceId, address.offsetBy(lsb = 0x24u), ControlSourceType.values())
     val systemClockSource =
-        Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x25u), ClockSource.values())
-    val systemTempo = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x26u))
+        EnumField(deviceId, address.offsetBy(lsb = 0x25u), ClockSource.values())
+    val systemTempo = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x26u))
     val tempoAssignSource =
-        Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x28u), ControlSourceType.values())
-    val receiveProgramChange = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x29u))
-    val receiveBankSelect = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Au))
-    val centerSpeakerSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Bu))
-    val subWooferSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Cu))
+        EnumField(deviceId, address.offsetBy(lsb = 0x28u), ControlSourceType.values())
+    val receiveProgramChange = BooleanField(deviceId, address.offsetBy(lsb = 0x29u))
+    val receiveBankSelect = BooleanField(deviceId, address.offsetBy(lsb = 0x2Au))
+    val centerSpeakerSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x2Bu))
+    val subWooferSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x2Cu))
     val twoChOutputMode =
-        Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Du), TwoChOutputMode.values())
+        EnumField(deviceId, address.offsetBy(lsb = 0x2Du), TwoChOutputMode.values())
 
     override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): SystemCommon {
         assert(this.isCovering(startAddress)) { "Expected System-common ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -188,7 +188,7 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     val masterEq = StudioSetMasterEqBuilder(deviceId, address.offsetBy(mlsb = 0x09u, lsb = 0x00u))
     val midiChannelPhaseLocks = IntRange(0, 15)
         .map {
-            Integra7FieldType.BooleanValueField(
+            BooleanField(
                 deviceId,
                 address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)
             )
@@ -228,40 +228,40 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetCommon>() {
         override val size = Integra7Size(54u)
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, 0x0F)
-        val voiceReserve01 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x18u), 0..64)
-        val voiceReserve02 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x19u), 0..64)
-        val voiceReserve03 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Au), 0..64)
-        val voiceReserve04 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu), 0..64)
-        val voiceReserve05 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Cu), 0..64)
-        val voiceReserve06 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Du), 0..64)
-        val voiceReserve07 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Eu), 0..64)
-        val voiceReserve08 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Fu), 0..64)
-        val voiceReserve09 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x20u), 0..64)
-        val voiceReserve10 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x21u), 0..64)
-        val voiceReserve11 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x22u), 0..64)
-        val voiceReserve12 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x23u), 0..64)
-        val voiceReserve13 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x24u), 0..64)
-        val voiceReserve14 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x25u), 0..64)
-        val voiceReserve15 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x26u), 0..64)
-        val voiceReserve16 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x27u), 0..64)
+        val name = AsciiStringField(deviceId, address, 0x0F)
+        val voiceReserve01 = UByteField(deviceId, address.offsetBy(lsb = 0x18u), 0..64)
+        val voiceReserve02 = UByteField(deviceId, address.offsetBy(lsb = 0x19u), 0..64)
+        val voiceReserve03 = UByteField(deviceId, address.offsetBy(lsb = 0x1Au), 0..64)
+        val voiceReserve04 = UByteField(deviceId, address.offsetBy(lsb = 0x1Bu), 0..64)
+        val voiceReserve05 = UByteField(deviceId, address.offsetBy(lsb = 0x1Cu), 0..64)
+        val voiceReserve06 = UByteField(deviceId, address.offsetBy(lsb = 0x1Du), 0..64)
+        val voiceReserve07 = UByteField(deviceId, address.offsetBy(lsb = 0x1Eu), 0..64)
+        val voiceReserve08 = UByteField(deviceId, address.offsetBy(lsb = 0x1Fu), 0..64)
+        val voiceReserve09 = UByteField(deviceId, address.offsetBy(lsb = 0x20u), 0..64)
+        val voiceReserve10 = UByteField(deviceId, address.offsetBy(lsb = 0x21u), 0..64)
+        val voiceReserve11 = UByteField(deviceId, address.offsetBy(lsb = 0x22u), 0..64)
+        val voiceReserve12 = UByteField(deviceId, address.offsetBy(lsb = 0x23u), 0..64)
+        val voiceReserve13 = UByteField(deviceId, address.offsetBy(lsb = 0x24u), 0..64)
+        val voiceReserve14 = UByteField(deviceId, address.offsetBy(lsb = 0x25u), 0..64)
+        val voiceReserve15 = UByteField(deviceId, address.offsetBy(lsb = 0x26u), 0..64)
+        val voiceReserve16 = UByteField(deviceId, address.offsetBy(lsb = 0x27u), 0..64)
         val tone1ControlSource =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x39u), ControlSource::fromValue)
+            EnumField(deviceId, address.offsetBy(lsb = 0x39u), ControlSource::fromValue)
         val tone2ControlSource =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Au), ControlSource::fromValue)
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Au), ControlSource::fromValue)
         val tone3ControlSource =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Bu), ControlSource::fromValue)
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Bu), ControlSource::fromValue)
         val tone4ControlSource =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), ControlSource::fromValue)
-        val tempo = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x3Du), 20..250)
-        val reverbSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x40u))
-        val chorusSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x41u))
-        val masterEQSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x42u))
-        val drumCompEQSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x43u))
-        val extPartLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Cu))
-        val extPartChorusSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Du))
-        val extPartReverbSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu))
-        val extPartReverbMuteSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x4Fu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), ControlSource::fromValue)
+        val tempo = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x3Du), 20..250)
+        val reverbSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x40u))
+        val chorusSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x41u))
+        val masterEQSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x42u))
+        val drumCompEQSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x43u))
+        val extPartLevel = UByteField(deviceId, address.offsetBy(lsb = 0x4Cu))
+        val extPartChorusSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x4Du))
+        val extPartReverbSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
+        val extPartReverbMuteSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Fu))
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommon {
             assert(this.isCovering(startAddress)) { "Expected Studio-Set common address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -312,13 +312,13 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetCommonChorusBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetCommonChorus>() {
         override val size = Integra7Size(54u)
 
-        val type = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
+        val type = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
         val outputSelect =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x03u), ChorusOutputSelect.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x03u), ChorusOutputSelect.values())
         val parameters = IntRange(0, 18) // TODO: Access last element 19)
             .map {
-                Integra7FieldType.SignedMsbLsbFourNibbles(
+                SignedMsbLsbFourNibbles(
                     deviceId,
                     address.offsetBy(lsb = 0x04u).offsetBy(lsb = 0x04u, factor = it),
                     -20000..20000
@@ -344,13 +344,13 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetCommonReverbBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetCommonReverb>() {
         override val size = Integra7Size(63u)
 
-        val type = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
+        val type = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
         val outputSelect =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x02u), ReverbOutputSelect.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x02u), ReverbOutputSelect.values())
         val parameters = IntRange(0, 22) // TODO: Acces last element! 23)
             .map {
-                Integra7FieldType.SignedMsbLsbFourNibbles(
+                SignedMsbLsbFourNibbles(
                     deviceId,
                     address.offsetBy(lsb = 0x03u).offsetBy(lsb = 0x04u, factor = it),
                     -20000..20000
@@ -376,23 +376,23 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetMotionalSurroundBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetMotionalSurround>() {
         override val size = Integra7Size(0x10u.toUInt7UsingValue())
 
-        val switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val roomType = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), RoomType.values())
-        val ambienceLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x02u))
-        val roomSize = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x03u), RoomSize.values())
-        val ambienceTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u), 0..100)
-        val ambienceDensity = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u), 0..100)
-        val ambienceHfDamp = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u), 0..100)
-        val extPartLR = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x07u), -64..63)
-        val extPartFB = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x08u), -64..63)
-        val extPartWidth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x09u), 0..32)
-        val extPartAmbienceSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Au))
-        val extPartControlChannel = Integra7FieldType.UnsignedValueField(
+        val switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
+        val roomType = EnumField(deviceId, address.offsetBy(lsb = 0x01u), RoomType.values())
+        val ambienceLevel = UByteField(deviceId, address.offsetBy(lsb = 0x02u))
+        val roomSize = EnumField(deviceId, address.offsetBy(lsb = 0x03u), RoomSize.values())
+        val ambienceTime = UByteField(deviceId, address.offsetBy(lsb = 0x04u), 0..100)
+        val ambienceDensity = UByteField(deviceId, address.offsetBy(lsb = 0x05u), 0..100)
+        val ambienceHfDamp = UByteField(deviceId, address.offsetBy(lsb = 0x06u), 0..100)
+        val extPartLR = ByteField(deviceId, address.offsetBy(lsb = 0x07u), -64..63)
+        val extPartFB = ByteField(deviceId, address.offsetBy(lsb = 0x08u), -64..63)
+        val extPartWidth = UByteField(deviceId, address.offsetBy(lsb = 0x09u), 0..32)
+        val extPartAmbienceSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x0Au))
+        val extPartControlChannel = UByteField(
             deviceId,
             address.offsetBy(lsb = 0x0Bu),
             0..16
         ) // 1..16, OFF --> Why is OFF the last now *grrr*
-        val depth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
+        val depth = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetMotionalSurround {
             assert(this.isCovering(startAddress)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -418,26 +418,26 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetMasterEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetMasterEq>() {
         override val size = Integra7Size(63u)
 
-        val lowFrequency = Integra7FieldType.EnumValueField(
+        val lowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x00u),
             SupernaturalDrumLowFrequency.values()
         )
-        val lowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x01u), 0..30) // -15
-        val midFrequency = Integra7FieldType.EnumValueField(
+        val lowGain = UByteField(deviceId, address.offsetBy(lsb = 0x01u), 0..30) // -15
+        val midFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x02u),
             SupernaturalDrumMidFrequency.values()
         )
-        val midGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x03u), 0..30) // -15
+        val midGain = UByteField(deviceId, address.offsetBy(lsb = 0x03u), 0..30) // -15
         val midQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumMidQ.values())
-        val highFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumMidQ.values())
+        val highFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x05u),
             SupernaturalDrumHighFrequency.values()
         )
-        val highGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u), 0..30) // -15
+        val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x06u), 0..30) // -15
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetMasterEq {
             assert(this.isCovering(startAddress)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -457,87 +457,87 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetPartBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetPart>() {
         override val size = Integra7Size(0x4Du)
 
-        val receiveChannel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u), 0..30)
-        val receiveSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x01u))
+        val receiveChannel = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..30)
+        val receiveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x01u))
 
-        val toneBankMsb = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u)) // CC#0, CC#32
-        val toneBankLsb = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u)) // CC#0, CC#32
-        val toneProgramNumber = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x08u))
+        val toneBankMsb = UByteField(deviceId, address.offsetBy(lsb = 0x06u)) // CC#0, CC#32
+        val toneBankLsb = UByteField(deviceId, address.offsetBy(lsb = 0x07u)) // CC#0, CC#32
+        val toneProgramNumber = UByteField(deviceId, address.offsetBy(lsb = 0x08u))
 
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x09u)) // CC#7
-        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Au), -64..63) // CC#10
-        val coarseTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Bu), -48..48) // RPN#2
-        val fineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu), -50..50) // RPN#1
-        val monoPoly = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Du), MonoPolyTone.values())
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x09u)) // CC#7
+        val pan = ByteField(deviceId, address.offsetBy(lsb = 0x0Au), -64..63) // CC#10
+        val coarseTune = ByteField(deviceId, address.offsetBy(lsb = 0x0Bu), -48..48) // RPN#2
+        val fineTune = ByteField(deviceId, address.offsetBy(lsb = 0x0Cu), -50..50) // RPN#1
+        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x0Du), MonoPolyTone.values())
         val legatoSwitch =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Eu), OffOnTone.values()) // CC#68
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Eu), OffOnTone.values()) // CC#68
         val pitchBendRange =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu), 0..25) // RPN#0 - 0..24, TONE
+            UByteField(deviceId, address.offsetBy(lsb = 0x0Fu), 0..25) // RPN#0 - 0..24, TONE
         val portamentoSwitch =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x10u), OffOnTone.values()) // CC#65
-        val portamentoTime = Integra7FieldType.UnsignedMsbLsbNibbles(
+            EnumField(deviceId, address.offsetBy(lsb = 0x10u), OffOnTone.values()) // CC#65
+        val portamentoTime = UnsignedMsbLsbNibbles(
             deviceId,
             address.offsetBy(lsb = 0x11u),
             0..128
         ) // CC#5 0..127, TONE
-        val cutoffOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x13u), -64..63) // CC#74
+        val cutoffOffset = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -64..63) // CC#74
         val resonanceOffset =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x14u), -64..63) // CC#71
+            ByteField(deviceId, address.offsetBy(lsb = 0x14u), -64..63) // CC#71
         val attackTimeOffset =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x15u), -64..63) // CC#73
+            ByteField(deviceId, address.offsetBy(lsb = 0x15u), -64..63) // CC#73
         val decayTimeOffset =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x16u), -64..63) // CC#75
+            ByteField(deviceId, address.offsetBy(lsb = 0x16u), -64..63) // CC#75
         val releaseTimeOffset =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x17u), -64..63) // CC#72
-        val vibratoRate = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x18u), -64..63) // CC#76
-        val vibratoDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x19u), -64..63) // CC#77
-        val vibratoDelay = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x1Au), -64..63) // CC#78
-        val octaveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu), -3..3)
-        val velocitySensOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x1Cu))
-        val keyboardRange = Integra7FieldType.UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x1Du))
-        val keyboardFadeWidth = Integra7FieldType.UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x1Fu))
-        val velocityRange = Integra7FieldType.UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x21u))
-        val velocityFadeWidth = Integra7FieldType.UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x23u))
-        val muteSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x25u))
+            ByteField(deviceId, address.offsetBy(lsb = 0x17u), -64..63) // CC#72
+        val vibratoRate = ByteField(deviceId, address.offsetBy(lsb = 0x18u), -64..63) // CC#76
+        val vibratoDepth = ByteField(deviceId, address.offsetBy(lsb = 0x19u), -64..63) // CC#77
+        val vibratoDelay = ByteField(deviceId, address.offsetBy(lsb = 0x1Au), -64..63) // CC#78
+        val octaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x1Bu), -3..3)
+        val velocitySensOffset = ByteField(deviceId, address.offsetBy(lsb = 0x1Cu))
+        val keyboardRange = UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x1Du))
+        val keyboardFadeWidth = UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x1Fu))
+        val velocityRange = UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x21u))
+        val velocityFadeWidth = UnsignedRangeFields(deviceId, address.offsetBy(lsb = 0x23u))
+        val muteSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x25u))
 
-        val chorusSend = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x27u)) // CC#93
-        val reverbSend = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x28u)) // CC#91
+        val chorusSend = UByteField(deviceId, address.offsetBy(lsb = 0x27u)) // CC#93
+        val reverbSend = UByteField(deviceId, address.offsetBy(lsb = 0x28u)) // CC#91
         val outputAssign =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x29u), PartOutput.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x29u), PartOutput.values())
 
         val scaleTuneType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Bu), ScaleTuneType.values())
-        val scaleTuneKey = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Cu), NoteKey.values())
-        val scaleTuneC = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Du), -64..63)
-        val scaleTuneCSharp = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Eu), -64..63)
-        val scaleTuneD = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Fu), -64..63)
-        val scaleTuneDSharp = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x30u), -64..63)
-        val scaleTuneE = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x31u), -64..63)
-        val scaleTuneF = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x32u), -64..63)
-        val scaleTuneFSharp = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x33u), -64..63)
-        val scaleTuneG = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x34u), -64..63)
-        val scaleTuneGSharp = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x35u), -64..63)
-        val scaleTuneA = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x36u), -64..63)
-        val scaleTuneASharp = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x37u), -64..63)
-        val scaleTuneB = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x38u), -64..63)
+            EnumField(deviceId, address.offsetBy(lsb = 0x2Bu), ScaleTuneType.values())
+        val scaleTuneKey = EnumField(deviceId, address.offsetBy(lsb = 0x2Cu), NoteKey.values())
+        val scaleTuneC = ByteField(deviceId, address.offsetBy(lsb = 0x2Du), -64..63)
+        val scaleTuneCSharp = ByteField(deviceId, address.offsetBy(lsb = 0x2Eu), -64..63)
+        val scaleTuneD = ByteField(deviceId, address.offsetBy(lsb = 0x2Fu), -64..63)
+        val scaleTuneDSharp = ByteField(deviceId, address.offsetBy(lsb = 0x30u), -64..63)
+        val scaleTuneE = ByteField(deviceId, address.offsetBy(lsb = 0x31u), -64..63)
+        val scaleTuneF = ByteField(deviceId, address.offsetBy(lsb = 0x32u), -64..63)
+        val scaleTuneFSharp = ByteField(deviceId, address.offsetBy(lsb = 0x33u), -64..63)
+        val scaleTuneG = ByteField(deviceId, address.offsetBy(lsb = 0x34u), -64..63)
+        val scaleTuneGSharp = ByteField(deviceId, address.offsetBy(lsb = 0x35u), -64..63)
+        val scaleTuneA = ByteField(deviceId, address.offsetBy(lsb = 0x36u), -64..63)
+        val scaleTuneASharp = ByteField(deviceId, address.offsetBy(lsb = 0x37u), -64..63)
+        val scaleTuneB = ByteField(deviceId, address.offsetBy(lsb = 0x38u), -64..63)
 
-        val receiveProgramChange = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x39u))
-        val receiveBankSelect = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Au))
-        val receivePitchBend = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
-        val receivePolyphonicKeyPressure = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Cu))
-        val receiveChannelPressure = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Du))
-        val receiveModulation = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
-        val receiveVolume = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Fu))
-        val receivePan = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x40u))
-        val receiveExpression = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x41u))
-        val receiveHold1 = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x42u))
+        val receiveProgramChange = BooleanField(deviceId, address.offsetBy(lsb = 0x39u))
+        val receiveBankSelect = BooleanField(deviceId, address.offsetBy(lsb = 0x3Au))
+        val receivePitchBend = BooleanField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val receivePolyphonicKeyPressure = BooleanField(deviceId, address.offsetBy(lsb = 0x3Cu))
+        val receiveChannelPressure = BooleanField(deviceId, address.offsetBy(lsb = 0x3Du))
+        val receiveModulation = BooleanField(deviceId, address.offsetBy(lsb = 0x3Eu))
+        val receiveVolume = BooleanField(deviceId, address.offsetBy(lsb = 0x3Fu))
+        val receivePan = BooleanField(deviceId, address.offsetBy(lsb = 0x40u))
+        val receiveExpression = BooleanField(deviceId, address.offsetBy(lsb = 0x41u))
+        val receiveHold1 = BooleanField(deviceId, address.offsetBy(lsb = 0x42u))
 
-        val velocityCurveType = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x43u), 0..4)
+        val velocityCurveType = UByteField(deviceId, address.offsetBy(lsb = 0x43u), 0..4)
 
-        val motionalSurroundLR = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x44u), -64..63)
-        val motionalSurroundFB = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x46u), -64..63)
-        val motionalSurroundWidth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x48u), 0..32)
-        val motionalSurroundAmbienceSend = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x49u))
+        val motionalSurroundLR = ByteField(deviceId, address.offsetBy(lsb = 0x44u), -64..63)
+        val motionalSurroundFB = ByteField(deviceId, address.offsetBy(lsb = 0x46u), -64..63)
+        val motionalSurroundWidth = UByteField(deviceId, address.offsetBy(lsb = 0x48u), 0..32)
+        val motionalSurroundAmbienceSend = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetPart {
             assert(this.isCovering(startAddress)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -618,27 +618,27 @@ data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, overr
     data class StudioSetPartEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7MemoryIO<StudioSetPartEq>() {
         override val size = Integra7Size(8u)
 
-        val switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val lowFrequency = Integra7FieldType.EnumValueField(
+        val switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
+        val lowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x01u),
             SupernaturalDrumLowFrequency.values()
         )
-        val lowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x02u), 0..30) // -15
-        val midFrequency = Integra7FieldType.EnumValueField(
+        val lowGain = UByteField(deviceId, address.offsetBy(lsb = 0x02u), 0..30) // -15
+        val midFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x03u),
             SupernaturalDrumMidFrequency.values()
         )
-        val midGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u), 0..30) // -15
+        val midGain = UByteField(deviceId, address.offsetBy(lsb = 0x04u), 0..30) // -15
         val midQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x05u), SupernaturalDrumMidQ.values())
-        val highFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x05u), SupernaturalDrumMidQ.values())
+        val highFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x06u),
             SupernaturalDrumHighFrequency.values()
         )
-        val highGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u), 0..30) // -15
+        val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x07u), 0..30) // -15
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetPartEq {
             assert(this.isCovering(startAddress)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
@@ -735,96 +735,96 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmSynthToneCommon>() {
         override val size = Integra7Size(0x50u)
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, length = 0x0C)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val priority = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x10u), Priority.values())
-        val coarseTuning = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x11u), -48..48)
-        val fineTuning = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x12u), -50..50)
-        val ocataveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x13u), -3..3)
-        val stretchTuneDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x14u), 0..3)
-        val analogFeel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x15u))
-        val monoPoly = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x16u), MonoPoly.values())
-        val legatoSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x17u))
-        val legatoRetrigger = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x18u))
-        val portamentoSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x19u))
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val pan = ByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val priority = EnumField(deviceId, address.offsetBy(lsb = 0x10u), Priority.values())
+        val coarseTuning = ByteField(deviceId, address.offsetBy(lsb = 0x11u), -48..48)
+        val fineTuning = ByteField(deviceId, address.offsetBy(lsb = 0x12u), -50..50)
+        val ocataveShift = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -3..3)
+        val stretchTuneDepth = UByteField(deviceId, address.offsetBy(lsb = 0x14u), 0..3)
+        val analogFeel = UByteField(deviceId, address.offsetBy(lsb = 0x15u))
+        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x16u), MonoPoly.values())
+        val legatoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x17u))
+        val legatoRetrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x18u))
+        val portamentoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x19u))
         val portamentoMode =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Au), PortamentoMode.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Au), PortamentoMode.values())
         val portamentoType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Bu), PortamentoType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Bu), PortamentoType.values())
         val portamentoStart =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Cu), PortamentoStart.values())
-        val portamentoTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Du))
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), PortamentoStart.values())
+        val portamentoTime = UByteField(deviceId, address.offsetBy(lsb = 0x1Du))
 
-        val cutoffOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x22u))
-        val resonanceOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x23u))
-        val attackTimeOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x24u))
-        val releaseTimeOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x25u))
-        val velocitySensOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x26u))
+        val cutoffOffset = ByteField(deviceId, address.offsetBy(lsb = 0x22u))
+        val resonanceOffset = ByteField(deviceId, address.offsetBy(lsb = 0x23u))
+        val attackTimeOffset = ByteField(deviceId, address.offsetBy(lsb = 0x24u))
+        val releaseTimeOffset = ByteField(deviceId, address.offsetBy(lsb = 0x25u))
+        val velocitySensOffset = ByteField(deviceId, address.offsetBy(lsb = 0x26u))
 
-        val pmtControlSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x28u))
-        val pitchBendRangeUp = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x29u), 0..48)
-        val pitchBendRangeDown = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Au), 0..48)
+        val pmtControlSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x28u))
+        val pitchBendRangeUp = UByteField(deviceId, address.offsetBy(lsb = 0x29u), 0..48)
+        val pitchBendRangeDown = UByteField(deviceId, address.offsetBy(lsb = 0x2Au), 0..48)
 
         val matrixControl1Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Bu), MatrixControlSource.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x2Bu), MatrixControlSource.values())
         val matrixControl1Destination1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Cu), MatrixControlDestination.values())
-        val matrixControl1Sens1 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Du))
+            EnumField(deviceId, address.offsetBy(lsb = 0x2Cu), MatrixControlDestination.values())
+        val matrixControl1Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x2Du))
         val matrixControl1Destination2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Eu), MatrixControlDestination.values())
-        val matrixControl1Sens2 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Fu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x2Eu), MatrixControlDestination.values())
+        val matrixControl1Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x2Fu))
         val matrixControl1Destination3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x30u), MatrixControlDestination.values())
-        val matrixControl1Sens3 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x31u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x30u), MatrixControlDestination.values())
+        val matrixControl1Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x31u))
         val matrixControl1Destination4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x32u), MatrixControlDestination.values())
-        val matrixControl1Sens4 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x33u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x32u), MatrixControlDestination.values())
+        val matrixControl1Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x33u))
 
         val matrixControl2Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x34u), MatrixControlSource.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x34u), MatrixControlSource.values())
         val matrixControl2Destination1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x35u), MatrixControlDestination.values())
-        val matrixControl2Sens1 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x36u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x35u), MatrixControlDestination.values())
+        val matrixControl2Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x36u))
         val matrixControl2Destination2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x37u), MatrixControlDestination.values())
-        val matrixControl2Sens2 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x38u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x37u), MatrixControlDestination.values())
+        val matrixControl2Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x38u))
         val matrixControl2Destination3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x39u), MatrixControlDestination.values())
-        val matrixControl2Sens3 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Au))
+            EnumField(deviceId, address.offsetBy(lsb = 0x39u), MatrixControlDestination.values())
+        val matrixControl2Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x3Au))
         val matrixControl2Destination4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Bu), MatrixControlDestination.values())
-        val matrixControl2Sens4 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Cu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Bu), MatrixControlDestination.values())
+        val matrixControl2Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x3Cu))
 
         val matrixControl3Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Du), MatrixControlSource.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Du), MatrixControlSource.values())
         val matrixControl3Destination1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Eu), MatrixControlDestination.values())
-        val matrixControl3Sens1 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Fu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Eu), MatrixControlDestination.values())
+        val matrixControl3Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x3Fu))
         val matrixControl3Destination2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x40u), MatrixControlDestination.values())
-        val matrixControl3Sens2 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x41u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x40u), MatrixControlDestination.values())
+        val matrixControl3Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x41u))
         val matrixControl3Destination3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x42u), MatrixControlDestination.values())
-        val matrixControl3Sens3 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x43u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x42u), MatrixControlDestination.values())
+        val matrixControl3Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x43u))
         val matrixControl3Destination4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x44u), MatrixControlDestination.values())
-        val matrixControl3Sens4 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x45u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x44u), MatrixControlDestination.values())
+        val matrixControl3Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x45u))
 
         val matrixControl4Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x46u), MatrixControlSource.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x46u), MatrixControlSource.values())
         val matrixControl4Destination1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x47u), MatrixControlDestination.values())
-        val matrixControl4Sens1 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x48u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x47u), MatrixControlDestination.values())
+        val matrixControl4Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x48u))
         val matrixControl4Destination2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x49u), MatrixControlDestination.values())
-        val matrixControl4Sens2 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Au))
+            EnumField(deviceId, address.offsetBy(lsb = 0x49u), MatrixControlDestination.values())
+        val matrixControl4Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x4Au))
         val matrixControl4Destination3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x4Bu), MatrixControlDestination.values())
-        val matrixControl4Sens3 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Cu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x4Bu), MatrixControlDestination.values())
+        val matrixControl4Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x4Cu))
         val matrixControl4Destination4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x4Du), MatrixControlDestination.values())
-        val matrixControl4Sens4 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x4Du), MatrixControlDestination.values())
+        val matrixControl4Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -982,64 +982,64 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmSynthToneMfx>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x11u.toUByte7()))
 
-        val mfxType = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val mfxChorusSend = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x02u))
-        val mfxReverbSend = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x03u))
+        val mfxType = UByteField(deviceId, address.offsetBy(lsb = 0x00u))
+        val mfxChorusSend = UByteField(deviceId, address.offsetBy(lsb = 0x02u))
+        val mfxReverbSend = UByteField(deviceId, address.offsetBy(lsb = 0x03u))
 
         val mfxControl1Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x05u), MfxControlSource.values())
-        val mfxControl1Sens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x05u), MfxControlSource.values())
+        val mfxControl1Sens = ByteField(deviceId, address.offsetBy(lsb = 0x06u))
         val mfxControl2Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x07u), MfxControlSource.values())
-        val mfxControl2Sens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x08u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x07u), MfxControlSource.values())
+        val mfxControl2Sens = ByteField(deviceId, address.offsetBy(lsb = 0x08u))
         val mfxControl3Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x09u), MfxControlSource.values())
-        val mfxControl3Sens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Au))
+            EnumField(deviceId, address.offsetBy(lsb = 0x09u), MfxControlSource.values())
+        val mfxControl3Sens = ByteField(deviceId, address.offsetBy(lsb = 0x0Au))
         val mfxControl4Source =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Bu), MfxControlSource.values())
-        val mfxControl4Sens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), MfxControlSource.values())
+        val mfxControl4Sens = ByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 
-        val mfxControlAssign1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Du))
-        val mfxControlAssign2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val mfxControlAssign3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val mfxControlAssign4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
+        val mfxControlAssign1 = UByteField(deviceId, address.offsetBy(lsb = 0x0Du))
+        val mfxControlAssign2 = UByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val mfxControlAssign3 = UByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val mfxControlAssign4 = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
 
-        val mfxParameter1 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x11u))
-        val mfxParameter2 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x15u))
-        val mfxParameter3 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x19u))
-        val mfxParameter4 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x1Du))
-        val mfxParameter5 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x21u))
-        val mfxParameter6 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x25u))
-        val mfxParameter7 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x29u))
-        val mfxParameter8 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Du))
-        val mfxParameter9 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x31u))
-        val mfxParameter10 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u))
-        val mfxParameter11 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x39u))
-        val mfxParameter12 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x3Du))
-        val mfxParameter13 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x41u))
-        val mfxParameter14 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x45u))
-        val mfxParameter15 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x49u))
-        val mfxParameter16 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x4Du))
-        val mfxParameter17 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x51u))
-        val mfxParameter18 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x55u))
-        val mfxParameter19 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x59u))
-        val mfxParameter20 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du))
-        val mfxParameter21 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u))
-        val mfxParameter22 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u))
-        val mfxParameter23 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x69u))
-        val mfxParameter24 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x6Du))
-        val mfxParameter25 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x71u))
-        val mfxParameter26 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x75u))
-        val mfxParameter27 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x79u))
-        val mfxParameter28 = Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Du))
+        val mfxParameter1 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x11u))
+        val mfxParameter2 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x15u))
+        val mfxParameter3 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x19u))
+        val mfxParameter4 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x1Du))
+        val mfxParameter5 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x21u))
+        val mfxParameter6 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x25u))
+        val mfxParameter7 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x29u))
+        val mfxParameter8 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Du))
+        val mfxParameter9 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x31u))
+        val mfxParameter10 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u))
+        val mfxParameter11 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x39u))
+        val mfxParameter12 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x3Du))
+        val mfxParameter13 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x41u))
+        val mfxParameter14 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x45u))
+        val mfxParameter15 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x49u))
+        val mfxParameter16 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x4Du))
+        val mfxParameter17 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x51u))
+        val mfxParameter18 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x55u))
+        val mfxParameter19 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x59u))
+        val mfxParameter20 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du))
+        val mfxParameter21 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u))
+        val mfxParameter22 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u))
+        val mfxParameter23 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x69u))
+        val mfxParameter24 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x6Du))
+        val mfxParameter25 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x71u))
+        val mfxParameter26 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x75u))
+        val mfxParameter27 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x79u))
+        val mfxParameter28 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Du))
         val mfxParameter29 =
-            Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u))
+            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u))
         val mfxParameter30 =
-            Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
+            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
         val mfxParameter31 =
-            Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u))
+            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u))
         val mfxParameter32 =
-            Integra7FieldType.SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du))
+            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du))
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -1117,37 +1117,37 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmSynthTonePartialMixTable>() {
         override val size = Integra7Size(0x29u.toUInt7UsingValue())
 
-        val structureType12 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val booster12 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x01u)) // ENUM
-        val structureType34 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x02u))
-        val booster34 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x03u)) // ENUM
+        val structureType12 = UByteField(deviceId, address.offsetBy(lsb = 0x00u))
+        val booster12 = UByteField(deviceId, address.offsetBy(lsb = 0x01u)) // ENUM
+        val structureType34 = UByteField(deviceId, address.offsetBy(lsb = 0x02u))
+        val booster34 = UByteField(deviceId, address.offsetBy(lsb = 0x03u)) // ENUM
 
         val velocityControl =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x04u), VelocityControl.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x04u), VelocityControl.values())
 
-        val pmt1PartialSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x05u))
-        val pmt1KeyboardRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x06u))
-        val pmt1KeyboardFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x08u))
-        val pmt1VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x0Au))
-        val pmt1VelocityFade = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x0Cu))
+        val pmt1PartialSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x05u))
+        val pmt1KeyboardRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x06u))
+        val pmt1KeyboardFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x08u))
+        val pmt1VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x0Au))
+        val pmt1VelocityFade = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x0Cu))
 
-        val pmt2PartialSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val pmt2KeyboardRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val pmt2KeyboardFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x11u))
-        val pmt2VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x13u))
-        val pmt2VelocityFade = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x15u))
+        val pmt2PartialSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val pmt2KeyboardRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val pmt2KeyboardFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x11u))
+        val pmt2VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x13u))
+        val pmt2VelocityFade = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x15u))
 
-        val pmt3PartialSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x17u))
-        val pmt3KeyboardRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x18u))
-        val pmt3KeyboardFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x1Au))
-        val pmt3VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x1Cu))
-        val pmt3VelocityFade = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x1Eu))
+        val pmt3PartialSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x17u))
+        val pmt3KeyboardRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x18u))
+        val pmt3KeyboardFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x1Au))
+        val pmt3VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x1Cu))
+        val pmt3VelocityFade = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x1Eu))
 
-        val pmt4PartialSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x20u))
-        val pmt4KeyboardRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x21u))
-        val pmt4KeyboardFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x23u))
-        val pmt4VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x25u))
-        val pmt4VelocityFade = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x27u))
+        val pmt4PartialSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x20u))
+        val pmt4KeyboardRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x21u))
+        val pmt4KeyboardFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x23u))
+        val pmt4VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x25u))
+        val pmt4VelocityFade = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x27u))
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -1201,202 +1201,202 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmSynthTonePartial>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01.toUByte7(), lsb = 0x1Au.toUByte7()))
 
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val chorusTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x01u), -48..48)
-        val fineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x02u), -50..50)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x00u))
+        val chorusTune = ByteField(deviceId, address.offsetBy(lsb = 0x01u), -48..48)
+        val fineTune = ByteField(deviceId, address.offsetBy(lsb = 0x02u), -50..50)
         val randomPithDepth =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x03u), RandomPithDepth.values())
-        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x04u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x03u), RandomPithDepth.values())
+        val pan = ByteField(deviceId, address.offsetBy(lsb = 0x04u))
         // TODO val panKeyFollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x05u), -100..100)
-        val panDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
-        val alternatePanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
-        val envMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x08u), EnvMode.values())
-        val delayMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x09u), DelayMode.values())
-        val delayTime = Integra7FieldType.UnsignedMsbLsbNibbles(
+        val panDepth = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
+        val alternatePanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x07u))
+        val envMode = EnumField(deviceId, address.offsetBy(lsb = 0x08u), EnvMode.values())
+        val delayMode = EnumField(deviceId, address.offsetBy(lsb = 0x09u), DelayMode.values())
+        val delayTime = UnsignedMsbLsbNibbles(
             deviceId,
             address.offsetBy(lsb = 0x0Au),
             0..149
         ) // TODO: 0 - 127, MUSICAL-NOTES |
 
-        val outputLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
-        val chorusSendLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val reverbSendLevel = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
+        val outputLevel = ByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
+        val chorusSendLevel = ByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val reverbSendLevel = ByteField(deviceId, address.offsetBy(lsb = 0x10u))
 
-        val receiveBender = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x12u))
-        val receiveExpression = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x13u))
-        val receiveHold1 = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x14u))
-        val redamper = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x16u))
+        val receiveBender = BooleanField(deviceId, address.offsetBy(lsb = 0x12u))
+        val receiveExpression = BooleanField(deviceId, address.offsetBy(lsb = 0x13u))
+        val receiveHold1 = BooleanField(deviceId, address.offsetBy(lsb = 0x14u))
+        val redamper = BooleanField(deviceId, address.offsetBy(lsb = 0x16u))
 
         val partialControl1Switch1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x17u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x17u), OffOnReverse.values())
         val partialControl1Switch2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x18u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x18u), OffOnReverse.values())
         val partialControl1Switch3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x19u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x19u), OffOnReverse.values())
         val partialControl1Switch4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Au), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Au), OffOnReverse.values())
         val partialControl2Switch1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Bu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Bu), OffOnReverse.values())
         val partialControl2Switch2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Cu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), OffOnReverse.values())
         val partialControl2Switch3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Du), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Du), OffOnReverse.values())
         val partialControl2Switch4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Eu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Eu), OffOnReverse.values())
         val partialControl3Switch1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Fu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), OffOnReverse.values())
         val partialControl3Switch2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x20u), OffOnReverse.values())
         val partialControl3Switch3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x21u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x21u), OffOnReverse.values())
         val partialControl3Switch4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x22u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x22u), OffOnReverse.values())
         val partialControl4Switch1 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x23u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x23u), OffOnReverse.values())
         val partialControl4Switch2 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x24u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x24u), OffOnReverse.values())
         val partialControl4Switch3 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x25u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x25u), OffOnReverse.values())
         val partialControl4Switch4 =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x26u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x26u), OffOnReverse.values())
 
         val waveGroupType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x27u), WaveGroupType.values())
-        val waveGroupId = Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x28u), 0..16384)
-        val waveNumberL = Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Cu), 0..16384)
-        val waveNumberR = Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x30u), 0..16384)
-        val waveGain = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
-        val waveFXMSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x35u))
-        val waveFXMColor = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x36u), 0..3)
-        val waveFXMDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x37u), 0..16)
-        val waveTempoSync = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x38u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x27u), WaveGroupType.values())
+        val waveGroupId = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x28u), 0..16384)
+        val waveNumberL = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Cu), 0..16384)
+        val waveNumberR = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x30u), 0..16384)
+        val waveGain = EnumField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
+        val waveFXMSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x35u))
+        val waveFXMColor = UByteField(deviceId, address.offsetBy(lsb = 0x36u), 0..3)
+        val waveFXMDepth = UByteField(deviceId, address.offsetBy(lsb = 0x37u), 0..16)
+        val waveTempoSync = BooleanField(deviceId, address.offsetBy(lsb = 0x38u))
         // TODO val wavePitchKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x37u), -200..200)
 
-        val pitchEnvDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Au), -12..12)
-        val pitchEnvVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
-        val pitchEnvTime1VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Cu))
-        val pitchEnvTime4VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Du))
+        val pitchEnvDepth = ByteField(deviceId, address.offsetBy(lsb = 0x3Au), -12..12)
+        val pitchEnvVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val pitchEnvTime1VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x3Cu))
+        val pitchEnvTime4VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x3Du))
         // TODO val pitchEnvTimeKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Eu), -100..100)
-        val pitchEnvTime1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Fu))
-        val pitchEnvTime2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x40u))
-        val pitchEnvTime3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x41u))
-        val pitchEnvTime4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x42u))
-        val pitchEnvLevel0 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x43u))
-        val pitchEnvLevel1 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x44u))
-        val pitchEnvLevel2 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x45u))
-        val pitchEnvLevel3 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x46u))
-        val pitchEnvLevel4 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x47u))
+        val pitchEnvTime1 = UByteField(deviceId, address.offsetBy(lsb = 0x3Fu))
+        val pitchEnvTime2 = UByteField(deviceId, address.offsetBy(lsb = 0x40u))
+        val pitchEnvTime3 = UByteField(deviceId, address.offsetBy(lsb = 0x41u))
+        val pitchEnvTime4 = UByteField(deviceId, address.offsetBy(lsb = 0x42u))
+        val pitchEnvLevel0 = ByteField(deviceId, address.offsetBy(lsb = 0x43u))
+        val pitchEnvLevel1 = ByteField(deviceId, address.offsetBy(lsb = 0x44u))
+        val pitchEnvLevel2 = ByteField(deviceId, address.offsetBy(lsb = 0x45u))
+        val pitchEnvLevel3 = ByteField(deviceId, address.offsetBy(lsb = 0x46u))
+        val pitchEnvLevel4 = ByteField(deviceId, address.offsetBy(lsb = 0x47u))
 
         val tvfFilterType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x48u), TvfFilterType.values())
-        val tvfCutoffFrequency = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x49u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x48u), TvfFilterType.values())
+        val tvfCutoffFrequency = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
         // TODO val tvfCutoffKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Au), -200..200)
-        val tvfCutoffVelocityCurve = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..7)
-        val tvfCutoffVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Cu))
-        val tvfResonance = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Du))
-        val tvfResonanceVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu))
-        val tvfEnvDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x4Fu))
-        val tvfEnvVelocityCurve = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x50u), 0..7)
-        val tvfEnvVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x51u))
-        val tvfEnvTime1VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x52u))
-        val tvfEnvTime4VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x53u))
+        val tvfCutoffVelocityCurve = UByteField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..7)
+        val tvfCutoffVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x4Cu))
+        val tvfResonance = UByteField(deviceId, address.offsetBy(lsb = 0x4Du))
+        val tvfResonanceVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
+        val tvfEnvDepth = ByteField(deviceId, address.offsetBy(lsb = 0x4Fu))
+        val tvfEnvVelocityCurve = UByteField(deviceId, address.offsetBy(lsb = 0x50u), 0..7)
+        val tvfEnvVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x51u))
+        val tvfEnvTime1VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x52u))
+        val tvfEnvTime4VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x53u))
         // TODO val tvfEnvTimeKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x54u), -100..100)
-        val tvfEnvTime1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x55u))
-        val tvfEnvTime2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x56u))
-        val tvfEnvTime3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x57u))
-        val tvfEnvTime4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x58u))
-        val tvfEnvLevel0 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x59u))
-        val tvfEnvLevel1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Au))
-        val tvfEnvLevel2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Bu))
-        val tvfEnvLevel3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Cu))
-        val tvfEnvLevel4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Du))
+        val tvfEnvTime1 = UByteField(deviceId, address.offsetBy(lsb = 0x55u))
+        val tvfEnvTime2 = UByteField(deviceId, address.offsetBy(lsb = 0x56u))
+        val tvfEnvTime3 = UByteField(deviceId, address.offsetBy(lsb = 0x57u))
+        val tvfEnvTime4 = UByteField(deviceId, address.offsetBy(lsb = 0x58u))
+        val tvfEnvLevel0 = UByteField(deviceId, address.offsetBy(lsb = 0x59u))
+        val tvfEnvLevel1 = UByteField(deviceId, address.offsetBy(lsb = 0x5Au))
+        val tvfEnvLevel2 = UByteField(deviceId, address.offsetBy(lsb = 0x5Bu))
+        val tvfEnvLevel3 = UByteField(deviceId, address.offsetBy(lsb = 0x5Cu))
+        val tvfEnvLevel4 = UByteField(deviceId, address.offsetBy(lsb = 0x5Du))
 
         // TODO val biasLevel = SignedValueField(deviceId, address.offsetBy(lsb = 0x5Eu), -100..100)
-        val biasPosition = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x5Fu))
+        val biasPosition = UByteField(deviceId, address.offsetBy(lsb = 0x5Fu))
         val biasDirection =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x60u), BiasDirection.values())
-        val tvaLevelVelocityCurve = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x61u), 0..7)
-        val tvaLevelVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x62u))
-        val tvaEnvTime1VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x63u))
-        val tvaEnvTime4VelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x64u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x60u), BiasDirection.values())
+        val tvaLevelVelocityCurve = UByteField(deviceId, address.offsetBy(lsb = 0x61u), 0..7)
+        val tvaLevelVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x62u))
+        val tvaEnvTime1VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x63u))
+        val tvaEnvTime4VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x64u))
         // TODO val tvaEnvTimeKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x65u), -100.100)
-        val tvaEnvTime1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x66u))
-        val tvaEnvTime2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x67u))
-        val tvaEnvTime3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x68u))
-        val tvaEnvTime4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x69u))
-        val tvaEnvLevel1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Au))
-        val tvaEnvLevel2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Bu))
-        val tvaEnvLevel3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Cu))
+        val tvaEnvTime1 = UByteField(deviceId, address.offsetBy(lsb = 0x66u))
+        val tvaEnvTime2 = UByteField(deviceId, address.offsetBy(lsb = 0x67u))
+        val tvaEnvTime3 = UByteField(deviceId, address.offsetBy(lsb = 0x68u))
+        val tvaEnvTime4 = UByteField(deviceId, address.offsetBy(lsb = 0x69u))
+        val tvaEnvLevel1 = UByteField(deviceId, address.offsetBy(lsb = 0x6Au))
+        val tvaEnvLevel2 = UByteField(deviceId, address.offsetBy(lsb = 0x6Bu))
+        val tvaEnvLevel3 = UByteField(deviceId, address.offsetBy(lsb = 0x6Cu))
 
         val lfo1WaveForm =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x6Du), LfoWaveForm.values())
-        val lfo1Rate = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x6Eu), 0..149)
-        val lfo1Offset = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x70u), LfoOffset.values())
-        val lfo1RateDetune = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x71u))
-        val lfo1DelayTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x72u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x6Du), LfoWaveForm.values())
+        val lfo1Rate = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x6Eu), 0..149)
+        val lfo1Offset = EnumField(deviceId, address.offsetBy(lsb = 0x70u), LfoOffset.values())
+        val lfo1RateDetune = UByteField(deviceId, address.offsetBy(lsb = 0x71u))
+        val lfo1DelayTime = UByteField(deviceId, address.offsetBy(lsb = 0x72u))
         // TODO val lfo1Keyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x73u), -100..100)
         val lfo1FadeMode =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x74u), LfoFadeMode.values())
-        val lfo1FadeTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x75u))
-        val lfo1KeyTrigger = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x76u))
-        val lfo1PitchDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x77u))
-        val lfo1TvfDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x78u))
-        val lfo1TvaDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x79u))
-        val lfo1PanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x7Au))
+            EnumField(deviceId, address.offsetBy(lsb = 0x74u), LfoFadeMode.values())
+        val lfo1FadeTime = UByteField(deviceId, address.offsetBy(lsb = 0x75u))
+        val lfo1KeyTrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x76u))
+        val lfo1PitchDepth = ByteField(deviceId, address.offsetBy(lsb = 0x77u))
+        val lfo1TvfDepth = ByteField(deviceId, address.offsetBy(lsb = 0x78u))
+        val lfo1TvaDepth = ByteField(deviceId, address.offsetBy(lsb = 0x79u))
+        val lfo1PanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x7Au))
 
         val lfo2WaveForm =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x7Bu), LfoWaveForm.values())
-        val lfo2Rate = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x7Cu), 0..149)
-        val lfo2Offset = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x7Eu), LfoOffset.values())
-        val lfo2RateDetune = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x7Fu))
-        val lfo2DelayTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x00u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x7Bu), LfoWaveForm.values())
+        val lfo2Rate = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x7Cu), 0..149)
+        val lfo2Offset = EnumField(deviceId, address.offsetBy(lsb = 0x7Eu), LfoOffset.values())
+        val lfo2RateDetune = UByteField(deviceId, address.offsetBy(lsb = 0x7Fu))
+        val lfo2DelayTime = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x00u))
         // TODO val lfo2Keyfollow = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u), -100..100)
-        val lfo2FadeMode = Integra7FieldType.EnumValueField(
+        val lfo2FadeMode = EnumField(
             deviceId,
             address.offsetBy(mlsb = 0x01u, lsb = 0x02u),
             LfoFadeMode.values()
         )
-        val lfo2FadeTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x03u))
-        val lfo2KeyTrigger = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x04u))
-        val lfo2PitchDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
-        val lfo2TvfDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u))
-        val lfo2TvaDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
-        val lfo2PanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x08u))
+        val lfo2FadeTime = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x03u))
+        val lfo2KeyTrigger = BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x04u))
+        val lfo2PitchDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
+        val lfo2TvfDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u))
+        val lfo2TvaDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
+        val lfo2PanDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x08u))
 
         val lfoStepType =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..1)
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..1)
         val lfoStep1 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au), -36..36)
         val lfoStep2 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -36..36)
         val lfoStep3 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -36..36)
         val lfoStep4 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -36..36)
         val lfoStep5 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu), -36..36)
         val lfoStep6 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), -36..36)
         val lfoStep7 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u), -36..36)
         val lfoStep8 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u), -36..36)
         val lfoStep9 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x12u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x12u), -36..36)
         val lfoStep10 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u), -36..36)
         val lfoStep11 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x14u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x14u), -36..36)
         val lfoStep12 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -36..36)
         val lfoStep13 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u), -36..36)
         val lfoStep14 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u), -36..36)
         val lfoStep15 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u), -36..36)
         val lfoStep16 =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u), -36..36)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u), -36..36)
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -1642,11 +1642,11 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmSynthToneCommon2>() {
         override val size = Integra7Size(0x3Cu.toUInt7UsingValue())
 
-        val toneCategory = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
-        val undocumented = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x11u), 0..255)
-        val phraseOctaveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x13u), -3..3)
-        val tfxSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x33u))
-        val phraseNmber = Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x38u), 0..65535)
+        val toneCategory = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
+        val undocumented = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x11u), 0..255)
+        val phraseOctaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -3..3)
+        val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x33u))
+        val phraseNmber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x38u), 0..65535)
 
 
         override fun interpret(
@@ -1703,36 +1703,36 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalSynthToneCommon>() {
         override val size = Integra7Size(0x40u)
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, length = 0x0C)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
-        val portamentoSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x12u))
-        val portamentoTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u))
-        val monoSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x14u))
-        val octaveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x15u), -3..3)
-        val pithBendRangeUp = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x16u), 0..24)
-        val pitchBendRangeDown = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x17u), 0..24)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
+        val portamentoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x12u))
+        val portamentoTime = UByteField(deviceId, address.offsetBy(lsb = 0x13u))
+        val monoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x14u))
+        val octaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x15u), -3..3)
+        val pithBendRangeUp = UByteField(deviceId, address.offsetBy(lsb = 0x16u), 0..24)
+        val pitchBendRangeDown = UByteField(deviceId, address.offsetBy(lsb = 0x17u), 0..24)
 
-        val partial1Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x19u))
-        val partial1Select = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Au))
-        val partial2Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Bu))
-        val partial2Select = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Cu))
-        val partial3Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Du))
-        val partial3Select = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Eu))
+        val partial1Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x19u))
+        val partial1Select = BooleanField(deviceId, address.offsetBy(lsb = 0x1Au))
+        val partial2Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Bu))
+        val partial2Select = BooleanField(deviceId, address.offsetBy(lsb = 0x1Cu))
+        val partial3Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Du))
+        val partial3Select = BooleanField(deviceId, address.offsetBy(lsb = 0x1Eu))
 
-        val ringSwitch = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Fu), RingSwitch.values())
-        val tfxSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x20u))
+        val ringSwitch = EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), RingSwitch.values())
+        val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x20u))
 
-        val unisonSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Eu))
+        val unisonSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x2Eu))
         val portamentoMode =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x31u), PortamentoMode.values())
-        val legatoSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x32u))
-        val analogFeel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x34u))
-        val waveShape = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x35u))
-        val toneCategory = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x36u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x31u), PortamentoMode.values())
+        val legatoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x32u))
+        val analogFeel = UByteField(deviceId, address.offsetBy(lsb = 0x34u))
+        val waveShape = UByteField(deviceId, address.offsetBy(lsb = 0x35u))
+        val toneCategory = UByteField(deviceId, address.offsetBy(lsb = 0x36u))
         val phraseNumber =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x37u), 0..65535)
-        val phraseOctaveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu), -3..3)
-        val unisonSize = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), UnisonSize.values())
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x37u), 0..65535)
+        val phraseOctaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x3Bu), -3..3)
+        val unisonSize = EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), UnisonSize.values())
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -1778,70 +1778,70 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x3Du)
 
         val oscWaveForm =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x00u), SnSWaveForm.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x00u), SnSWaveForm.values())
         val oscWaveFormVariation =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x01u), SnsWaveFormVariation.values())
-        val oscPitch = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x03u), -24..24)
-        val oscDetune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x04u), -50..50)
-        val oscPulseWidthModulationDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
-        val oscPulseWidth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
-        val oscPitchAttackTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
-        val oscPitchEnvDecay = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x08u))
-        val oscPitchEnvDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x09u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x01u), SnsWaveFormVariation.values())
+        val oscPitch = ByteField(deviceId, address.offsetBy(lsb = 0x03u), -24..24)
+        val oscDetune = ByteField(deviceId, address.offsetBy(lsb = 0x04u), -50..50)
+        val oscPulseWidthModulationDepth = UByteField(deviceId, address.offsetBy(lsb = 0x05u))
+        val oscPulseWidth = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
+        val oscPitchAttackTime = UByteField(deviceId, address.offsetBy(lsb = 0x07u))
+        val oscPitchEnvDecay = UByteField(deviceId, address.offsetBy(lsb = 0x08u))
+        val oscPitchEnvDepth = ByteField(deviceId, address.offsetBy(lsb = 0x09u))
 
         val filterMode =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Au), SnsFilterMode.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Au), SnsFilterMode.values())
         val filterSlope =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Bu), SnsFilterSlope.values())
-        val filterCutoff = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), SnsFilterSlope.values())
+        val filterCutoff = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 //        val filterCutoffKeyflow = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), -100..100)
-        val filterEnvVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val filterResonance = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val filterEnvAttackTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
-        val filterEnvDecayTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
-        val filterEnvSustainLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x12u))
-        val filterEnvReleaseTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u))
-        val filterEnvDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x14u))
-        val ampLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x15u))
-        val ampVelocitySens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x16u))
-        val ampEnvAttackTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x17u))
-        val ampEnvDecayTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x18u))
-        val ampEnvSustainLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x19u))
-        val ampEnvReleaseTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Au))
-        val ampPan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu), -64..63)
+        val filterEnvVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val filterResonance = UByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val filterEnvAttackTime = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
+        val filterEnvDecayTime = UByteField(deviceId, address.offsetBy(lsb = 0x11u))
+        val filterEnvSustainLevel = UByteField(deviceId, address.offsetBy(lsb = 0x12u))
+        val filterEnvReleaseTime = UByteField(deviceId, address.offsetBy(lsb = 0x13u))
+        val filterEnvDepth = ByteField(deviceId, address.offsetBy(lsb = 0x14u))
+        val ampLevel = UByteField(deviceId, address.offsetBy(lsb = 0x15u))
+        val ampVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x16u))
+        val ampEnvAttackTime = UByteField(deviceId, address.offsetBy(lsb = 0x17u))
+        val ampEnvDecayTime = UByteField(deviceId, address.offsetBy(lsb = 0x18u))
+        val ampEnvSustainLevel = UByteField(deviceId, address.offsetBy(lsb = 0x19u))
+        val ampEnvReleaseTime = UByteField(deviceId, address.offsetBy(lsb = 0x1Au))
+        val ampPan = ByteField(deviceId, address.offsetBy(lsb = 0x1Bu), -64..63)
 
-        val lfoShape = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Cu), SnsLfoShape.values())
-        val lfoRate = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Du))
-        val lfoTempoSyncSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Eu))
+        val lfoShape = EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), SnsLfoShape.values())
+        val lfoRate = UByteField(deviceId, address.offsetBy(lsb = 0x1Du))
+        val lfoTempoSyncSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Eu))
         val lfoTempoSyncNote =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x1Fu), SnsLfoTempoSyncNote.values())
-        val lfoFadeTime = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x20u))
-        val lfoKeyTrigger = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x21u))
-        val lfoPitchDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x22u))
-        val lfoFilterDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x23u))
-        val lfoAmpDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x24u))
-        val lfoPanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x25u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), SnsLfoTempoSyncNote.values())
+        val lfoFadeTime = UByteField(deviceId, address.offsetBy(lsb = 0x20u))
+        val lfoKeyTrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x21u))
+        val lfoPitchDepth = ByteField(deviceId, address.offsetBy(lsb = 0x22u))
+        val lfoFilterDepth = ByteField(deviceId, address.offsetBy(lsb = 0x23u))
+        val lfoAmpDepth = ByteField(deviceId, address.offsetBy(lsb = 0x24u))
+        val lfoPanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x25u))
 
         val modulationShape =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x26u), SnsLfoShape.values())
-        val modulationLfoRate = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x27u))
-        val modulationLfoTempoSyncSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x28u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x26u), SnsLfoShape.values())
+        val modulationLfoRate = UByteField(deviceId, address.offsetBy(lsb = 0x27u))
+        val modulationLfoTempoSyncSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x28u))
         val modulationLfoTempoSyncNote =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x29u), SnsLfoTempoSyncNote.values())
-        val oscPulseWidthShift = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Au))
-        val modulationLfoPitchDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Cu))
-        val modulationLfoFilterDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Du))
-        val modulationLfoAmpDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Eu))
-        val modulationLfoPanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x2Fu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x29u), SnsLfoTempoSyncNote.values())
+        val oscPulseWidthShift = UByteField(deviceId, address.offsetBy(lsb = 0x2Au))
+        val modulationLfoPitchDepth = ByteField(deviceId, address.offsetBy(lsb = 0x2Cu))
+        val modulationLfoFilterDepth = ByteField(deviceId, address.offsetBy(lsb = 0x2Du))
+        val modulationLfoAmpDepth = ByteField(deviceId, address.offsetBy(lsb = 0x2Eu))
+        val modulationLfoPanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x2Fu))
 
-        val cutoffAftertouchSens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x30u))
-        val levelAftertouchSens = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x31u))
+        val cutoffAftertouchSens = ByteField(deviceId, address.offsetBy(lsb = 0x30u))
+        val levelAftertouchSens = ByteField(deviceId, address.offsetBy(lsb = 0x31u))
 
-        val waveGain = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
-        val waveNumber = Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u), 0..16384)
-        val hpfCutoff = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x39u))
-        val superSawDetune = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Au))
-        val modulationLfoRateControl = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val waveGain = EnumField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
+        val waveNumber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u), 0..16384)
+        val hpfCutoff = UByteField(deviceId, address.offsetBy(lsb = 0x39u))
+        val superSawDetune = UByteField(deviceId, address.offsetBy(lsb = 0x3Au))
+        val modulationLfoRateControl = ByteField(deviceId, address.offsetBy(lsb = 0x3Bu))
 //        val ampLevelKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Cu), 100..100)
 
         override fun interpret(
@@ -1954,30 +1954,30 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalAcousticToneCommon>() {
         override val size = Integra7Size(0x46u)
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, length = 0x0C)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
 
-        val monoPoly = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x11u), MonoPoly.values())
-        val portamentoTimeOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
-        val cutoffOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x13u), -64..63)
-        val resonanceOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x14u), -64..63)
-        val attackTimeOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x15u), -64..63)
-        val releaseTimeOffset = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x16u), -64..63)
-        val vibratoRate = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x17u), -64..63)
-        val vibratoDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x18u), -64..63)
-        val vibratorDelay = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x19u), -64..63)
-        val octaveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x1Au), -3..3)
-        val category = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu))
-        val phraseNumber = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x1Cu), 0..255)
-        val phraseOctaveShift = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x1Eu), -3..3)
+        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x11u), MonoPoly.values())
+        val portamentoTimeOffset = ByteField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
+        val cutoffOffset = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -64..63)
+        val resonanceOffset = ByteField(deviceId, address.offsetBy(lsb = 0x14u), -64..63)
+        val attackTimeOffset = ByteField(deviceId, address.offsetBy(lsb = 0x15u), -64..63)
+        val releaseTimeOffset = ByteField(deviceId, address.offsetBy(lsb = 0x16u), -64..63)
+        val vibratoRate = ByteField(deviceId, address.offsetBy(lsb = 0x17u), -64..63)
+        val vibratoDepth = ByteField(deviceId, address.offsetBy(lsb = 0x18u), -64..63)
+        val vibratorDelay = ByteField(deviceId, address.offsetBy(lsb = 0x19u), -64..63)
+        val octaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x1Au), -3..3)
+        val category = UByteField(deviceId, address.offsetBy(lsb = 0x1Bu))
+        val phraseNumber = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x1Cu), 0..255)
+        val phraseOctaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x1Eu), -3..3)
 
-        val tfxSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Fu))
+        val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Fu))
 
-        val instrumentVariation = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x20u))
-        val instrumentNumber = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x21u))
+        val instrumentVariation = UByteField(deviceId, address.offsetBy(lsb = 0x20u))
+        val instrumentNumber = UByteField(deviceId, address.offsetBy(lsb = 0x21u))
 
         val modifyParameters = IntRange(0, 31).map {
-            Integra7FieldType.UnsignedValueField(
+            UByteField(
                 deviceId,
                 address.offsetBy(lsb = 0x22u).offsetBy(lsb = 0x01u, factor = it)
             )
@@ -2367,11 +2367,11 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalDrumKitCommon>() {
         override val size = Integra7Size(0x46u)
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, length = 0x0C)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u))
-        val ambienceLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
-        val phraseNo = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x12u))
-        val tfx = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x13u))
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
+        val ambienceLevel = UByteField(deviceId, address.offsetBy(lsb = 0x11u))
+        val phraseNo = UByteField(deviceId, address.offsetBy(lsb = 0x12u))
+        val tfx = BooleanField(deviceId, address.offsetBy(lsb = 0x13u))
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -2393,227 +2393,227 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<SupernaturalDrumKitCommonCompEq>() {
         override val size = Integra7Size(0x54u)
 
-        val comp1Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x00u))
-        val comp1AttackTime = Integra7FieldType.EnumValueField(
+        val comp1Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
+        val comp1AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x01u),
             SupernaturalDrumAttackTime.values()
         )
-        val comp1ReleaseTime = Integra7FieldType.EnumValueField(
+        val comp1ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x02u),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp1Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x03u))
+        val comp1Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x03u))
         val comp1Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumRatio.values())
-        val comp1OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x05u), 0..24)
-        val eq1Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x06u))
-        val eq1LowFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumRatio.values())
+        val comp1OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x05u), 0..24)
+        val eq1Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x06u))
+        val eq1LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x07u),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq1LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x08u), 0..30) // - 15
-        val eq1MidFrequency = Integra7FieldType.EnumValueField(
+        val eq1LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x08u), 0..30) // - 15
+        val eq1MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x09u),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq1MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Au), 0..30) // - 15
+        val eq1MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x0Au), 0..30) // - 15
         val eq1MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Bu), SupernaturalDrumMidQ.values())
-        val eq1HighFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), SupernaturalDrumMidQ.values())
+        val eq1HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x0Cu),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq1HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), 0..30) // - 15
+        val eq1HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x0Du), 0..30) // - 15
 
-        val comp2Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val comp2AttackTime = Integra7FieldType.EnumValueField(
+        val comp2Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val comp2AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x0Fu),
             SupernaturalDrumAttackTime.values()
         )
-        val comp2ReleaseTime = Integra7FieldType.EnumValueField(
+        val comp2ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x10u),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp2Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
+        val comp2Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x11u))
         val comp2Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x12u), SupernaturalDrumRatio.values())
-        val comp2OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u), 0..24)
-        val eq2Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x14u))
-        val eq2LowFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x12u), SupernaturalDrumRatio.values())
+        val comp2OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x13u), 0..24)
+        val eq2Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x14u))
+        val eq2LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x15u),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq2LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x16u), 0..30) // - 15
-        val eq2MidFrequency = Integra7FieldType.EnumValueField(
+        val eq2LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x16u), 0..30) // - 15
+        val eq2MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x17u),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq2MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x18u), 0..30) // - 15
+        val eq2MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x18u), 0..30) // - 15
         val eq2MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x19u), SupernaturalDrumMidQ.values())
-        val eq2HighFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x19u), SupernaturalDrumMidQ.values())
+        val eq2HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Au),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq2HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Bu), 0..30) // - 15
+        val eq2HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x1Bu), 0..30) // - 15
 
-        val comp3Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Cu))
-        val comp3AttackTime = Integra7FieldType.EnumValueField(
+        val comp3Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Cu))
+        val comp3AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Du),
             SupernaturalDrumAttackTime.values()
         )
-        val comp3ReleaseTime = Integra7FieldType.EnumValueField(
+        val comp3ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Eu),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp3Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Fu))
+        val comp3Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x1Fu))
         val comp3Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), SupernaturalDrumRatio.values())
-        val comp3OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x21u), 0..24)
-        val eq3Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x22u))
-        val eq3LowFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x20u), SupernaturalDrumRatio.values())
+        val comp3OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x21u), 0..24)
+        val eq3Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x22u))
+        val eq3LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x23u),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq3LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x24u), 0..30) // - 15
-        val eq3MidFrequency = Integra7FieldType.EnumValueField(
+        val eq3LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x24u), 0..30) // - 15
+        val eq3MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x25u),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq3MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x26u), 0..30) // - 15
+        val eq3MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x26u), 0..30) // - 15
         val eq3MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x27u), SupernaturalDrumMidQ.values())
-        val eq3HighFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x27u), SupernaturalDrumMidQ.values())
+        val eq3HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x28u),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq3HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x29u), 0..30) // - 15
+        val eq3HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x29u), 0..30) // - 15
 
-        val comp4Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x2Au))
-        val comp4AttackTime = Integra7FieldType.EnumValueField(
+        val comp4Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x2Au))
+        val comp4AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x2Bu),
             SupernaturalDrumAttackTime.values()
         )
-        val comp4ReleaseTime = Integra7FieldType.EnumValueField(
+        val comp4ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x2Cu),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp4Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Du))
+        val comp4Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x2Du))
         val comp4Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Eu), SupernaturalDrumRatio.values())
-        val comp4OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x2Fu), 0..24)
-        val eq4Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x30u))
-        val eq4LowFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x2Eu), SupernaturalDrumRatio.values())
+        val comp4OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x2Fu), 0..24)
+        val eq4Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x30u))
+        val eq4LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x31u),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq4LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x32u), 0..30) // - 15
-        val eq4MidFrequency = Integra7FieldType.EnumValueField(
+        val eq4LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x32u), 0..30) // - 15
+        val eq4MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x33u),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq4MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x34u), 0..30) // - 15
+        val eq4MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x34u), 0..30) // - 15
         val eq4MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x35u), SupernaturalDrumMidQ.values())
-        val eq4HighFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x35u), SupernaturalDrumMidQ.values())
+        val eq4HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x36u),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq4HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x37u), 0..30) // - 15
+        val eq4HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x37u), 0..30) // - 15
 
-        val comp5Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x38u))
-        val comp5AttackTime = Integra7FieldType.EnumValueField(
+        val comp5Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x38u))
+        val comp5AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x39u),
             SupernaturalDrumAttackTime.values()
         )
-        val comp5ReleaseTime = Integra7FieldType.EnumValueField(
+        val comp5ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x3Au),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp5Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Bu))
+        val comp5Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x3Bu))
         val comp5Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio.values())
-        val comp5OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x3Du), 0..24)
-        val eq5Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
-        val eq5LowFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio.values())
+        val comp5OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x3Du), 0..24)
+        val eq5Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x3Eu))
+        val eq5LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x3Fu),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq5LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x40u), 0..30) // - 15
-        val eq5MidFrequency = Integra7FieldType.EnumValueField(
+        val eq5LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x40u), 0..30) // - 15
+        val eq5MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x41u),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq5MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x42u), 0..30) // - 15
+        val eq5MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x42u), 0..30) // - 15
         val eq5MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ.values())
-        val eq5HighFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ.values())
+        val eq5HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x44u),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq5HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
+        val eq5HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
 
-        val comp6Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x46u))
-        val comp6AttackTime = Integra7FieldType.EnumValueField(
+        val comp6Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x46u))
+        val comp6AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x47u),
             SupernaturalDrumAttackTime.values()
         )
-        val comp6ReleaseTime = Integra7FieldType.EnumValueField(
+        val comp6ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x48u),
             SupernaturalDrumReleaseTime.values()
         )
-        val comp6Threshold = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x49u))
+        val comp6Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
         val comp6Ratio =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x4Au), SupernaturalDrumRatio.values())
-        val comp6OutputGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..24)
-        val eq6Switch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x4Cu))
-        val eq6LowFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x4Au), SupernaturalDrumRatio.values())
+        val comp6OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..24)
+        val eq6Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Cu))
+        val eq6LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x4Du),
             SupernaturalDrumLowFrequency.values()
         )
-        val eq6LowGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..30) // - 15
-        val eq6MidFrequency = Integra7FieldType.EnumValueField(
+        val eq6LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..30) // - 15
+        val eq6MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x4Fu),
             SupernaturalDrumMidFrequency.values()
         )
-        val eq6MidGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x50u), 0..30) // - 15
+        val eq6MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x50u), 0..30) // - 15
         val eq6MidQ =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x51u), SupernaturalDrumMidQ.values())
-        val eq6HighFrequency = Integra7FieldType.EnumValueField(
+            EnumField(deviceId, address.offsetBy(lsb = 0x51u), SupernaturalDrumMidQ.values())
+        val eq6HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x52u),
             SupernaturalDrumHighFrequency.values()
         )
-        val eq6HighGain = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x53u), 0..30) // - 15
+        val eq6HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x53u), 0..30) // - 15
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -2721,27 +2721,27 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x13u)
 
         val instrumentNumber =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x00u), 0..512)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x04u))
-        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x05u))
-        val chorusSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x06u))
-        val reverbSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x07u))
-        val tune = Integra7FieldType.UnsignedMsbLsbFourNibbles(
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x00u), 0..512)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x04u))
+        val pan = ByteField(deviceId, address.offsetBy(lsb = 0x05u))
+        val chorusSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
+        val reverbSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x07u))
+        val tune = UnsignedMsbLsbFourNibbles(
             deviceId,
             address.offsetBy(lsb = 0x08u),
             8..248
         ) // TODO: convert!
-        val attack = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
-        val decay = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), -63..0)
-        val brilliance = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu), -15..12)
-        val variation = Integra7FieldType.EnumValueField(
+        val attack = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
+        val decay = ByteField(deviceId, address.offsetBy(lsb = 0x0Du), -63..0)
+        val brilliance = ByteField(deviceId, address.offsetBy(lsb = 0x0Eu), -15..12)
+        val variation = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x0Fu),
             SuperNaturalDrumToneVariation.values()
         )
-        val dynamicRange = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x10u), 0..63)
-        val stereoWidth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x11u))
-        val outputAssign = Integra7FieldType.EnumValueField(
+        val dynamicRange = UByteField(deviceId, address.offsetBy(lsb = 0x10u), 0..63)
+        val stereoWidth = UByteField(deviceId, address.offsetBy(lsb = 0x11u))
+        val outputAssign = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x12u),
             SuperNaturalDrumToneOutput.values()
@@ -2807,8 +2807,8 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmDrumKitCommon>() {
         override val size = Integra7Size(0x46u)
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, length = 0x0C)
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Cu))
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -2827,218 +2827,218 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmDrumKitPartial>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x43u.toUByte7()))
 
-        val name = Integra7FieldType.AsciiStringField(deviceId, address, length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C)
 
         val assignType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType.values())
-        val muteGroup = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), 0..31)
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType.values())
+        val muteGroup = UByteField(deviceId, address.offsetBy(lsb = 0x0Du), 0..31)
 
-        val level = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val coarseTune = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val fineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x10u), -50..50)
+        val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
+        val coarseTune = UByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
+        val fineTune = ByteField(deviceId, address.offsetBy(lsb = 0x10u), -50..50)
         val randomPitchDepth =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x11u), RandomPithDepth.values())
-        val pan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
-        val randomPanDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x13u), 0..63)
-        val alternatePanDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x14u))
-        val envMode = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x15u), EnvMode.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x11u), RandomPithDepth.values())
+        val pan = ByteField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
+        val randomPanDepth = UByteField(deviceId, address.offsetBy(lsb = 0x13u), 0..63)
+        val alternatePanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x14u))
+        val envMode = EnumField(deviceId, address.offsetBy(lsb = 0x15u), EnvMode.values())
 
-        val outputLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x16u))
-        val chorusSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x19u))
-        val reverbSendLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Au))
-        val outputAssign = Integra7FieldType.EnumValueField(
+        val outputLevel = UByteField(deviceId, address.offsetBy(lsb = 0x16u))
+        val chorusSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x19u))
+        val reverbSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x1Au))
+        val outputAssign = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Bu),
             SuperNaturalDrumToneOutput.values()
         )
 
-        val pitchBendRange = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x1Cu), 0..48)
-        val receiveExpression = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Du))
-        val receiveHold1 = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x1Eu))
+        val pitchBendRange = UByteField(deviceId, address.offsetBy(lsb = 0x1Cu), 0..48)
+        val receiveExpression = BooleanField(deviceId, address.offsetBy(lsb = 0x1Du))
+        val receiveHold1 = BooleanField(deviceId, address.offsetBy(lsb = 0x1Eu))
 
         val wmtVelocityControl =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x20u), WmtVelocityControl.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x20u), WmtVelocityControl.values())
 
-        val wmt1WaveSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x21u))
+        val wmt1WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x21u))
         val wmt1WaveGroupType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x22u), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x22u), WaveGroupType.values())
         val wmt1WaveGroupId =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x23u), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x23u), 0..16384)
         val wmt1WaveNumberL =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x27u), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x27u), 0..16384)
         val wmt1WaveNumberR =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Bu), 0..16384)
-        val wmt1WaveGain = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x2Fu), WaveGain.values())
-        val wmt1WaveFxmSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x30u))
-        val wmt1WaveFxmColor = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x31u), 0..3)
-        val wmt1WaveFxmDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x32u), 0..16)
-        val wmt1WaveTempoSync = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x33u))
-        val wmt1WaveCoarseTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x34u), -48..48)
-        val wmt1WaveFineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x35u), -50..50)
-        val wmt1WavePan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x36u), -64..63)
-        val wmt1WaveRandomPanSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x37u))
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Bu), 0..16384)
+        val wmt1WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x2Fu), WaveGain.values())
+        val wmt1WaveFxmSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x30u))
+        val wmt1WaveFxmColor = UByteField(deviceId, address.offsetBy(lsb = 0x31u), 0..3)
+        val wmt1WaveFxmDepth = UByteField(deviceId, address.offsetBy(lsb = 0x32u), 0..16)
+        val wmt1WaveTempoSync = BooleanField(deviceId, address.offsetBy(lsb = 0x33u))
+        val wmt1WaveCoarseTune = ByteField(deviceId, address.offsetBy(lsb = 0x34u), -48..48)
+        val wmt1WaveFineTune = ByteField(deviceId, address.offsetBy(lsb = 0x35u), -50..50)
+        val wmt1WavePan = ByteField(deviceId, address.offsetBy(lsb = 0x36u), -64..63)
+        val wmt1WaveRandomPanSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x37u))
         val wmt1WaveAlternatePanSwitch =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x38u), OffOnReverse.values())
-        val wmt1WaveLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x39u))
-        val wmt1VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Au))
-        val wmt1VelocityFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Cu))
+            EnumField(deviceId, address.offsetBy(lsb = 0x38u), OffOnReverse.values())
+        val wmt1WaveLevel = UByteField(deviceId, address.offsetBy(lsb = 0x39u))
+        val wmt1VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Au))
+        val wmt1VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Cu))
 
-        val wmt2WaveSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x3Eu))
+        val wmt2WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x3Eu))
         val wmt2WaveGroupType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x3Fu), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Fu), WaveGroupType.values())
         val wmt2WaveGroupId =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x40u), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x40u), 0..16384)
         val wmt2WaveNumberL =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x44u), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x44u), 0..16384)
         val wmt2WaveNumberR =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x48u), 0..16384)
-        val wmt2WaveGain = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x4Cu), WaveGain.values())
-        val wmt2WaveFxmSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x4Du))
-        val wmt2WaveFxmColor = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..3)
-        val wmt2WaveFxmDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x4Fu), 0..16)
-        val wmt2WaveTempoSync = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x50u))
-        val wmt2WaveCoarseTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x51u), -48..48)
-        val wmt2WaveFineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x52u), -50..50)
-        val wmt2WavePan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x53u), -64..63)
-        val wmt2WaveRandomPanSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x54u))
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x48u), 0..16384)
+        val wmt2WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x4Cu), WaveGain.values())
+        val wmt2WaveFxmSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Du))
+        val wmt2WaveFxmColor = UByteField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..3)
+        val wmt2WaveFxmDepth = UByteField(deviceId, address.offsetBy(lsb = 0x4Fu), 0..16)
+        val wmt2WaveTempoSync = BooleanField(deviceId, address.offsetBy(lsb = 0x50u))
+        val wmt2WaveCoarseTune = ByteField(deviceId, address.offsetBy(lsb = 0x51u), -48..48)
+        val wmt2WaveFineTune = ByteField(deviceId, address.offsetBy(lsb = 0x52u), -50..50)
+        val wmt2WavePan = ByteField(deviceId, address.offsetBy(lsb = 0x53u), -64..63)
+        val wmt2WaveRandomPanSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x54u))
         val wmt2WaveAlternatePanSwitch =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x55u), OffOnReverse.values())
-        val wmt2WaveLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x56u))
-        val wmt2VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x57u))
-        val wmt2VelocityFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x59u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x55u), OffOnReverse.values())
+        val wmt2WaveLevel = UByteField(deviceId, address.offsetBy(lsb = 0x56u))
+        val wmt2VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x57u))
+        val wmt2VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x59u))
 
-        val wmt3WaveSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x5Bu))
+        val wmt3WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x5Bu))
         val wmt3WaveGroupType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x5Cu), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x5Cu), WaveGroupType.values())
         val wmt3WaveGroupId =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du), 0..16384)
         val wmt3WaveNumberL =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u), 0..16384)
         val wmt3WaveNumberR =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u), 0..16384)
-        val wmt3WaveGain = Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x69u), WaveGain.values())
-        val wmt3WaveFxmSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x6Au))
-        val wmt3WaveFxmColor = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Bu), 0..3)
-        val wmt3WaveFxmDepth = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x6Cu), 0..16)
-        val wmt3WaveTempoSync = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x6Du))
-        val wmt3WaveCoarseTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x6Eu), -48..48)
-        val wmt3WaveFineTune = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x6Fu), -50..50)
-        val wmt3WavePan = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(lsb = 0x70u), -64..63)
-        val wmt3WaveRandomPanSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x71u))
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u), 0..16384)
+        val wmt3WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x69u), WaveGain.values())
+        val wmt3WaveFxmSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x6Au))
+        val wmt3WaveFxmColor = UByteField(deviceId, address.offsetBy(lsb = 0x6Bu), 0..3)
+        val wmt3WaveFxmDepth = UByteField(deviceId, address.offsetBy(lsb = 0x6Cu), 0..16)
+        val wmt3WaveTempoSync = BooleanField(deviceId, address.offsetBy(lsb = 0x6Du))
+        val wmt3WaveCoarseTune = ByteField(deviceId, address.offsetBy(lsb = 0x6Eu), -48..48)
+        val wmt3WaveFineTune = ByteField(deviceId, address.offsetBy(lsb = 0x6Fu), -50..50)
+        val wmt3WavePan = ByteField(deviceId, address.offsetBy(lsb = 0x70u), -64..63)
+        val wmt3WaveRandomPanSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x71u))
         val wmt3WaveAlternatePanSwitch =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x72u), OffOnReverse.values())
-        val wmt3WaveLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(lsb = 0x73u))
-        val wmt3VelocityRange = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x74u))
-        val wmt3VelocityFadeWidth = Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x76u))
+            EnumField(deviceId, address.offsetBy(lsb = 0x72u), OffOnReverse.values())
+        val wmt3WaveLevel = UByteField(deviceId, address.offsetBy(lsb = 0x73u))
+        val wmt3VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x74u))
+        val wmt3VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x76u))
 
-        val wmt4WaveSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x78u))
+        val wmt4WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x78u))
         val wmt4WaveGroupType =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(lsb = 0x79u), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x79u), WaveGroupType.values())
         val wmt4WaveGroupId =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Au), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Au), 0..16384)
         val wmt4WaveNumberL =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Eu), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Eu), 0..16384)
         val wmt4WaveNumberR =
-            Integra7FieldType.UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x02u), 0..16384)
+            UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x02u), 0..16384)
         val wmt4WaveGain =
-            Integra7FieldType.EnumValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u), WaveGain.values())
+            EnumField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u), WaveGain.values())
         val wmt4WaveFxmSwitch =
-            Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
+            BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
         val wmt4WaveFxmColor =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x08u), 0..3)
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x08u), 0..3)
         val wmt4WaveFxmDepth =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..16)
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..16)
         val wmt4WaveTempoSync =
-            Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au))
+            BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au))
         val wmt4WaveCoarseTune =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -48..48)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -48..48)
         val wmt4WaveFineTune =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -50..50)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -50..50)
         val wmt4WavePan =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -64..63)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -64..63)
         val wmt4WaveRandomPanSwitch =
-            Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu))
-        val wmt4WaveAlternatePanSwitch = Integra7FieldType.EnumValueField(
+            BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu))
+        val wmt4WaveAlternatePanSwitch = EnumField(
             deviceId,
             address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu),
             OffOnReverse.values()
         )
-        val wmt4WaveLevel = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u))
+        val wmt4WaveLevel = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u))
         val wmt4VelocityRange =
-            Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u))
+            UnsignedLsbMsbBytes(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u))
         val wmt4VelocityFadeWidth =
-            Integra7FieldType.UnsignedLsbMsbBytes(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u))
+            UnsignedLsbMsbBytes(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u))
 
         val pitchEnvDepth =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -12..12)
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -12..12)
         val pitchEnvVelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u))
         val pitchEnvTime1VelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u))
         val pitchEnvTime4VelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u))
 
-        val pitchEnvTime1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u))
-        val pitchEnvTime2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Au))
-        val pitchEnvTime3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Bu))
-        val pitchEnvTime4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Cu))
+        val pitchEnvTime1 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u))
+        val pitchEnvTime2 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Au))
+        val pitchEnvTime3 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Bu))
+        val pitchEnvTime4 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Cu))
 
-        val pitchEnvLevel0 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Du))
-        val pitchEnvLevel1 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Eu))
-        val pitchEnvLevel2 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Fu))
-        val pitchEnvLevel3 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x20u))
-        val pitchEnvLevel4 = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x21u))
+        val pitchEnvLevel0 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Du))
+        val pitchEnvLevel1 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Eu))
+        val pitchEnvLevel2 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x1Fu))
+        val pitchEnvLevel3 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x20u))
+        val pitchEnvLevel4 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x21u))
 
-        val tvfFilterType = Integra7FieldType.EnumValueField(
+        val tvfFilterType = EnumField(
             deviceId,
             address.offsetBy(mlsb = 0x01u, lsb = 0x22u),
             TvfFilterType.values()
         )
         val tvfCutoffFrequency =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x23u))
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x23u))
         val tvfCutoffVelocityCurve =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x24u), 0..7)
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x24u), 0..7)
         val tvfCutoffVelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x25u))
-        val tvfResonance = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x26u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x25u))
+        val tvfResonance = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x26u))
         val tvfResonanceVelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x27u))
-        val tvfEnvDepth = Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x28u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x27u))
+        val tvfEnvDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x28u))
         val tvfEnvVelocityCurveType =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x29u), 0..7)
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x29u), 0..7)
         val tvfEnvVelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Au))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Au))
         val tvfEnvTime1VelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Bu))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Bu))
         val tvfEnvTime4VelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Cu))
-        val tvfEnvTime1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Du))
-        val tvfEnvTime2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Eu))
-        val tvfEnvTime3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Fu))
-        val tvfEnvTime4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x30u))
-        val tvfEnvLevel0 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x31u))
-        val tvfEnvLevel1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x32u))
-        val tvfEnvLevel2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x33u))
-        val tvfEnvLevel3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x34u))
-        val tvfEnvLevel4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x35u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Cu))
+        val tvfEnvTime1 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Du))
+        val tvfEnvTime2 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Eu))
+        val tvfEnvTime3 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x2Fu))
+        val tvfEnvTime4 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x30u))
+        val tvfEnvLevel0 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x31u))
+        val tvfEnvLevel1 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x32u))
+        val tvfEnvLevel2 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x33u))
+        val tvfEnvLevel3 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x34u))
+        val tvfEnvLevel4 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x35u))
 
         val tvaLevelVelocityCurve =
-            Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x36u), 0..7)
+            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x36u), 0..7)
         val tvaLevelVelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x37u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x37u))
         val tvaEnvTime1VelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x38u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x38u))
         val tvaEnvTime4VelocitySens =
-            Integra7FieldType.SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x39u))
-        val tvaEnvTime1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Au))
-        val tvaEnvTime2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Bu))
-        val tvaEnvTime3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Cu))
-        val tvaEnvTime4 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Du))
-        val tvaEnvLevel1 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Eu))
-        val tvaEnvLevel2 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Fu))
-        val tvaEnvLevel3 = Integra7FieldType.UnsignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x40u))
+            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x39u))
+        val tvaEnvTime1 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Au))
+        val tvaEnvTime2 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Bu))
+        val tvaEnvTime3 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Cu))
+        val tvaEnvTime4 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Du))
+        val tvaEnvLevel1 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Eu))
+        val tvaEnvLevel2 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x3Fu))
+        val tvaEnvLevel3 = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x40u))
 
-        val oneShotMode = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x41u))
+        val oneShotMode = BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x41u))
 
         override fun interpret(
             startAddress: Integra7Address,
@@ -3281,8 +3281,8 @@ sealed class IntegraToneBuilder<T: IntegraTone>: Integra7MemoryIO<T>() {
         Integra7MemoryIO<PcmDrumKitCommon2>() {
         override val size = Integra7Size(0x32u)
 
-        val phraseNumber = Integra7FieldType.UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x10u))
-        val tfxSwitch = Integra7FieldType.BooleanValueField(deviceId, address.offsetBy(lsb = 0x31u))
+        val phraseNumber = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x10u))
+        val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x31u))
 
         override fun interpret(
             startAddress: Integra7Address,

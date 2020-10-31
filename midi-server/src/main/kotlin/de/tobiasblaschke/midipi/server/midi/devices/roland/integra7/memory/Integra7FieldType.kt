@@ -26,7 +26,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
      * Read one bytes: 0bbbbbbb
      */
     @ExperimentalUnsignedTypes
-    data class UnsignedValueField(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = 0..127): Integra7FieldType<Int>() {
+    data class UByteField(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = 0..127): Integra7FieldType<Int>() {
         override val size = Integra7Size.ONE_BYTE
 
         init {
@@ -68,7 +68,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
      * Read one bytes: 0bbbbbbb and look it up in an enum
      */
     @ExperimentalUnsignedTypes
-    data class EnumValueField<T: Enum<T>>(override val deviceId: DeviceId, override val address: Integra7Address, val getter: (Int) -> T): Integra7FieldType<T>() {
+    data class EnumField<T: Enum<T>>(override val deviceId: DeviceId, override val address: Integra7Address, val getter: (Int) -> T): Integra7FieldType<T>() {
         @Deprecated(message = "Use other constructor")
         constructor(deviceId: DeviceId, address: Integra7Address, values: Array<T>)
             :this(deviceId, address, { elem -> values[elem] })
@@ -156,7 +156,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
      * Read one bytes: 0bbbbbbb
      */
     @ExperimentalUnsignedTypes
-    data class SignedValueField(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = -63..63): Integra7FieldType<Int>() {
+    data class ByteField(override val deviceId: DeviceId, override val address: Integra7Address, val range: IntRange = -63..63): Integra7FieldType<Int>() {
         override val size = Integra7Size.ONE_BYTE
 
         init {
@@ -198,7 +198,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
      * Read one byte: 0000000b
      */
     @ExperimentalUnsignedTypes
-    data class BooleanValueField(override val deviceId: DeviceId, override val address: Integra7Address): Integra7FieldType<Boolean>() {
+    data class BooleanField(override val deviceId: DeviceId, override val address: Integra7Address): Integra7FieldType<Boolean>() {
         override val size = Integra7Size.ONE_BYTE
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Boolean {
