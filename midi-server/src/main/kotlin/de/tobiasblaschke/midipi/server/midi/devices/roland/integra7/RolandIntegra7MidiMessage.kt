@@ -2,7 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.*
-import de.tobiasblaschke.midipi.server.midi.utils.SparseUByteArray
+import de.tobiasblaschke.midipi.server.utils.SparseUByteArray
 import java.lang.Exception
 import java.time.Duration
 

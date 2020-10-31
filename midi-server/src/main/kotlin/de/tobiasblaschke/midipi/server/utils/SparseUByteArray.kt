@@ -1,6 +1,5 @@
-package de.tobiasblaschke.midipi.server.midi.utils
+package de.tobiasblaschke.midipi.server.utils
 
-import de.tobiasblaschke.midipi.server.midi.toAsciiString
 import java.util.*
 import kotlin.Comparator
 import kotlin.NoSuchElementException
