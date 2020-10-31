@@ -4,7 +4,6 @@ import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.Integra7MemoryIO
 import de.tobiasblaschke.midipi.server.midi.toAsciiString
 import de.tobiasblaschke.midipi.server.utils.*
-import java.lang.IllegalStateException
 import java.lang.RuntimeException
 
 abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
@@ -12,7 +11,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
     data class AsciiStringField(override val deviceId: DeviceId, override val address: Integra7Address, val length: Int): Integra7FieldType<String>() {
         override val size = Integra7Size(length.toUInt7())
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): String {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): String {
             assert(startAddress >= address)
 
             try {
@@ -34,7 +33,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= 0 && range.last <= 127) { "Impossible range $range" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
             val ret = readByte(startAddress, payload).toInt()
             return checkRange(ret, startAddress, payload, range)
         }
@@ -51,7 +50,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= 0 && range.last <= 127) { "Impossible range $range" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): IntRange {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): IntRange {
             val min = readByte(startAddress, payload).toInt()
             val max = readByte(startAddress, payload).toInt()
 
@@ -71,7 +70,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             :this(deviceId, address, { elem -> values[elem] })
         override val size = Integra7Size.ONE_BYTE
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): T {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): T {
             val elem = readByte(startAddress, payload).toInt()
             return try {
                 getter(elem)
@@ -92,7 +91,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= 0 && range.last <= 0xFF) { "Impossible range $range" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
             val msn = readByte(startAddress, payload)
             val lsn = readByte(startAddress.successor(), payload)
             val value = msn.toInt() * 0x10 + lsn.toInt()
@@ -111,7 +110,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= 0 && range.last < 0x4000) { "Impossible range $range" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
             val msb = readByte(startAddress, payload)
             val lsb = readByte(startAddress.successor(), payload)
             val value = msb.toInt() * 0x80 + lsb.toInt()
@@ -130,7 +129,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= 0 && range.last <= 0xFFFF) { "Impossible range $range for this datatype" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
             val msb = readByte(startAddress, payload).toInt()
             val mmsb = readByte(startAddress.successor(), payload).toInt()
             val mlsb = readByte(startAddress.successor().successor(), payload).toInt()
@@ -152,7 +151,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= -64 && range.last <= 63) { "Impossible range $range" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
             val ret = readByte(startAddress, payload).toInt() - 64
             return checkRange(ret, startAddress, payload, range)
         }
@@ -168,7 +167,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
             assert(range.first >= -0x8000 && range.last <= 0x7FFF) { "Impossible range $range for this datatype" }
         }
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Int {
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Int {
             val msb = readByte(startAddress, payload).toInt()
             val mmsb = readByte(startAddress.successor(), payload).toInt()
             val mlsb = readByte(startAddress.successor().successor(), payload).toInt()
@@ -186,7 +185,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
     data class BooleanValueField(override val deviceId: DeviceId, override val address: Integra7Address): Integra7FieldType<Boolean>() {
         override val size = Integra7Size.ONE_BYTE
 
-        override fun interpret(startAddress: Integra7Address, length: Int, payload: SparseUByteArray): Boolean =
+        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Boolean =
             when(readByte(startAddress, payload).toInt()) {
                 0 -> false
                 1 -> true

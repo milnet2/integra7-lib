@@ -43,7 +43,7 @@ class RolandIntegra7(
         val sysEx: RolandIntegra7MidiMessage = addressRange.asDataRequest1()
         return device.send(sysEx as MBRequestResponseMidiMessage, -1)
             .map { it as RolandIntegra7MidiMessage.IntegraSysExDataSet1Response }
-            .map { addressRange.interpret(it.startAddress, it.payload.size, it.payload) }
+            .map { addressRange.interpret(it.startAddress, it.payload) }
     }
 
     fun identity(): Future<RolandIntegra7MidiMessage.IdentityReply> {
