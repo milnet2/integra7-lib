@@ -52,7 +52,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
         val pan = ByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val priority = EnumField(deviceId, address.offsetBy(lsb = 0x10u), Priority.values())
+        val priority = EnumField(deviceId, address.offsetBy(lsb = 0x10u), Priority::fromValue)
         val coarseTuning = ByteField(deviceId, address.offsetBy(lsb = 0x11u), -48..48)
         val fineTuning = ByteField(deviceId, address.offsetBy(lsb = 0x12u), -50..50)
         val ocataveShift = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -3..3)
@@ -62,12 +62,9 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val legatoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x17u))
         val legatoRetrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x18u))
         val portamentoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x19u))
-        val portamentoMode =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Au), PortamentoMode.values())
-        val portamentoType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Bu), PortamentoType.values())
-        val portamentoStart =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), PortamentoStart.values())
+        val portamentoMode = EnumField(deviceId, address.offsetBy(lsb = 0x1Au), PortamentoMode::fromValue)
+        val portamentoType = EnumField(deviceId, address.offsetBy(lsb = 0x1Bu), PortamentoType::fromValue)
+        val portamentoStart = EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), PortamentoStart::fromValue)
         val portamentoTime = UByteField(deviceId, address.offsetBy(lsb = 0x1Du))
 
         val cutoffOffset = ByteField(deviceId, address.offsetBy(lsb = 0x22u))
@@ -80,70 +77,48 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val pitchBendRangeUp = UByteField(deviceId, address.offsetBy(lsb = 0x29u), 0..48)
         val pitchBendRangeDown = UByteField(deviceId, address.offsetBy(lsb = 0x2Au), 0..48)
 
-        val matrixControl1Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x2Bu), MatrixControlSource.values())
-        val matrixControl1Destination1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x2Cu), MatrixControlDestination.values())
+        val matrixControl1Source = EnumField(deviceId, address.offsetBy(lsb = 0x2Bu), MatrixControlSource::fromValue)
+        val matrixControl1Destination1 = EnumField(deviceId, address.offsetBy(lsb = 0x2Cu), MatrixControlDestination::fromValue)
         val matrixControl1Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x2Du))
-        val matrixControl1Destination2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x2Eu), MatrixControlDestination.values())
+        val matrixControl1Destination2 = EnumField(deviceId, address.offsetBy(lsb = 0x2Eu), MatrixControlDestination::fromValue)
         val matrixControl1Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x2Fu))
-        val matrixControl1Destination3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x30u), MatrixControlDestination.values())
+        val matrixControl1Destination3 = EnumField(deviceId, address.offsetBy(lsb = 0x30u), MatrixControlDestination::fromValue)
         val matrixControl1Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x31u))
-        val matrixControl1Destination4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x32u), MatrixControlDestination.values())
+        val matrixControl1Destination4 = EnumField(deviceId, address.offsetBy(lsb = 0x32u), MatrixControlDestination::fromValue)
         val matrixControl1Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x33u))
 
-        val matrixControl2Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x34u), MatrixControlSource.values())
-        val matrixControl2Destination1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x35u), MatrixControlDestination.values())
+        val matrixControl2Source = EnumField(deviceId, address.offsetBy(lsb = 0x34u), MatrixControlSource::fromValue)
+        val matrixControl2Destination1 = EnumField(deviceId, address.offsetBy(lsb = 0x35u), MatrixControlDestination::fromValue)
         val matrixControl2Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x36u))
-        val matrixControl2Destination2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x37u), MatrixControlDestination.values())
+        val matrixControl2Destination2 = EnumField(deviceId, address.offsetBy(lsb = 0x37u), MatrixControlDestination::fromValue)
         val matrixControl2Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x38u))
-        val matrixControl2Destination3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x39u), MatrixControlDestination.values())
+        val matrixControl2Destination3 = EnumField(deviceId, address.offsetBy(lsb = 0x39u), MatrixControlDestination::fromValue)
         val matrixControl2Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x3Au))
-        val matrixControl2Destination4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x3Bu), MatrixControlDestination.values())
+        val matrixControl2Destination4 = EnumField(deviceId, address.offsetBy(lsb = 0x3Bu), MatrixControlDestination::fromValue)
         val matrixControl2Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x3Cu))
 
-        val matrixControl3Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x3Du), MatrixControlSource.values())
-        val matrixControl3Destination1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x3Eu), MatrixControlDestination.values())
+        val matrixControl3Source = EnumField(deviceId, address.offsetBy(lsb = 0x3Du), MatrixControlSource::fromValue)
+        val matrixControl3Destination1 = EnumField(deviceId, address.offsetBy(lsb = 0x3Eu), MatrixControlDestination::fromValue)
         val matrixControl3Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x3Fu))
-        val matrixControl3Destination2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x40u), MatrixControlDestination.values())
+        val matrixControl3Destination2 = EnumField(deviceId, address.offsetBy(lsb = 0x40u), MatrixControlDestination::fromValue)
         val matrixControl3Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x41u))
-        val matrixControl3Destination3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x42u), MatrixControlDestination.values())
+        val matrixControl3Destination3 = EnumField(deviceId, address.offsetBy(lsb = 0x42u), MatrixControlDestination::fromValue)
         val matrixControl3Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x43u))
-        val matrixControl3Destination4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x44u), MatrixControlDestination.values())
+        val matrixControl3Destination4 = EnumField(deviceId, address.offsetBy(lsb = 0x44u), MatrixControlDestination::fromValue)
         val matrixControl3Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x45u))
 
-        val matrixControl4Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x46u), MatrixControlSource.values())
-        val matrixControl4Destination1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x47u), MatrixControlDestination.values())
+        val matrixControl4Source = EnumField(deviceId, address.offsetBy(lsb = 0x46u), MatrixControlSource::fromValue)
+        val matrixControl4Destination1 = EnumField(deviceId, address.offsetBy(lsb = 0x47u), MatrixControlDestination::fromValue)
         val matrixControl4Sens1 = ByteField(deviceId, address.offsetBy(lsb = 0x48u))
-        val matrixControl4Destination2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x49u), MatrixControlDestination.values())
+        val matrixControl4Destination2 = EnumField(deviceId, address.offsetBy(lsb = 0x49u), MatrixControlDestination::fromValue)
         val matrixControl4Sens2 = ByteField(deviceId, address.offsetBy(lsb = 0x4Au))
-        val matrixControl4Destination3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x4Bu), MatrixControlDestination.values())
+        val matrixControl4Destination3 = EnumField(deviceId, address.offsetBy(lsb = 0x4Bu), MatrixControlDestination::fromValue)
         val matrixControl4Sens3 = ByteField(deviceId, address.offsetBy(lsb = 0x4Cu))
-        val matrixControl4Destination4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x4Du), MatrixControlDestination.values())
+        val matrixControl4Destination4 = EnumField(deviceId, address.offsetBy(lsb = 0x4Du), MatrixControlDestination::fromValue)
         val matrixControl4Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
 
-        override fun deserialize(
-            payload: SparseUByteArray
-        ): PcmSynthToneCommon {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone common ($address..${address.offsetBy(size)}) for part $part" }
+        override fun deserialize(payload: SparseUByteArray): PcmSynthToneCommon {
+            assert(this.isCovering(payload)) { "Not PCM synth tone common ($address..${address.offsetBy(size)}) for part $part" }
 
             try {
                 return PcmSynthToneCommon(
@@ -240,17 +215,13 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val mfxChorusSend = UByteField(deviceId, address.offsetBy(lsb = 0x02u))
         val mfxReverbSend = UByteField(deviceId, address.offsetBy(lsb = 0x03u))
 
-        val mfxControl1Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x05u), MfxControlSource.values())
+        val mfxControl1Source = EnumField(deviceId, address.offsetBy(lsb = 0x05u), MfxControlSource::fromValue)
         val mfxControl1Sens = ByteField(deviceId, address.offsetBy(lsb = 0x06u))
-        val mfxControl2Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x07u), MfxControlSource.values())
+        val mfxControl2Source = EnumField(deviceId, address.offsetBy(lsb = 0x07u), MfxControlSource::fromValue)
         val mfxControl2Sens = ByteField(deviceId, address.offsetBy(lsb = 0x08u))
-        val mfxControl3Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x09u), MfxControlSource.values())
+        val mfxControl3Source = EnumField(deviceId, address.offsetBy(lsb = 0x09u), MfxControlSource::fromValue)
         val mfxControl3Sens = ByteField(deviceId, address.offsetBy(lsb = 0x0Au))
-        val mfxControl4Source =
-            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), MfxControlSource.values())
+        val mfxControl4Source = EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), MfxControlSource::fromValue)
         val mfxControl4Sens = ByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 
         val mfxControlAssign1 = UByteField(deviceId, address.offsetBy(lsb = 0x0Du))
@@ -286,18 +257,12 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val mfxParameter26 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x75u))
         val mfxParameter27 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x79u))
         val mfxParameter28 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Du))
-        val mfxParameter29 =
-            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u))
-        val mfxParameter30 =
-            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
-        val mfxParameter31 =
-            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u))
-        val mfxParameter32 =
-            SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du))
+        val mfxParameter29 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u))
+        val mfxParameter30 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
+        val mfxParameter31 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u))
+        val mfxParameter32 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du))
 
-        override fun deserialize(
-            payload: SparseUByteArray
-        ): PcmSynthToneMfx {
+        override fun deserialize(payload: SparseUByteArray): PcmSynthToneMfx {
             assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)}" }
 
             try {
@@ -1207,74 +1172,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common = SuperNaturalDrumKitCommonBuilder(deviceId, address, part)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
         val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u), part)
-        val note27 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u), part)
-        val note28 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 1), part)
-        val note29 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 2), part)
-
-        val note30 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 3), part)
-        val note31 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 4), part)
-        val note32 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 5), part)
-        val note33 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 6), part)
-        val note34 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 7), part)
-        val note35 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 8), part)
-        val note36 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 9), part)
-        val note37 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 10), part)
-        val note38 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 11), part)
-        val note39 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 12), part)
-
-        val note40 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 13), part)
-        val note41 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 14), part)
-        val note42 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 15), part)
-        val note43 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 16), part)
-        val note44 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 17), part)
-        val note45 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 18), part)
-        val note46 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 19), part)
-        val note47 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 20), part)
-        val note48 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 21), part)
-        val note49 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 22), part)
-
-        val note50 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 23), part)
-        val note51 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 24), part)
-        val note52 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 25), part)
-        val note53 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 26), part)
-        val note54 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 27), part)
-        val note55 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 28), part)
-        val note56 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 29), part)
-        val note57 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 30), part)
-        val note58 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 31), part)
-        val note59 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 32), part)
-
-        val note60 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 33), part)
-        val note61 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 34), part)
-        val note62 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 35), part)
-        val note63 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 36), part)
-        val note64 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 37), part)
-        val note65 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 38), part)
-        val note66 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 39), part)
-        val note67 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 40), part)
-        val note68 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 41), part)
-        val note69 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 42), part)
-
-        val note70 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 43), part)
-        val note71 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 44), part)
-        val note72 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 45), part)
-        val note73 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 46), part)
-        val note74 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 47), part)
-        val note75 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 48), part)
-        val note76 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 49), part)
-        val note77 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 50), part)
-        val note78 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 51), part)
-        val note79 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 52), part)
-
-        val note80 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 53), part)
-        val note81 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 54), part)
-        val note82 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 55), part)
-        val note83 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 56), part)
-        val note84 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 57), part)
-        val note85 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 58), part)
-        val note86 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 59), part)
-        val note87 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 60), part)
-        val note88 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 61), part)
+        val notes = IntRange(0, 88-17)
+            .map { SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it), part) }
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalDrumKit {
             assert(this.isCovering(payload)) { "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part" }
@@ -1283,180 +1182,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                 common = common.deserialize(payload),
                 mfx = mfx.deserialize(payload),
                 commonCompEq = commonCompEq.deserialize(payload),
-                notes = listOf(
-                    note27.deserialize(payload),
-                    note28.deserialize(payload),
-                    note29.deserialize(payload),
-
-                    note30.deserialize(payload),
-                    note31.deserialize(payload),
-                    note32.deserialize(payload),
-                    note33.deserialize(payload),
-                    note34.deserialize(payload),
-                    note35.deserialize(payload),
-                    note36.deserialize(payload),
-                    note37.deserialize(
-                        payload
-                    ),
-                    note38.deserialize(
-                        payload
-                    ),
-                    note39.deserialize(
-                        payload
-                    ),
-
-                    note40.deserialize(
-                        payload
-                    ),
-                    note41.deserialize(
-                        payload
-                    ),
-                    note42.deserialize(
-                        payload
-                    ),
-                    note43.deserialize(
-                        payload
-                    ),
-                    note44.deserialize(
-                        payload
-                    ),
-                    note45.deserialize(
-                        payload
-                    ),
-                    note46.deserialize(
-                        payload
-                    ),
-                    note47.deserialize(
-                        payload
-                    ),
-                    note48.deserialize(
-                        payload
-                    ),
-                    note49.deserialize(
-                        payload
-                    ),
-
-                    note50.deserialize(
-                        payload
-                    ),
-                    note51.deserialize(
-                        payload
-                    ),
-                    note52.deserialize(
-                        payload
-                    ),
-                    note53.deserialize(
-                        payload
-                    ),
-                    note54.deserialize(
-                        payload
-                    ),
-                    note55.deserialize(
-                        payload
-                    ),
-                    note56.deserialize(
-                        payload
-                    ),
-                    note57.deserialize(
-                        payload
-                    ),
-                    note58.deserialize(
-                        payload
-                    ),
-                    note59.deserialize(
-                        payload
-                    ),
-
-                    note60.deserialize(
-                        payload
-                    ),
-                    note61.deserialize(
-                        payload
-                    ),
-                    note62.deserialize(
-                        payload
-                    ),
-                    note63.deserialize(
-                        payload
-                    ),
-                    note64.deserialize(
-                        payload
-                    ),
-                    note65.deserialize(
-                        payload
-                    ),
-                    note66.deserialize(
-                        payload
-                    ),
-                    note67.deserialize(
-                        payload
-                    ),
-                    note68.deserialize(
-                        payload
-                    ),
-                    note69.deserialize(
-                        payload
-                    ),
-
-                    note70.deserialize(
-                        payload
-                    ),
-                    note71.deserialize(
-                        payload
-                    ),
-                    note72.deserialize(
-                        payload
-                    ),
-                    note73.deserialize(
-                        payload
-                    ),
-                    note74.deserialize(
-                        payload
-                    ),
-                    note75.deserialize(
-                        payload
-                    ),
-                    note76.deserialize(
-                        payload
-                    ),
-                    note77.deserialize(
-                        payload
-                    ),
-                    note78.deserialize(
-                        payload
-                    ),
-                    note79.deserialize(
-                        payload
-                    ),
-
-                    note80.deserialize(
-                        payload
-                    ),
-                    note81.deserialize(
-                        payload
-                    ),
-                    note82.deserialize(
-                        payload
-                    ),
-                    note83.deserialize(
-                        payload
-                    ),
-                    note84.deserialize(
-                        payload
-                    ),
-                    note85.deserialize(
-                        payload
-                    ),
-                    note86.deserialize(
-                        payload
-                    ),
-                    note87.deserialize(
-                        payload
-                    ),
-                    note88.deserialize(
-                        payload
-                    )
-                )
+                notes = notes.map { it.deserialize(payload) }
             )
         }
     }

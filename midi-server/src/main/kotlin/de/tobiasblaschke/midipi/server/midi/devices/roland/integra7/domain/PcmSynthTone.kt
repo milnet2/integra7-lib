@@ -45,7 +45,13 @@ enum class MatrixControlSource(val hex: UByte) {
     BEND(95u), AFT(97u),
     CTRL1(98u), CTRL2(99u), CTRL3(100u), CTRL4(101u),
     VELOCITY(102u), KEYFOLLOW(103u), TEMPO(104u), LFO1(105u),
-    LFO2(106u), PIT_ENV(107u), TVF_ENV(108u), TVA_ENV(109u)
+    LFO2(106u), PIT_ENV(107u), TVF_ENV(108u), TVA_ENV(109u);
+
+    companion object {
+        fun fromValue(value: Int): MatrixControlSource =
+            values()
+                .first { it.hex.toInt() == value }
+    }
 }
 
 enum class MatrixControlDestination(val hex: UByte) {
@@ -57,7 +63,13 @@ enum class MatrixControlDestination(val hex: UByte) {
     PIT_ATK(19u), PIT_DCY(20u), PIT_REL(21u),
     TVF_ATK(22u), TVF_DCY(23u), TVF_REL(24u),
     TVA_ATK(25u), TVA_DCY(26u), TVA_REL(27u),
-    PMT(28u), FXM(29u)
+    PMT(28u), FXM(29u);
+
+    companion object {
+        fun fromValue(value: Int): MatrixControlDestination =
+            values()
+                .first { it.hex.toInt() == value }
+    }
 }
 
 data class PcmSynthToneCommon(
@@ -192,7 +204,13 @@ enum class MfxControlSource(val hex: UByte) {
     CC86(86u), CC87(87u), CC88(88u), CC89(89u), CC90(90u),
     CC91(91u), CC92(92u), CC93(93u), CC94(94u), CC95(95u),
     BEND(95u), AFT(97u),
-    SYS1(98u), SYS2(99u), SYS3(100u), SYS4(101u)
+    SYS1(98u), SYS2(99u), SYS3(100u), SYS4(101u);
+
+    companion object {
+        fun fromValue(value: Int): MfxControlSource =
+            values()
+                .first { it.hex.toInt() == value }
+    }
 }
 
 data class PcmSynthToneMfx(
@@ -297,7 +315,15 @@ data class PcmSynthToneMfx(
     }
 }
 
-enum class VelocityControl{ OFF, ON, RANDOM, CYCLE }
+enum class VelocityControl(val hex: Int) {
+    OFF(0), ON(1), RANDOM(2), CYCLE(3);
+
+    companion object {
+        fun fromValue(value: Int): ControlSource =
+            ControlSource.values()
+                .first { it.hex.toInt() == value }
+    }
+}
 
 data class PcmSynthTonePartialMixTable(
     val structureType12: Int,
