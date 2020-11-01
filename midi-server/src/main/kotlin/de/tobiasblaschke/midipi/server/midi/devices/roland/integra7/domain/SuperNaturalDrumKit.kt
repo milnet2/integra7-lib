@@ -11,7 +11,10 @@ data class SuperNaturalDrumKit (
                 "\tcommon = $common\n" +
                 "\tmfx = $mfx\n" +
                 "\tcommonCompEq = $commonCompEq\n" +
-                "\tnotes = $notes\n" +
+                "\tnotes = ${notes.joinToString(
+                    prefix = "\n\t  ",
+                    separator = "\n\t  ",
+                    postfix = "\n")}" +
                 ")"
 }
 
@@ -192,6 +195,7 @@ enum class SupernaturalDrumMidQ {
 }
 
 data class SuperNaturalDrumKitNote(
+    val pianoKey: PianoKey,
     val instrumentNumber: Int,
     val level: Int,
     val pan: Int,

@@ -1,6 +1,7 @@
 package de.tobiasblaschke.midipi.server.midi.bearable.lifted
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
+import de.tobiasblaschke.midipi.server.midi.bearable.domain.MidiChannel
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId.Companion.ALL_DEVICES
 import de.tobiasblaschke.midipi.server.midi.toHexString
 import de.tobiasblaschke.midipi.server.utils.toUShort7
@@ -11,22 +12,22 @@ fun interface MidiMapper<I: UByteSerializable, O: UByteSerializable> {
 }
 
 interface MBUnidirectionalMidiMessage: UByteSerializable {
-    interface NoteOff: MBUnidirectionalMidiMessage { val channel: Int; val key: Int; val velocity: Int }
-    interface NoteOn: MBUnidirectionalMidiMessage { val channel: Int; val key: Int; val velocity: Int }
-    interface PolyphonicKeyPressure: MBUnidirectionalMidiMessage { val channel: Int; val key: Int; val velocity: Int }
-    interface AllSoundsOff: MBUnidirectionalMidiMessage { val channel: Int }
-    interface ResetAllControllers: MBUnidirectionalMidiMessage { val channel: Int; val value: Int }
-    interface LocalControlOff: MBUnidirectionalMidiMessage { val channel: Int }
-    interface LocalControlOn: MBUnidirectionalMidiMessage { val channel: Int }
-    interface AllNotesOff: MBUnidirectionalMidiMessage { val channel: Int }
-    interface OmniModeOff: MBUnidirectionalMidiMessage { val channel: Int }
-    interface OmniModeOn: MBUnidirectionalMidiMessage { val channel: Int }
-    interface MonoModeOn: MBUnidirectionalMidiMessage { val channel: Int; val channelCount: Int }
-    interface PolyModeOn: MBUnidirectionalMidiMessage { val channel: Int }
-    interface ControlChangeController: MBUnidirectionalMidiMessage { val channel: Int; val controllerNumber: Int; val value: Int }
-    interface ProgramChange: MBUnidirectionalMidiMessage { val channel: Int; val programNumber: Int }
-    interface ChannelPressure: MBUnidirectionalMidiMessage { val channel: Int; val value: Int }
-    interface PitchBend: MBUnidirectionalMidiMessage { val channel: Int; val value: Int }
+    interface NoteOff: MBUnidirectionalMidiMessage { val channel: MidiChannel; val key: Int; val velocity: Int }
+    interface NoteOn: MBUnidirectionalMidiMessage { val channel: MidiChannel; val key: Int; val velocity: Int }
+    interface PolyphonicKeyPressure: MBUnidirectionalMidiMessage { val channel: MidiChannel; val key: Int; val velocity: Int }
+    interface AllSoundsOff: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface ResetAllControllers: MBUnidirectionalMidiMessage { val channel: MidiChannel; val value: Int }
+    interface LocalControlOff: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface LocalControlOn: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface AllNotesOff: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface OmniModeOff: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface OmniModeOn: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface MonoModeOn: MBUnidirectionalMidiMessage { val channel: MidiChannel; val channelCount: Int }
+    interface PolyModeOn: MBUnidirectionalMidiMessage { val channel: MidiChannel }
+    interface ControlChangeController: MBUnidirectionalMidiMessage { val channel: MidiChannel; val controllerNumber: Int; val value: Int }
+    interface ProgramChange: MBUnidirectionalMidiMessage { val channel: MidiChannel; val programNumber: Int }
+    interface ChannelPressure: MBUnidirectionalMidiMessage { val channel: MidiChannel; val value: Int }
+    interface PitchBend: MBUnidirectionalMidiMessage { val channel: MidiChannel; val value: Int }
     interface TimeCode: MBUnidirectionalMidiMessage {val messageType: Int; val value: Int }
     interface SongPositionPointer: MBUnidirectionalMidiMessage {val beats: Int }
     interface SongSelect: MBUnidirectionalMidiMessage {val song: Int }
@@ -59,145 +60,115 @@ data class Reserved(val bytes: UByteArray) : MBGenericMidiMessage() {
 @ExperimentalUnsignedTypes
 sealed class MBGenericMidiMessage: MBUnidirectionalMidiMessage {
     sealed class ChannelEvent: MBGenericMidiMessage() {
-        abstract val channel: Int
+        abstract val channel: MidiChannel
 
-        data class NoteOff(override val channel: Int, override val key: Int, override val velocity: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.NoteOff {
+        data class NoteOff(override val channel: MidiChannel, override val key: Int, override val velocity: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.NoteOff {
             init {
-                assert(channel in 0..15)
                 assert(key in 0..127)
                 assert(velocity in 0..127)
             }
             override fun bytes(): UByteArray = ubyteArrayOf(
-                0x80u.toUByte() or channel.toUByte(), key.toUByte(), velocity.toUByte())
+                0x80u.toUByte() or channel.zeroBased.toUByte(), key.toUByte(), velocity.toUByte())
         }
 
-        data class NoteOn(override val channel: Int, override val key: Int, override val velocity: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.NoteOn {
+        data class NoteOn(override val channel: MidiChannel, override val key: Int, override val velocity: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.NoteOn {
             init {
-                assert(channel in 0..15)
                 assert(key in 0..127)
                 assert(velocity in 0..127)
             }
             override fun bytes(): UByteArray = ubyteArrayOf(
-                0x90u.toUByte() or channel.toUByte(), key.toUByte(), velocity.toUByte())
+                0x90u.toUByte() or channel.zeroBased.toUByte(), key.toUByte(), velocity.toUByte())
         }
 
-        data class PolyphonicKeyPressure(override val channel: Int, override val key: Int, override val velocity: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.PolyphonicKeyPressure {
+        data class PolyphonicKeyPressure(override val channel: MidiChannel, override val key: Int, override val velocity: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.PolyphonicKeyPressure {
             init {
-                assert(channel in 0..15)
                 assert(key in 0..127)
                 assert(velocity in 0..127)
             }
             override fun bytes(): UByteArray = ubyteArrayOf(
-                0xA0u.toUByte() or channel.toUByte(), key.toUByte(), velocity.toUByte())
+                0xA0u.toUByte() or channel.zeroBased.toUByte(), key.toUByte(), velocity.toUByte())
         }
 
         sealed class ControlChange: ChannelEvent() {
-            data class AllSoundsOff(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.AllSoundsOff {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class AllSoundsOff(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.AllSoundsOff {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 120u, 0u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 120u, 0u)
             }
 
-            data class ResetAllControllers(override val channel: Int, override val value: Int = 0) : ControlChange(), MBUnidirectionalMidiMessage.ResetAllControllers {
+            data class ResetAllControllers(override val channel: MidiChannel, override val value: Int = 0) : ControlChange(), MBUnidirectionalMidiMessage.ResetAllControllers {
                 init {
-                    assert(channel in 0..15)
                     assert(value in 0..127)
                 }
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 121u, value.toUByte())
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 121u, value.toUByte())
             }
 
-            data class LocalControlOff(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.LocalControlOff {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class LocalControlOff(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.LocalControlOff {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 122u, 0u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 122u, 0u)
             }
 
-            data class LocalControlOn(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.LocalControlOn {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class LocalControlOn(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.LocalControlOn {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 122u, 127u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 122u, 127u)
             }
 
-            data class AllNotesOff(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.AllNotesOff {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class AllNotesOff(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.AllNotesOff {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 123u, 0u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 123u, 0u)
             }
 
-            data class OmniModeOff(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.OmniModeOff {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class OmniModeOff(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.OmniModeOff {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 124u, 0u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 124u, 0u)
             }
 
-            data class OmniModeOn(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.OmniModeOn {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class OmniModeOn(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.OmniModeOn {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 125u, 0u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 125u, 0u)
             }
 
-            data class MonoModeOn(override val channel: Int, override val channelCount: Int) : ControlChange(), MBUnidirectionalMidiMessage.MonoModeOn {
+            data class MonoModeOn(override val channel: MidiChannel, override val channelCount: Int) : ControlChange(), MBUnidirectionalMidiMessage.MonoModeOn {
                 init {
-                    assert(channel in 0..15)
                     assert(channelCount in 0..127)
                 }
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 126u, channelCount.toUByte())
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 126u, channelCount.toUByte())
             }
 
-            data class PolyModeOn(override val channel: Int) : ControlChange(), MBUnidirectionalMidiMessage.PolyModeOn {
-                init {
-                    assert(channel in 0..15)
-                }
+            data class PolyModeOn(override val channel: MidiChannel) : ControlChange(), MBUnidirectionalMidiMessage.PolyModeOn {
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), 127u, 0u)
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), 127u, 0u)
             }
 
-            data class ControlChangeController(override val channel: Int, override val controllerNumber: Int, override val value: Int): ControlChange(), MBUnidirectionalMidiMessage.ControlChangeController {
+            data class ControlChangeController(override val channel: MidiChannel, override val controllerNumber: Int, override val value: Int): ControlChange(), MBUnidirectionalMidiMessage.ControlChangeController {
                 init {
-                    assert(channel in 0..15)
                     assert(controllerNumber in 0 .. 119)
                     assert(value in 0 .. 127)
                 }
                 override fun bytes(): UByteArray = ubyteArrayOf(
-                    0xB0u.toUByte() or channel.toUByte(), controllerNumber.toUByte(), value.toUByte())
+                    0xB0u.toUByte() or channel.zeroBased.toUByte(), controllerNumber.toUByte(), value.toUByte())
                 override fun toString(): String =
                     String.format("%s c=0x%02X(%d) v=0x%02X(%d)", this.javaClass.simpleName, controllerNumber, controllerNumber, value, value)
             }
         }
 
-        data class ProgramChange(override val channel: Int, override val programNumber: Int): ChannelEvent(), MBUnidirectionalMidiMessage.ProgramChange {
+        data class ProgramChange(override val channel: MidiChannel, override val programNumber: Int): ChannelEvent(), MBUnidirectionalMidiMessage.ProgramChange {
             init {
-                assert(channel in 0..15)
                 assert(programNumber in 0 .. 127)
             }
             override fun bytes(): UByteArray = ubyteArrayOf(
-                0xC0.toUByte() or channel.toUByte(), programNumber.toUByte())
+                0xC0.toUByte() or channel.zeroBased.toUByte(), programNumber.toUByte())
         }
-        data class ChannelPressure(override val channel: Int, override val value: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.ChannelPressure {
+        data class ChannelPressure(override val channel: MidiChannel, override val value: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.ChannelPressure {
             init {
-                assert(channel in 0..15)
                 assert(value in 0 .. 127)
             }
             override fun bytes(): UByteArray = ubyteArrayOf(
-                0xD0.toUByte() or channel.toUByte(), value.toUByte())
+                0xD0.toUByte() or channel.zeroBased.toUByte(), value.toUByte())
         }
-        data class PitchBend(override val channel: Int, override val value: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.PitchBend {
+        data class PitchBend(override val channel: MidiChannel, override val value: Int) : ChannelEvent(), MBUnidirectionalMidiMessage.PitchBend {
             init {
-                assert(channel in 0..15)
                 assert(value in -16384/2 .. 16384/2)
             }
             override fun bytes(): UByteArray =

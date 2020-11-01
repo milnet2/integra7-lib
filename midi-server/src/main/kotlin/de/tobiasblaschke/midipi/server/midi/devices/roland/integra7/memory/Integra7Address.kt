@@ -200,11 +200,12 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
     override fun bytes(): UByteArray =
         address.toUByteArrayLittleEndian()
 
-    @Deprecated("Switch to UInt7")
-    fun offsetBy(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte, factor: Int = 1): Integra7Address =
-        offsetBy(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7())
+    fun successor(): Integra7Address =
+        Integra7Address((address + 1u).toUInt7UsingValue())
 
-    @Deprecated("Switch to UInt7")
+    fun offsetBy(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte, factor: Int = 1): Integra7Address =
+        offsetBy(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7(), factor)
+
     fun offsetBy(msb: UByte7 = UByte7.MIN_VALUE, mmsb: UByte7 = UByte7.MIN_VALUE, mlsb: UByte7 = UByte7.MIN_VALUE, lsb: UByte7 = UByte7.MIN_VALUE, factor: Int = 1): Integra7Address =
         offsetBy(UInt7(msb, mmsb, mlsb, lsb), factor)
 
@@ -226,6 +227,9 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
     operator fun minus(other: Integra7Address): Integra7Size =
         Integra7Size((address.toUInt() - other.address.toUInt()).toUInt7UsingValue())
 
+    operator fun plus(other: Integra7Size): Integra7Address =
+        Integra7Address((this.address + other.size).toUInt7UsingValue())
+
     fun fullByteAddress(): Int =
         address.toInt()
 
@@ -237,12 +241,14 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
         ?.let { it.toString() }
         ?: "Unknown range $this"
 
+    fun toStringDetailed(): String =
+        "${toString()} in range ${rangeName()}"
+
     override fun toString(): String =
         address.toString()
 }
 
 data class Integra7Size(val size: UInt7): UByteSerializable {
-    @Deprecated("Switch to UInt7...")
     constructor(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte):
             this(UInt7(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7()))
 
@@ -251,6 +257,8 @@ data class Integra7Size(val size: UInt7): UByteSerializable {
 
     companion object {
         val ONE_BYTE = Integra7Size(0x01u.toUInt7UsingValue())
+        val TWO_BYTES = Integra7Size(0x02u.toUInt7UsingValue())
+        val FOUR_BYTES = Integra7Size(0x04u.toUInt7UsingValue())
     }
 
     override fun bytes(): UByteArray =
@@ -261,6 +269,9 @@ data class Integra7Size(val size: UInt7): UByteSerializable {
 
     operator fun plus(other: Int): Integra7Size =
         Integra7Size((fullByteSize() + other).toUInt())
+
+    operator fun plus(other: Integra7Size): Integra7Size =
+        Integra7Size(this.size + other.size)
 
     fun fullByteSize(): Int =
         size.toInt()

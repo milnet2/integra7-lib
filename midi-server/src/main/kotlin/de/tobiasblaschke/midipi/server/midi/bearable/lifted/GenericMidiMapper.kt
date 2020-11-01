@@ -1,6 +1,7 @@
 package de.tobiasblaschke.midipi.server.midi.bearable.lifted
 
 import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
+import de.tobiasblaschke.midipi.server.midi.bearable.domain.MidiChannel
 import java.lang.IllegalArgumentException
 
 @ExperimentalUnsignedTypes
@@ -13,39 +14,39 @@ open class GenericMidiMapper: MidiMapper<UByteSerializable, MBGenericMidiMessage
         val possiblyChannel = (message[0] and 0x0Fu).toInt()
 
         val decoded: MBGenericMidiMessage = if (baseCommand < 0xF0u) when (baseCommand.toUInt()) {
-            0x80u -> MBGenericMidiMessage.ChannelEvent.NoteOn(possiblyChannel, message[1].toInt(), message[2].toInt())
-            0x90u -> MBGenericMidiMessage.ChannelEvent.NoteOff(possiblyChannel, message[1].toInt(), message[2].toInt())
+            0x80u -> MBGenericMidiMessage.ChannelEvent.NoteOn(MidiChannel.values()[possiblyChannel], message[1].toInt(), message[2].toInt())
+            0x90u -> MBGenericMidiMessage.ChannelEvent.NoteOff(MidiChannel.values()[possiblyChannel], message[1].toInt(), message[2].toInt())
             0xA0u -> MBGenericMidiMessage.ChannelEvent.PolyphonicKeyPressure(
-                possiblyChannel,
+                MidiChannel.values()[possiblyChannel],
                 message[1].toInt(),
                 message[2].toInt()
             )
             0xB0u -> when (message[1].toInt()) {
-                120 -> MBGenericMidiMessage.ChannelEvent.ControlChange.AllSoundsOff(possiblyChannel)
+                120 -> MBGenericMidiMessage.ChannelEvent.ControlChange.AllSoundsOff(MidiChannel.values()[possiblyChannel])
                 121 -> MBGenericMidiMessage.ChannelEvent.ControlChange.ResetAllControllers(
-                    possiblyChannel,
+                    MidiChannel.values()[possiblyChannel],
                     message[2].toInt()
                 )
                 122 -> when (message[2].toInt()) {
-                    0 -> MBGenericMidiMessage.ChannelEvent.ControlChange.LocalControlOff(possiblyChannel)
-                    127 -> MBGenericMidiMessage.ChannelEvent.ControlChange.LocalControlOn(possiblyChannel)
+                    0 -> MBGenericMidiMessage.ChannelEvent.ControlChange.LocalControlOff(MidiChannel.values()[possiblyChannel])
+                    127 -> MBGenericMidiMessage.ChannelEvent.ControlChange.LocalControlOn(MidiChannel.values()[possiblyChannel])
                     else -> throw IllegalArgumentException()
                 }
-                123 -> MBGenericMidiMessage.ChannelEvent.ControlChange.AllNotesOff(possiblyChannel)
-                124 -> MBGenericMidiMessage.ChannelEvent.ControlChange.OmniModeOff(possiblyChannel)
-                125 -> MBGenericMidiMessage.ChannelEvent.ControlChange.OmniModeOn(possiblyChannel)
-                126 -> MBGenericMidiMessage.ChannelEvent.ControlChange.MonoModeOn(possiblyChannel, message[2].toInt())
-                127 -> MBGenericMidiMessage.ChannelEvent.ControlChange.PolyModeOn(possiblyChannel)
+                123 -> MBGenericMidiMessage.ChannelEvent.ControlChange.AllNotesOff(MidiChannel.values()[possiblyChannel])
+                124 -> MBGenericMidiMessage.ChannelEvent.ControlChange.OmniModeOff(MidiChannel.values()[possiblyChannel])
+                125 -> MBGenericMidiMessage.ChannelEvent.ControlChange.OmniModeOn(MidiChannel.values()[possiblyChannel])
+                126 -> MBGenericMidiMessage.ChannelEvent.ControlChange.MonoModeOn(MidiChannel.values()[possiblyChannel], message[2].toInt())
+                127 -> MBGenericMidiMessage.ChannelEvent.ControlChange.PolyModeOn(MidiChannel.values()[possiblyChannel])
                 else -> MBGenericMidiMessage.ChannelEvent.ControlChange.ControlChangeController(
-                    possiblyChannel,
+                    MidiChannel.values()[possiblyChannel],
                     message[1].toInt(),
                     message[2].toInt()
                 )
             }
-            0xC0u -> MBGenericMidiMessage.ChannelEvent.ProgramChange(possiblyChannel, message[1].toInt())
-            0xD0u -> MBGenericMidiMessage.ChannelEvent.ChannelPressure(possiblyChannel, message[0].toInt())
+            0xC0u -> MBGenericMidiMessage.ChannelEvent.ProgramChange(MidiChannel.values()[possiblyChannel], message[1].toInt())
+            0xD0u -> MBGenericMidiMessage.ChannelEvent.ChannelPressure(MidiChannel.values()[possiblyChannel], message[0].toInt())
             0xE0u -> MBGenericMidiMessage.ChannelEvent.PitchBend(
-                possiblyChannel,
+                MidiChannel.values()[possiblyChannel],
                 message[0].toInt() + message[1].toInt() * 0x80 - 0x2000
             )
             else -> throw IllegalArgumentException("Cannot decode $baseCommand")

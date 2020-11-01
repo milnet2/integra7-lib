@@ -110,7 +110,7 @@ public class UInt7 @PublishedApi internal constructor(@PublishedApi internal val
         toUInt().hashCode()
 
     public override fun toString(): String =
-        String.format("0x%02X%02X%02X%02X (%d)", msb.toInt(), mmsb.toInt(), mlsb.toInt(), lsb.toInt(), data.toUShort().toInt())
+        String.format("0x%02X%02X%02X%02X", msb.toInt(), mmsb.toInt(), mlsb.toInt(), lsb.toInt(), data.toUShort().toInt())
 }
 
 public inline fun Byte.toUInt7(): UInt7 = this.toUInt().toUInt7UsingValue()
