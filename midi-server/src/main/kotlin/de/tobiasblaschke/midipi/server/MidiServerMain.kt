@@ -1,9 +1,11 @@
 package de.tobiasblaschke.midipi.server
 
+import de.tobiasblaschke.midipi.server.midi.bearable.domain.MidiChannel
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiDiscovery
 import de.tobiasblaschke.midipi.server.midi.bearable.javamidi.MBJavaMidiEndpoint
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.IntegraPart
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.RolandIntegra7MidiMessage.*
 import java.lang.System.exit
 import kotlin.system.exitProcess
 
@@ -36,8 +38,7 @@ object MidiServerMain {
             println(con.studioSet)
 
 // -----------------------------------------------------
-//            println("555 ${con.part(IntegraPart.P10).sound.pcm.common}")
-//
+
             IntegraPart.values()
                 .forEach { part ->
                     println("Part $part: " +
@@ -47,79 +48,31 @@ object MidiServerMain {
 
 // -----------------------------------------------------
 
-//            val undoc = con.request { it.undocumented }
-//            println(undoc.get())
+            // slow access (fetches the entire studio-set)
+            println("Studio set name:" + con.studioSet.common.name)
+
+            // fast access (fetches only the name)
+            println("Studio set name: " + con.request { it.studioSet.common.name }.get())
 
 // -----------------------------------------------------
-//            val identity = con.identity().get()
-//            println("Successful response! $identity")
-//
+
+            // Selects program 20 on channel 4
+            con.send(ProgramChange(MidiChannel.CHANNEL_4, 19))
 
 // -----------------------------------------------------
-//            con.send(RolandIntegra7MidiMessage.ProgramChange(MBGenericMidiMessage.ChannelEvent.ProgramChange(3, 19)))
 
-            // con.request { it.tone1.pcmSynthTone.common }
-//            val future: CompletableFuture<Any> = con.request { it.tone1 }
-//            //val future: CompletableFuture<Any> = con.request { it.studioSet }
-////            val future: CompletableFuture<Any> = con.request { it.studioSet.common }
-//            println("waiting....")
-//            val mem = future.get()
-//            println("$mem")
-//            println()
-//            println()
-//            println()
-//            println("Got response ${mem.startAddress}, length ${mem.payload.size}, => ${mem.payload.toHexString()}")
-//
-//            println(mem.payload.toList()
-//                .chunked(10)
-//                .map { it
-//                    .map { bt -> if (bt >= 48u && bt <= 90u) bt.toByte().toChar() else '.' }
-//                    .joinToString(separator = " ")
-//                }.joinToString(separator = "\n"))
+            // Select "Pure ClavCA1" in SN-A
+            con.send(BankSelectMsb(MidiChannel.CHANNEL_5, 89))
+            con.send(BankSelectLsb(MidiChannel.CHANNEL_5, 64))
+            con.send(ProgramChange(MidiChannel.CHANNEL_5, 35))
+            // Assume part == channel
+            Thread.sleep(100) // Just to be sure it's loaded...
+            println( "Expecting 'Pure ClavCA1' == " + con.part(IntegraPart.P5).sound.tone.tone.common.name)
+
+// -----------------------------------------------------
+
+            val identity = con.identity().get()
+            println("$identity")
         }
-
-//        val d = MidiDiscovery()
-//        val devices = d.scan()
-//        devices.forEach { println("Device $it") }
-//
-//        val controllers = devices
-//            .filterIsInstance<MatchedDevice.Pair>()
-//            .map(MidiController::create)
-//
-//        Thread.sleep(1000)
-//        println()
-//        println()
-//        println()
-//        println()
-//
-//        controllers
-//            .filter { it !is RolandIntegra7 }
-//            .forEach {  controller ->
-//            println("Opening a ${controller.javaClass.simpleName}")
-//            controller.open()
-//            dumpEvents(controller)
-//        }
-//
-//        controllers
-//            .firstOrNull { it is RolandIntegra7 }
-//            ?.let { dumpEvents(it) }
-//
-//        Thread.sleep(100000)
     }
-
-//    private fun dumpEvents(controller: MidiController) {
-//        val flow = controller.flow()
-//        GlobalScope.launch {
-//            flow.collect { event: MidiInputEvent -> println("Received $event") }
-//        }
-//
-//        if (controller is RolandIntegra7) {
-//            GlobalScope.launch {
-//                delay(1000)
-//                println("Requesting reverb...")
-//                println("Identity is ${controller.identity()}")
-//                // println("Reverb is ${controller.reverbType}")
-//            }
-//        }
-//    }
 }
