@@ -20,7 +20,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(UInt7(mlsb = 0x30u.toUByte7(), lsb = 0x3Cu.toUByte7()))
 
         val common = PcmSynthToneCommonBuilder(deviceId, address, part)
-        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part)
+        val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part)
         val partialMixTable = PcmSynthTonePartialMixTableBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u), part)
         val partial1 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u), part)
         val partial2 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u), part)
@@ -207,7 +207,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     }
 
     @ExperimentalUnsignedTypes
-    class PcmSynthToneMfxBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
+    class MfxSysEx(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthToneMfx>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x11u.toUByte7()))
 
@@ -224,43 +224,11 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val mfxControl4Source = EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), MfxControlSource::fromValue)
         val mfxControl4Sens = ByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 
-        val mfxControlAssign1 = UByteField(deviceId, address.offsetBy(lsb = 0x0Du))
-        val mfxControlAssign2 = UByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
-        val mfxControlAssign3 = UByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
-        val mfxControlAssign4 = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
+        val mfxControlAssignments = IntRange(0, 3)
+            .map { UByteField(deviceId, address.offsetBy(lsb = 0x0Du).offsetBy(0x01.toUInt7(), factor = it)) }
 
-        val mfxParameter1 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x11u))
-        val mfxParameter2 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x15u))
-        val mfxParameter3 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x19u))
-        val mfxParameter4 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x1Du))
-        val mfxParameter5 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x21u))
-        val mfxParameter6 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x25u))
-        val mfxParameter7 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x29u))
-        val mfxParameter8 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Du))
-        val mfxParameter9 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x31u))
-        val mfxParameter10 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u))
-        val mfxParameter11 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x39u))
-        val mfxParameter12 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x3Du))
-        val mfxParameter13 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x41u))
-        val mfxParameter14 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x45u))
-        val mfxParameter15 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x49u))
-        val mfxParameter16 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x4Du))
-        val mfxParameter17 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x51u))
-        val mfxParameter18 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x55u))
-        val mfxParameter19 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x59u))
-        val mfxParameter20 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du))
-        val mfxParameter21 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u))
-        val mfxParameter22 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u))
-        val mfxParameter23 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x69u))
-        val mfxParameter24 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x6Du))
-        val mfxParameter25 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x71u))
-        val mfxParameter26 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x75u))
-        val mfxParameter27 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x79u))
-        val mfxParameter28 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Du))
-        val mfxParameter29 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u))
-        val mfxParameter30 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x05u))
-        val mfxParameter31 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u))
-        val mfxParameter32 = SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du))
+        val mfxParameters = IntRange(0, 30) // TODO: 31
+            .map { SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x11u).offsetBy(0x04.toUInt7(), factor = it)) }
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthToneMfx {
             assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)}" }
@@ -280,46 +248,10 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                 mfxControl4Source = mfxControl4Source.deserialize(payload),
                 mfxControl4Sens = mfxControl4Sens.deserialize(payload),
 
-                mfxControlAssign1 = mfxControlAssign1.deserialize(payload),
-                mfxControlAssign2 = mfxControlAssign2.deserialize(payload),
-                mfxControlAssign3 = mfxControlAssign3.deserialize(payload),
-                mfxControlAssign4 = mfxControlAssign4.deserialize(payload),
-
-                mfxParameter1 = mfxParameter1.deserialize(payload),
-                mfxParameter2 = mfxParameter2.deserialize(payload),
-                mfxParameter3 = mfxParameter3.deserialize(payload),
-                mfxParameter4 = mfxParameter4.deserialize(payload),
-                mfxParameter5 = mfxParameter5.deserialize(payload),
-                mfxParameter6 = mfxParameter6.deserialize(payload),
-                mfxParameter7 = mfxParameter7.deserialize(payload),
-                mfxParameter8 = mfxParameter8.deserialize(payload),
-                mfxParameter9 = mfxParameter9.deserialize(payload),
-
-                mfxParameter10 = mfxParameter10.deserialize(payload),
-                mfxParameter11 = mfxParameter11.deserialize(payload),
-                mfxParameter12 = mfxParameter12.deserialize(payload),
-                mfxParameter13 = mfxParameter13.deserialize(payload),
-                mfxParameter14 = mfxParameter14.deserialize(payload),
-                mfxParameter15 = mfxParameter15.deserialize(payload),
-                mfxParameter16 = mfxParameter16.deserialize(payload),
-                mfxParameter17 = mfxParameter17.deserialize(payload),
-                mfxParameter18 = mfxParameter18.deserialize(payload),
-                mfxParameter19 = mfxParameter19.deserialize(payload),
-
-                mfxParameter20 = mfxParameter20.deserialize(payload),
-                mfxParameter21 = mfxParameter21.deserialize(payload),
-                mfxParameter22 = mfxParameter22.deserialize(payload),
-                mfxParameter23 = mfxParameter23.deserialize(payload),
-                mfxParameter24 = mfxParameter24.deserialize(payload),
-                mfxParameter25 = mfxParameter25.deserialize(payload),
-                mfxParameter26 = mfxParameter26.deserialize(payload),
-                mfxParameter27 = mfxParameter27.deserialize(payload),
-                mfxParameter28 = mfxParameter28.deserialize(payload),
-                mfxParameter29 = mfxParameter29.deserialize(payload),
-
-                mfxParameter30 = mfxParameter30.deserialize(payload),
-                mfxParameter31 = mfxParameter31.deserialize(payload),
-                mfxParameter32 = 0 // mfxParameter32.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Du), length, payload),  // TODO!!
+                mfxControlAssignments = mfxControlAssignments
+                    .map { it.deserialize(payload) },
+                mfxParameters = mfxParameters
+                    .map { it.deserialize(payload) },
             )
             } catch (e: AssertionError) {
                 throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address(it.toUInt7()).toString() }, 0x10)}", e)
@@ -838,7 +770,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(UInt7(mlsb = 0x22.toUByte7(), lsb = 0x7Fu.toUByte7()))
 
         val common = SuperNaturalSynthToneCommonBuilder(deviceId, address, part)
-        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
+        val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
         val partial1 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u), part)
         val partial2 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x21u, lsb = 0x00u), part)
         val partial3 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u), part)
@@ -1081,7 +1013,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(UInt7(mlsb = 0x30u.toUByte7(), lsb = 0x3Cu.toUByte7()))
 
         val common = SuperNaturalAcousticToneCommonBuilder(deviceId, address, part)
-        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
+        val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalAcousticTone {
             assert(this.isCovering(payload)) { "Not a SN-A part ($address..${address.offsetBy(size)}) for part $part" }
@@ -1170,7 +1102,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(UInt7(mlsb = 0x4D.toUByte7(), lsb = 0x7Fu.toUByte7()))
 
         val common = SuperNaturalDrumKitCommonBuilder(deviceId, address, part)
-        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
+        val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
         val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u), part)
         val notes = IntRange(0, 88-17)
             .map { SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it), part) }
@@ -1600,7 +1532,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             Integra7Size(UInt7(mmsb = 0x02u.toUByte7(), mlsb = 0x07Fu.toUByte7(), lsb = 0x7Fu.toUByte7()))
 
         val common = PcmDrumKitCommonBuilder(deviceId, address, part)
-        val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
+        val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
         val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u), part) // Same as SN-D
         val keys = IntRange(0, 78) // key 21 .. 108
             .map { PcmDrumKitPartialBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x02u, lsb = 0x00u, factor = it), part)  }

@@ -227,43 +227,8 @@ data class PcmSynthToneMfx(
     val mfxControl4Source: MfxControlSource,
     val mfxControl4Sens: Int,
 
-    val mfxControlAssign1: Int,
-    val mfxControlAssign2: Int,
-    val mfxControlAssign3: Int,
-    val mfxControlAssign4: Int,
-
-    val mfxParameter1: Int,
-    val mfxParameter2: Int,
-    val mfxParameter3: Int,
-    val mfxParameter4: Int,
-    val mfxParameter5: Int,
-    val mfxParameter6: Int,
-    val mfxParameter7: Int,
-    val mfxParameter8: Int,
-    val mfxParameter9: Int,
-    val mfxParameter10: Int,
-    val mfxParameter11: Int,
-    val mfxParameter12: Int,
-    val mfxParameter13: Int,
-    val mfxParameter14: Int,
-    val mfxParameter15: Int,
-    val mfxParameter16: Int,
-    val mfxParameter17: Int,
-    val mfxParameter18: Int,
-    val mfxParameter19: Int,
-    val mfxParameter20: Int,
-    val mfxParameter21: Int,
-    val mfxParameter22: Int,
-    val mfxParameter23: Int,
-    val mfxParameter24: Int,
-    val mfxParameter25: Int,
-    val mfxParameter26: Int,
-    val mfxParameter27: Int,
-    val mfxParameter28: Int,
-    val mfxParameter29: Int,
-    val mfxParameter30: Int,
-    val mfxParameter31: Int,
-    val mfxParameter32: Int,
+    val mfxControlAssignments: List<Int>,
+    val mfxParameters: List<Int>,
 ) {
     init {
         assert(mfxType in 0..67) { "Value not in range $mfxType" }
@@ -275,43 +240,8 @@ data class PcmSynthToneMfx(
         assert(mfxControl3Sens in -63..63) { "Value not in range $mfxControl3Sens" }
         assert(mfxControl4Sens in -63..63) { "Value not in range $mfxControl4Sens" }
 
-        assert(mfxControlAssign1 in 0..16) { "Value not in range $mfxControlAssign1" }
-        assert(mfxControlAssign2 in 0..16) { "Value not in range $mfxControlAssign2" }
-        assert(mfxControlAssign3 in 0..16) { "Value not in range $mfxControlAssign3" }
-        assert(mfxControlAssign4 in 0..16) { "Value not in range $mfxControlAssign4" }
-
-        assert(mfxParameter1  in -20000..20000) { "Value not in range $mfxParameter1" }
-        assert(mfxParameter2  in -20000..20000) { "Value not in range $mfxParameter2" }
-        assert(mfxParameter3  in -20000..20000) { "Value not in range $mfxParameter3" }
-        assert(mfxParameter4  in -20000..20000) { "Value not in range $mfxParameter4" }
-        assert(mfxParameter5  in -20000..20000) { "Value not in range $mfxParameter5" }
-        assert(mfxParameter6  in -20000..20000) { "Value not in range $mfxParameter6" }
-        assert(mfxParameter7  in -20000..20000) { "Value not in range $mfxParameter7" }
-        assert(mfxParameter8  in -20000..20000) { "Value not in range $mfxParameter8" }
-        assert(mfxParameter9  in -20000..20000) { "Value not in range $mfxParameter9" }
-        assert(mfxParameter10  in -20000..20000) { "Value not in range $mfxParameter10" }
-        assert(mfxParameter11  in -20000..20000) { "Value not in range $mfxParameter11" }
-        assert(mfxParameter12  in -20000..20000) { "Value not in range $mfxParameter12" }
-        assert(mfxParameter13  in -20000..20000) { "Value not in range $mfxParameter13" }
-        assert(mfxParameter14  in -20000..20000) { "Value not in range $mfxParameter14" }
-        assert(mfxParameter15  in -20000..20000) { "Value not in range $mfxParameter15" }
-        assert(mfxParameter16  in -20000..20000) { "Value not in range $mfxParameter16" }
-        assert(mfxParameter17  in -20000..20000) { "Value not in range $mfxParameter17" }
-        assert(mfxParameter18  in -20000..20000) { "Value not in range $mfxParameter18" }
-        assert(mfxParameter19  in -20000..20000) { "Value not in range $mfxParameter19" }
-        assert(mfxParameter20  in -20000..20000) { "Value not in range $mfxParameter20" }
-        assert(mfxParameter21  in -20000..20000) { "Value not in range $mfxParameter21" }
-        assert(mfxParameter22  in -20000..20000) { "Value not in range $mfxParameter22" }
-        assert(mfxParameter23  in -20000..20000) { "Value not in range $mfxParameter23" }
-        assert(mfxParameter24  in -20000..20000) { "Value not in range $mfxParameter24" }
-        assert(mfxParameter25  in -20000..20000) { "Value not in range $mfxParameter25" }
-        assert(mfxParameter26  in -20000..20000) { "Value not in range $mfxParameter26" }
-        assert(mfxParameter27  in -20000..20000) { "Value not in range $mfxParameter27" }
-        assert(mfxParameter28  in -20000..20000) { "Value not in range $mfxParameter28" }
-        assert(mfxParameter29  in -20000..20000) { "Value not in range $mfxParameter29" }
-        assert(mfxParameter30  in -20000..20000) { "Value not in range $mfxParameter30" }
-        assert(mfxParameter31  in -20000..20000) { "Value not in range $mfxParameter31" }
-        assert(mfxParameter32  in -20000..20000) { "Value not in range $mfxParameter32" }
+        assert(mfxControlAssignments.all { it in 0..16 }) { "Value not in range $mfxControlAssignments" }
+        assert(mfxParameters.all { it in -20000..20000 }) { "Value not in range $mfxParameters" }
     }
 }
 
