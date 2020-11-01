@@ -1,7 +1,5 @@
 package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain
 
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.IntegraToneBuilder
-
 data class PcmSynthTone(
     override val common: PcmSynthToneCommon,
     val mfx: PcmSynthToneMfx,
