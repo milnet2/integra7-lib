@@ -11,6 +11,7 @@ import java.lang.IllegalArgumentException
 sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     abstract val part: IntegraPart
 
+    @ExperimentalUnsignedTypes
     class PcmSynth7PartSysEx(
         override val deviceId: DeviceId,
         override val address: Integra7Address,
@@ -34,20 +35,16 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                 common = common.deserialize(payload),
                 mfx = mfx.deserialize(payload),
                 partialMixTable = partialMixTable.deserialize(payload),
-                partial1 = // if (payload.size >= startAddress.offsetBy(msb = 0x20u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial1.deserialize(payload), // else null,
-                partial2 = // if (payload.size >= startAddress.offsetBy(msb = 0x22u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial2.deserialize(payload), // else null,
-                partial3 = // if (payload.size >= startAddress.offsetBy(msb = 0x24u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial3.deserialize(payload), // else null,
-                partial4 = // if (payload.size >= startAddress.offsetBy(msb = 0x26u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial4.deserialize(payload), // else null,
-                common2 = // if (payload.size >= startAddress.offsetBy(msb = 0x30u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                common2.deserialize(payload), //else null,
+                partial1 = partial1.deserialize(payload),
+                partial2 = partial2.deserialize(payload),
+                partial3 = partial3.deserialize(payload),
+                partial4 = partial4.deserialize(payload),
+                common2 = common2.deserialize(payload), //else null,
             )
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmSynthToneCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthToneCommon>() {
         override val size = Integra7Size(0x50u)
@@ -179,108 +176,44 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                     pitchBendRangeDown = pitchBendRangeDown.deserialize(payload),
 
                     matrixControl1Source = matrixControl1Source.deserialize(payload),
-                    matrixControl1Destination1 = matrixControl1Destination1.deserialize(
-                        payload
-                    ),
+                    matrixControl1Destination1 = matrixControl1Destination1.deserialize(payload),
                     matrixControl1Sens1 = matrixControl1Sens1.deserialize(payload),
-                    matrixControl1Destination2 = matrixControl1Destination2.deserialize(
-                        payload
-                    ),
+                    matrixControl1Destination2 = matrixControl1Destination2.deserialize(payload),
                     matrixControl1Sens2 = matrixControl1Sens2.deserialize(payload),
-                    matrixControl1Destination3 = matrixControl1Destination3.deserialize(
-                        payload
-                    ),
+                    matrixControl1Destination3 = matrixControl1Destination3.deserialize(payload),
                     matrixControl1Sens3 = matrixControl1Sens3.deserialize(payload),
-                    matrixControl1Destination4 = matrixControl1Destination4.deserialize(
-                        payload
-                    ),
-                    matrixControl1Sens4 = matrixControl1Sens4.deserialize(
-                        payload
-                    ),
+                    matrixControl1Destination4 = matrixControl1Destination4.deserialize(payload),
+                    matrixControl1Sens4 = matrixControl1Sens4.deserialize(payload),
 
-                    matrixControl2Source = matrixControl2Source.deserialize(
-                        payload
-                    ),
-                    matrixControl2Destination1 = matrixControl2Destination1.deserialize(
-                        payload
-                    ),
-                    matrixControl2Sens1 = matrixControl2Sens1.deserialize(
-                        payload
-                    ),
-                    matrixControl2Destination2 = matrixControl2Destination2.deserialize(
-                        payload
-                    ),
-                    matrixControl2Sens2 = matrixControl2Sens2.deserialize(
-                        payload
-                    ),
-                    matrixControl2Destination3 = matrixControl2Destination3.deserialize(
-                        payload
-                    ),
-                    matrixControl2Sens3 = matrixControl2Sens3.deserialize(
-                        payload
-                    ),
-                    matrixControl2Destination4 = matrixControl2Destination4.deserialize(
-                        payload
-                    ),
-                    matrixControl2Sens4 = matrixControl2Sens4.deserialize(
-                        payload
-                    ),
+                    matrixControl2Source = matrixControl2Source.deserialize(payload),
+                    matrixControl2Destination1 = matrixControl2Destination1.deserialize(payload),
+                    matrixControl2Sens1 = matrixControl2Sens1.deserialize(payload),
+                    matrixControl2Destination2 = matrixControl2Destination2.deserialize(payload),
+                    matrixControl2Sens2 = matrixControl2Sens2.deserialize(payload),
+                    matrixControl2Destination3 = matrixControl2Destination3.deserialize(payload),
+                    matrixControl2Sens3 = matrixControl2Sens3.deserialize(payload),
+                    matrixControl2Destination4 = matrixControl2Destination4.deserialize(payload),
+                    matrixControl2Sens4 = matrixControl2Sens4.deserialize(payload),
 
-                    matrixControl3Source = matrixControl3Source.deserialize(
-                        payload
-                    ),
-                    matrixControl3Destination1 = matrixControl3Destination1.deserialize(
-                        payload
-                    ),
-                    matrixControl3Sens1 = matrixControl3Sens1.deserialize(
-                        payload
-                    ),
-                    matrixControl3Destination2 = matrixControl3Destination2.deserialize(
-                        payload
-                    ),
-                    matrixControl3Sens2 = matrixControl3Sens2.deserialize(
-                        payload
-                    ),
-                    matrixControl3Destination3 = matrixControl3Destination3.deserialize(
-                        payload
-                    ),
-                    matrixControl3Sens3 = matrixControl3Sens3.deserialize(
-                        payload
-                    ),
-                    matrixControl3Destination4 = matrixControl3Destination4.deserialize(
-                        payload
-                    ),
-                    matrixControl3Sens4 = matrixControl3Sens4.deserialize(
-                        payload
-                    ),
+                    matrixControl3Source = matrixControl3Source.deserialize(payload),
+                    matrixControl3Destination1 = matrixControl3Destination1.deserialize(payload),
+                    matrixControl3Sens1 = matrixControl3Sens1.deserialize(payload),
+                    matrixControl3Destination2 = matrixControl3Destination2.deserialize(payload),
+                    matrixControl3Sens2 = matrixControl3Sens2.deserialize(payload),
+                    matrixControl3Destination3 = matrixControl3Destination3.deserialize(payload),
+                    matrixControl3Sens3 = matrixControl3Sens3.deserialize(payload),
+                    matrixControl3Destination4 = matrixControl3Destination4.deserialize(payload),
+                    matrixControl3Sens4 = matrixControl3Sens4.deserialize(payload),
 
-                    matrixControl4Source = matrixControl4Source.deserialize(
-                        payload
-                    ),
-                    matrixControl4Destination1 = matrixControl4Destination1.deserialize(
-                        payload
-                    ),
-                    matrixControl4Sens1 = matrixControl4Sens1.deserialize(
-                        payload
-                    ),
-                    matrixControl4Destination2 = matrixControl4Destination2.deserialize(
-                        payload
-                    ),
-                    matrixControl4Sens2 = matrixControl4Sens2.deserialize(
-                        payload
-                    ),
-                    matrixControl4Destination3 = matrixControl4Destination3.deserialize(
-                        payload
-                    ),
-                    matrixControl4Sens3 = matrixControl4Sens3.deserialize(
-                        payload
-                    ),
-                    matrixControl4Destination4 = matrixControl4Destination4.deserialize(
-                        payload
-                    ),
-                    matrixControl4Sens4 = matrixControl4Sens4.deserialize(
-                        payload
-                    ),
+                    matrixControl4Source = matrixControl4Source.deserialize(payload),
+                    matrixControl4Destination1 = matrixControl4Destination1.deserialize(payload),
+                    matrixControl4Sens1 = matrixControl4Sens1.deserialize(payload),
+                    matrixControl4Destination2 = matrixControl4Destination2.deserialize(payload),
+                    matrixControl4Sens2 = matrixControl4Sens2.deserialize(payload),
+                    matrixControl4Destination3 = matrixControl4Destination3.deserialize(payload),
+                    matrixControl4Sens3 = matrixControl4Sens3.deserialize(payload),
+                    matrixControl4Destination4 = matrixControl4Destination4.deserialize(payload),
+                    matrixControl4Sens4 = matrixControl4Sens4.deserialize(payload),
                 )
             } catch (e: AssertionError) {
                 throw AssertionError("When reading $address size $size from ${payload.hexDump({ Integra7Address(it.toUInt7()).toString() }, 0x10)}", e)
@@ -298,6 +231,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmSynthToneMfxBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthToneMfx>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x11u.toUByte7()))
@@ -438,6 +372,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmSynthTonePartialMixTableBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthTonePartialMixTable>() {
         override val size = Integra7Size(0x29u.toUInt7UsingValue())
@@ -490,33 +425,25 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
 
                     pmt1PartialSwitch = pmt1PartialSwitch.deserialize(payload),
                     pmt1KeyboardRange = pmt1KeyboardRange.deserialize(payload),
-                    pmt1KeyboardFadeWidth = pmt1KeyboardFadeWidth.deserialize(
-                        payload
-                    ),
+                    pmt1KeyboardFadeWidth = pmt1KeyboardFadeWidth.deserialize(payload),
                     pmt1VelocityRange = pmt1VelocityRange.deserialize(payload),
                     pmt1VelocityFade = pmt1VelocityFade.deserialize(payload),
 
                     pmt2PartialSwitch = pmt2PartialSwitch.deserialize(payload),
                     pmt2KeyboardRange = pmt2KeyboardRange.deserialize(payload),
-                    pmt2KeyboardFadeWidth = pmt2KeyboardFadeWidth.deserialize(
-                        payload
-                    ),
+                    pmt2KeyboardFadeWidth = pmt2KeyboardFadeWidth.deserialize(payload),
                     pmt2VelocityRange = pmt2VelocityRange.deserialize(payload),
                     pmt2VelocityFade = pmt2VelocityFade.deserialize(payload),
 
                     pmt3PartialSwitch = pmt3PartialSwitch.deserialize(payload),
                     pmt3KeyboardRange = pmt3KeyboardRange.deserialize(payload),
-                    pmt3KeyboardFadeWidth = pmt3KeyboardFadeWidth.deserialize(
-                        payload
-                    ),
+                    pmt3KeyboardFadeWidth = pmt3KeyboardFadeWidth.deserialize(payload),
                     pmt3VelocityRange = pmt3VelocityRange.deserialize(payload),
                     pmt3VelocityFade = pmt3VelocityFade.deserialize(payload),
 
                     pmt4PartialSwitch = pmt4PartialSwitch.deserialize(payload),
                     pmt4KeyboardRange = pmt4KeyboardRange.deserialize(payload),
-                    pmt4KeyboardFadeWidth = pmt4KeyboardFadeWidth.deserialize(
-                        payload
-                    ),
+                    pmt4KeyboardFadeWidth = pmt4KeyboardFadeWidth.deserialize(payload),
                     pmt4VelocityRange = pmt4VelocityRange.deserialize(payload),
                     pmt4VelocityFade = 0 // TODO = pmt4VelocityFade.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
                 )
@@ -536,6 +463,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmSynthTonePartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthTonePartial>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01.toUByte7(), lsb = 0x1Au.toUByte7()))
@@ -702,40 +630,23 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val lfo2TvaDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
         val lfo2PanDepth = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x08u))
 
-        val lfoStepType =
-            UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..1)
-        val lfoStep1 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au), -36..36)
-        val lfoStep2 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -36..36)
-        val lfoStep3 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -36..36)
-        val lfoStep4 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -36..36)
-        val lfoStep5 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu), -36..36)
-        val lfoStep6 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), -36..36)
-        val lfoStep7 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u), -36..36)
-        val lfoStep8 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u), -36..36)
-        val lfoStep9 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x12u), -36..36)
-        val lfoStep10 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u), -36..36)
-        val lfoStep11 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x14u), -36..36)
-        val lfoStep12 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -36..36)
-        val lfoStep13 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u), -36..36)
-        val lfoStep14 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u), -36..36)
-        val lfoStep15 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u), -36..36)
-        val lfoStep16 =
-            ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u), -36..36)
+        val lfoStepType = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x09u), 0..1)
+        val lfoStep1 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Au), -36..36)
+        val lfoStep2 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), -36..36)
+        val lfoStep3 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), -36..36)
+        val lfoStep4 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du), -36..36)
+        val lfoStep5 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Eu), -36..36)
+        val lfoStep6 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), -36..36)
+        val lfoStep7 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u), -36..36)
+        val lfoStep8 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x11u), -36..36)
+        val lfoStep9 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x12u), -36..36)
+        val lfoStep10 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x13u), -36..36)
+        val lfoStep11 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x14u), -36..36)
+        val lfoStep12 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x15u), -36..36)
+        val lfoStep13 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x16u), -36..36)
+        val lfoStep14 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x17u), -36..36)
+        val lfoStep15 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x18u), -36..36)
+        val lfoStep16 = ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u), -36..36)
 
         override fun deserialize(
             payload: SparseUByteArray
@@ -765,54 +676,22 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                     receiveHold1 = receiveHold1.deserialize(payload),
                     redamper = redamper.deserialize(payload),
 
-                    partialControl1Switch1 = partialControl1Switch1.deserialize(
-                        payload
-                    ),
-                    partialControl1Switch2 = partialControl1Switch2.deserialize(
-                        payload
-                    ),
-                    partialControl1Switch3 = partialControl1Switch3.deserialize(
-                        payload
-                    ),
-                    partialControl1Switch4 = partialControl1Switch4.deserialize(
-                        payload
-                    ),
-                    partialControl2Switch1 = partialControl2Switch1.deserialize(
-                        payload
-                    ),
-                    partialControl2Switch2 = partialControl2Switch2.deserialize(
-                        payload
-                    ),
-                    partialControl2Switch3 = partialControl2Switch3.deserialize(
-                        payload
-                    ),
-                    partialControl2Switch4 = partialControl2Switch4.deserialize(
-                        payload
-                    ),
-                    partialControl3Switch1 = partialControl3Switch1.deserialize(
-                        payload
-                    ),
-                    partialControl3Switch2 = partialControl3Switch2.deserialize(
-                        payload
-                    ),
-                    partialControl3Switch3 = partialControl3Switch3.deserialize(
-                        payload
-                    ),
-                    partialControl3Switch4 = partialControl3Switch4.deserialize(
-                        payload
-                    ),
-                    partialControl4Switch1 = partialControl4Switch1.deserialize(
-                        payload
-                    ),
-                    partialControl4Switch2 = partialControl4Switch2.deserialize(
-                        payload
-                    ),
-                    partialControl4Switch3 = partialControl4Switch3.deserialize(
-                        payload
-                    ),
-                    partialControl4Switch4 = partialControl4Switch4.deserialize(
-                        payload
-                    ),
+                    partialControl1Switch1 = partialControl1Switch1.deserialize(payload),
+                    partialControl1Switch2 = partialControl1Switch2.deserialize(payload),
+                    partialControl1Switch3 = partialControl1Switch3.deserialize(payload),
+                    partialControl1Switch4 = partialControl1Switch4.deserialize(payload),
+                    partialControl2Switch1 = partialControl2Switch1.deserialize(payload),
+                    partialControl2Switch2 = partialControl2Switch2.deserialize(payload),
+                    partialControl2Switch3 = partialControl2Switch3.deserialize(payload),
+                    partialControl2Switch4 = partialControl2Switch4.deserialize(payload),
+                    partialControl3Switch1 = partialControl3Switch1.deserialize(payload),
+                    partialControl3Switch2 = partialControl3Switch2.deserialize(payload),
+                    partialControl3Switch3 = partialControl3Switch3.deserialize(payload),
+                    partialControl3Switch4 = partialControl3Switch4.deserialize(payload),
+                    partialControl4Switch1 = partialControl4Switch1.deserialize(payload),
+                    partialControl4Switch2 = partialControl4Switch2.deserialize(payload),
+                    partialControl4Switch3 = partialControl4Switch3.deserialize(payload),
+                    partialControl4Switch4 = partialControl4Switch4.deserialize(payload),
 
                     waveGroupType = waveGroupType.deserialize(payload),
                     waveGroupId = waveGroupId.deserialize(payload),
@@ -827,12 +706,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
 
                     pitchEnvDepth = pitchEnvDepth.deserialize(payload),
                     pitchEnvVelocitySens = pitchEnvVelocitySens.deserialize(payload),
-                    pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.deserialize(
-                        payload
-                    ),
-                    pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.deserialize(
-                        payload
-                    ),
+                    pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.deserialize(payload),
+                    pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.deserialize(payload),
                     // pitchEnvTimeKeyfollow = pitchEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
                     pitchEnvTime1 = pitchEnvTime1.deserialize(payload),
                     pitchEnvTime2 = pitchEnvTime2.deserialize(payload),
@@ -847,25 +722,15 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                     tvfFilterType = tvfFilterType.deserialize(payload),
                     tvfCutoffFrequency = tvfCutoffFrequency.deserialize(payload),
                     // tvfCutoffKeyfollow = tvfCutoffKeyfollow.interpret(startAddress.offsetBy(lsb = 0x4Au), length, payload),
-                    tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.deserialize(
-                        payload
-                    ),
-                    tvfCutoffVelocitySens = tvfCutoffVelocitySens.deserialize(
-                        payload
-                    ),
+                    tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.deserialize(payload),
+                    tvfCutoffVelocitySens = tvfCutoffVelocitySens.deserialize(payload),
                     tvfResonance = tvfResonance.deserialize(payload),
-                    tvfResonanceVelocitySens = tvfResonanceVelocitySens.deserialize(
-                        payload
-                    ),
+                    tvfResonanceVelocitySens = tvfResonanceVelocitySens.deserialize(payload),
                     tvfEnvDepth = tvfEnvDepth.deserialize(payload),
                     tvfEnvVelocityCurve = tvfEnvVelocityCurve.deserialize(payload),
                     tvfEnvVelocitySens = tvfEnvVelocitySens.deserialize(payload),
-                    tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.deserialize(
-                        payload
-                    ),
-                    tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.deserialize(
-                        payload
-                    ),
+                    tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.deserialize(payload),
+                    tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.deserialize(payload),
                     // tvfEnvTimeKeyfollow = tvfEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x54u), length, payload),
                     tvfEnvTime1 = tvfEnvTime1.deserialize(payload),
                     tvfEnvTime2 = tvfEnvTime2.deserialize(payload),
@@ -880,16 +745,10 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                     //biasLevel = biasLevel.interpret(startAddress.offsetBy(lsb = 0x5Eu), length, payload),
                     biasPosition = biasPosition.deserialize(payload),
                     biasDirection = biasDirection.deserialize(payload),
-                    tvaLevelVelocityCurve = tvaLevelVelocityCurve.deserialize(
-                        payload
-                    ),
+                    tvaLevelVelocityCurve = tvaLevelVelocityCurve.deserialize(payload),
                     tvaLevelVelocitySens = tvaLevelVelocitySens.deserialize(payload),
-                    tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.deserialize(
-                        payload
-                    ),
-                    tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.deserialize(
-                        payload
-                    ),
+                    tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.deserialize(payload),
+                    tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.deserialize(payload),
                     // tvaEnvTimeKeyfollow = tvaEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x65u), length, payload),
                     tvaEnvTime1 = tvaEnvTime1.deserialize(payload),
                     tvaEnvTime2 = tvaEnvTime2.deserialize(payload),
@@ -921,12 +780,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                     // lfo2Keyfollow = lfo2Keyfollow.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x01u), length, payload),
                     lfo2FadeMode = lfo2FadeMode.deserialize(payload),
                     lfo2FadeTime = lfo2FadeTime.deserialize(payload),
-                    lfo2KeyTrigger = lfo2KeyTrigger.deserialize(
-                        payload
-                    ),
-                    lfo2PitchDepth = lfo2PitchDepth.deserialize(
-                        payload
-                    ),
+                    lfo2KeyTrigger = lfo2KeyTrigger.deserialize(payload),
+                    lfo2PitchDepth = lfo2PitchDepth.deserialize(payload),
                     lfo2TvfDepth = lfo2TvfDepth.deserialize(payload),
                     lfo2TvaDepth = lfo2TvaDepth.deserialize(payload),
                     lfo2PanDepth = lfo2PanDepth.deserialize(payload),
@@ -968,6 +823,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmSynthToneCommon2Builder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthToneCommon2>() {
         override val size = Integra7Size(0x3Cu.toUInt7UsingValue())
@@ -1008,6 +864,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalSynth7PartSysEx(
         override val deviceId: DeviceId,
         override val address: Integra7Address,
@@ -1034,6 +891,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalSynthToneCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SupernaturalSynthToneCommon>() {
         override val size = Integra7Size(0x40u)
@@ -1107,6 +965,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalSynthTonePartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SuperNaturalSynthTonePartial>() {
         override val size = Integra7Size(0x3Du)
@@ -1228,19 +1087,11 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
 
                 modulationShape = modulationShape.deserialize(payload),
                 modulationLfoRate = modulationLfoRate.deserialize(payload),
-                modulationLfoTempoSyncSwitch = modulationLfoTempoSyncSwitch.deserialize(
-                    payload
-                ),
-                modulationLfoTempoSyncNote = modulationLfoTempoSyncNote.deserialize(
-                    payload
-                ),
+                modulationLfoTempoSyncSwitch = modulationLfoTempoSyncSwitch.deserialize(payload),
+                modulationLfoTempoSyncNote = modulationLfoTempoSyncNote.deserialize(payload),
                 oscPulseWidthShift = oscPulseWidthShift.deserialize(payload),
-                modulationLfoPitchDepth = modulationLfoPitchDepth.deserialize(
-                    payload
-                ),
-                modulationLfoFilterDepth = modulationLfoFilterDepth.deserialize(
-                    payload
-                ),
+                modulationLfoPitchDepth = modulationLfoPitchDepth.deserialize(payload),
+                modulationLfoFilterDepth = modulationLfoFilterDepth.deserialize(payload),
                 modulationLfoAmpDepth = modulationLfoAmpDepth.deserialize(payload),
                 modulationLfoPanDepth = modulationLfoPanDepth.deserialize(payload),
 
@@ -1251,9 +1102,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                 waveNumber = waveNumber.deserialize(payload),
                 hpfCutoff = hpfCutoff.deserialize(payload),
                 superSawDetune = superSawDetune.deserialize(payload),
-                modulationLfoRateControl = modulationLfoRateControl.deserialize(
-                    payload
-                ),
+                modulationLfoRateControl = modulationLfoRateControl.deserialize(payload),
 //                ampLevelKeyfollow = ampLevelKeyfollow.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
             )
         }
@@ -1436,34 +1285,16 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                 commonCompEq = commonCompEq.deserialize(payload),
                 notes = listOf(
                     note27.deserialize(payload),
-                    note28.deserialize(
-                        payload
-                    ),
-                    note29.deserialize(
-                        payload
-                    ),
+                    note28.deserialize(payload),
+                    note29.deserialize(payload),
 
-                    note30.deserialize(
-                        payload
-                    ),
-                    note31.deserialize(
-                        payload
-                    ),
-                    note32.deserialize(
-                        payload
-                    ),
-                    note33.deserialize(
-                        payload
-                    ),
-                    note34.deserialize(
-                        payload
-                    ),
-                    note35.deserialize(
-                        payload
-                    ),
-                    note36.deserialize(
-                        payload
-                    ),
+                    note30.deserialize(payload),
+                    note31.deserialize(payload),
+                    note32.deserialize(payload),
+                    note33.deserialize(payload),
+                    note34.deserialize(payload),
+                    note35.deserialize(payload),
+                    note36.deserialize(payload),
                     note37.deserialize(
                         payload
                     ),

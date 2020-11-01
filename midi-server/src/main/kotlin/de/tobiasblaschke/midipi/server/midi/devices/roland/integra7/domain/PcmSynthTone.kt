@@ -4,14 +4,17 @@ data class PcmSynthTone(
     override val common: PcmSynthToneCommon,
     val mfx: PcmSynthToneMfx,
     val partialMixTable: PcmSynthTonePartialMixTable,
-    val partial1: PcmSynthTonePartial?,
-    val partial2: PcmSynthTonePartial?,
-    val partial3: PcmSynthTonePartial?,
-    val partial4: PcmSynthTonePartial?,
-    val common2: PcmSynthToneCommon2?,
+    val partial1: PcmSynthTonePartial,
+    val partial2: PcmSynthTonePartial,
+    val partial3: PcmSynthTonePartial,
+    val partial4: PcmSynthTonePartial,
+    val common2: PcmSynthToneCommon2,
 ): IntegraTone {
     override fun toString(): String =
-        "PcmSynthTone(\n\tcommon = $common\n\tmfx = $mfx\n\tpartial1 = $partial1\n" +
+        "PcmSynthTone(\n" +
+                "\tcommon = $common\n" +
+                "\tmfx = $mfx\n" +
+                "\tpartial1 = $partial1\n" +
                 "\tpartial2 = $partial2\n" +
                 "\tpartial3 = $partial3\n" +
                 "\tpartial4 = $partial4\n" +
