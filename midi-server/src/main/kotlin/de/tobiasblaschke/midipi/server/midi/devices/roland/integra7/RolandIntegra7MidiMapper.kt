@@ -9,6 +9,7 @@ import de.tobiasblaschke.midipi.server.utils.UInt7
 import de.tobiasblaschke.midipi.server.utils.toUByte7
 import java.lang.IllegalArgumentException
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class RolandIntegra7MidiMapper: MidiMapper<UByteSerializable, RolandIntegra7MidiMessage> {
     private val delegate = GenericMidiMapper()
 

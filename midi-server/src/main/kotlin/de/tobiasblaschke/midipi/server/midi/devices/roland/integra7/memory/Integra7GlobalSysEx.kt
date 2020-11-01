@@ -8,6 +8,7 @@ import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integ
 import de.tobiasblaschke.midipi.server.utils.*
 import java.lang.IllegalArgumentException
 
+@OptIn(ExperimentalUnsignedTypes::class)
 sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
     class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<Setup>() {
         override val size = Integra7Size(38u.toUInt7UsingByteRepresentation())

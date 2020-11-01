@@ -33,6 +33,7 @@ enum class TwoChOutputMode {
     SPEAKER, PHONES
 }
 
+@OptIn(ExperimentalUnsignedTypes::class)
 enum class ControlSource(val hex: UByte) {
     OFF(0x00u),
     CC01(1u),  CC02(2u),  CC03(3u),  CC04(4u),  CC05(5u),
@@ -58,7 +59,7 @@ enum class ControlSource(val hex: UByte) {
 
     companion object {
         fun fromValue(value: Int): ControlSource =
-            ControlSource.values()
+            values()
                 .first { it.hex.toInt() == value }
     }
 }

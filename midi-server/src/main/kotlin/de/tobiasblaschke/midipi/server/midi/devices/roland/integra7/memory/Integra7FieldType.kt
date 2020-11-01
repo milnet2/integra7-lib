@@ -197,6 +197,7 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
 
     // -------------------------------------------------------------
 
+    @OptIn(ExperimentalUnsignedTypes::class)
     protected fun <V> checkRange(value: V, payload: SparseUByteArray, range: IntRange): V {
         if (!range.contains(value)) {
             throw FieldReadException(address, size, payload, "Value $value not in $range")

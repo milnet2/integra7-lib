@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.utils
 import org.junit.Assert.*
 import org.junit.Test
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class UNibbleTest {
     @Test
     fun `add should overflow at 0x0F`() {

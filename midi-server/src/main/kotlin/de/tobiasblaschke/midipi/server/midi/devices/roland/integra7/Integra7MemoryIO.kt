@@ -5,7 +5,7 @@ import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.*
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.*
 import de.tobiasblaschke.midipi.server.utils.*
 
-
+@OptIn(ExperimentalUnsignedTypes::class)
 abstract class Integra7MemoryIO<T> {
     internal abstract val deviceId: DeviceId
     internal abstract val address: Integra7Address
@@ -116,7 +116,7 @@ class AddressRequestBuilder(private val deviceId: DeviceId) {
 //}
 
 
-
+@OptIn(ExperimentalUnsignedTypes::class)
 data class ToneAddressRequestBuilder(
     override val deviceId: DeviceId,
     override val address: Integra7Address,

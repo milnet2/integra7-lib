@@ -3,6 +3,7 @@ package de.tobiasblaschke.midipi.server.utils
 import org.junit.Assert.*
 import org.junit.Test
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class UInt7Test {
     @Test
     fun `should overflow at 0x8000`() {

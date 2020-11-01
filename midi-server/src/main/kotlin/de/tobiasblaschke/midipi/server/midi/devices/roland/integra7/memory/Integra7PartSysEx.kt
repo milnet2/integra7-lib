@@ -8,6 +8,7 @@ import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integ
 import de.tobiasblaschke.midipi.server.utils.*
 import java.lang.IllegalArgumentException
 
+@OptIn(ExperimentalUnsignedTypes::class)
 sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     abstract val part: IntegraPart
 

@@ -4,8 +4,8 @@ import de.tobiasblaschke.midipi.server.midi.bearable.UByteSerializable
 import de.tobiasblaschke.midipi.server.utils.*
 import java.lang.IllegalArgumentException
 
+@OptIn(ExperimentalUnsignedTypes::class)
 data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<Integra7Address> {
-
     enum class Integra7Ranges(val range: UIntRange) {
         SETUP(0x01000000u.toUInt7UsingByteRepresentation().rangeTo(0x017F7F7Fu.toUInt7UsingByteRepresentation())),
         SYSTEM(0x02000000u.toUInt7UsingByteRepresentation().rangeTo(0x027F7F7Fu.toUInt7UsingByteRepresentation())),

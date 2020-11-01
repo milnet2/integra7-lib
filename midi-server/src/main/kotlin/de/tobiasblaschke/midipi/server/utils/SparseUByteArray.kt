@@ -4,6 +4,7 @@ import java.util.*
 import kotlin.Comparator
 import kotlin.NoSuchElementException
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class SparseUByteArray(): Collection<UByte> {
     private val values = TreeMap<IntRange, UByteArray>(Comparator.comparing(IntRange::first))
     override val size: Int

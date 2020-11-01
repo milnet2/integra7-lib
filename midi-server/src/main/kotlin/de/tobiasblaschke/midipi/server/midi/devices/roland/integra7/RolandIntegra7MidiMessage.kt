@@ -10,6 +10,7 @@ import de.tobiasblaschke.midipi.server.utils.toUInt7
 import java.lang.Exception
 import java.time.Duration
 
+@OptIn(ExperimentalUnsignedTypes::class)
 sealed class RolandIntegra7MidiMessage: UByteSerializable {
     companion object {
         val ROLAND = ManufacturerId.Short(0x41u)
@@ -566,8 +567,10 @@ sealed class RolandIntegra7RpnMessage {
     }
 }
 
+@OptIn(ExperimentalUnsignedTypes::class)
 fun UShort.msb(): UByte =
     (this / 0x100u).toUByte()
 
+@OptIn(ExperimentalUnsignedTypes::class)
 fun UShort.lsb(): UByte =
     (this and 0xFFu).toUByte()

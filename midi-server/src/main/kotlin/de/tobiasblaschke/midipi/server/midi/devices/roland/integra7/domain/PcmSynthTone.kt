@@ -18,6 +18,7 @@ data class PcmSynthTone(
                 "\tcommon2 = $common2\n)"
 }
 
+@OptIn(ExperimentalUnsignedTypes::class)
 enum class MatrixControlSource(val hex: UByte) {
     OFF(0x00u),
     CC01(1u),  CC02(2u),  CC03(3u),  CC04(4u),  CC05(5u),
@@ -51,6 +52,7 @@ enum class MatrixControlSource(val hex: UByte) {
     }
 }
 
+@OptIn(ExperimentalUnsignedTypes::class)
 enum class MatrixControlDestination(val hex: UByte) {
     OFF(0u), PCH(1u), CUT(2u), RES(3u), LEV(4u), PAN(5u),
     DRY(6u), CHO(7u), REV(8u), PIT_LFO1(9u),
@@ -179,6 +181,7 @@ data class PcmSynthToneCommon(
     }
 }
 
+@OptIn(ExperimentalUnsignedTypes::class)
 enum class MfxControlSource(val hex: UByte) {
     OFF(0x00u),
     CC01(1u),  CC02(2u),  CC03(3u),  CC04(4u),  CC05(5u),

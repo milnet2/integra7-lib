@@ -6,6 +6,7 @@ import java.lang.IllegalArgumentException
  * A 28-bit value, that only uses 7 bits in each of its bytes
  */
 @Suppress("NON_PUBLIC_PRIMARY_CONSTRUCTOR_OF_INLINE_CLASS")
+@OptIn(ExperimentalUnsignedTypes::class)
 public class UInt7 @PublishedApi internal constructor(@PublishedApi internal val data: Int) : Comparable<UInt7> {
     public constructor(msb: UByte7 = UByte7.MIN_VALUE, mmsb: UByte7 = UByte7.MIN_VALUE, mlsb: UByte7 = UByte7.MIN_VALUE, lsb: UByte7 = UByte7.MIN_VALUE):
             this((((msb * 0x80u + mmsb.toUInt()) * 0x80u + mlsb.toUInt()) * 0x80u + lsb.toUInt()).toInt())

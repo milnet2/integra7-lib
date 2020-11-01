@@ -10,6 +10,7 @@ import kotlin.experimental.xor
  * A short value, that only uses 7 bits in each of its bytes
  */
 @Suppress("NON_PUBLIC_PRIMARY_CONSTRUCTOR_OF_INLINE_CLASS")
+@OptIn(ExperimentalUnsignedTypes::class)
 public class UShort7 @PublishedApi internal constructor(@PublishedApi internal val data: Short) : Comparable<UShort7> {
     public constructor(msb: UByte7, lsb: UByte7): this((msb * 0x80u + lsb.toUByte()).toShort())
 

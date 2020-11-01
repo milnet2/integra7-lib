@@ -1,5 +1,6 @@
 package de.tobiasblaschke.midipi.server.utils
 
+@OptIn(ExperimentalUnsignedTypes::class)
 public class UByte7Array constructor(@PublishedApi internal val storage: ByteArray) : Collection<UByte7> {
     public constructor(size: Int) : this(ByteArray(size))
 

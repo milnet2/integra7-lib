@@ -7,6 +7,7 @@ import kotlin.experimental.or
 import kotlin.experimental.xor
 
 @Suppress("NON_PUBLIC_PRIMARY_CONSTRUCTOR_OF_INLINE_CLASS")
+@OptIn(ExperimentalUnsignedTypes::class)
 public class UNibble @PublishedApi internal constructor(@PublishedApi internal val data: Byte): Comparable<UNibble> {
     companion object {
         public val MIN_VALUE: UNibble = UNibble(0)

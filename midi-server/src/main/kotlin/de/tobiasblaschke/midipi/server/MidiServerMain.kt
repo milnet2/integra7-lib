@@ -19,7 +19,7 @@ object MidiServerMain {
             try {
                 devices
                     .filterIsInstance<MBJavaMidiEndpoint.MBJavaMidiReadWriteEndpoint>()
-                    .first { it.name.contains("INTEGRA7") }!!
+                    .first { it.name.contains("INTEGRA7") }
             } catch (e: NoSuchElementException) {
                 println("No integra7 fround!")
                 exitProcess(1)

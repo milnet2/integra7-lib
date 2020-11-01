@@ -12,6 +12,7 @@ import kotlin.experimental.*
  * A UByte only using the lower 7 bits
  */
 @Suppress("NON_PUBLIC_PRIMARY_CONSTRUCTOR_OF_INLINE_CLASS")
+@OptIn(ExperimentalUnsignedTypes::class)
 public class UByte7 @PublishedApi internal constructor(@PublishedApi internal val data: Byte): Comparable<UByte7> {
     public constructor(msn: UNibble, lsn: UNibble): this((msn * 0x10u + lsn.toUByte()).toByte())
 
