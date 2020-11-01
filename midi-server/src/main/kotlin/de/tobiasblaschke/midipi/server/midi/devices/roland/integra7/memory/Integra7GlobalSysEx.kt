@@ -7,8 +7,8 @@ import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integ
 import de.tobiasblaschke.midipi.server.utils.*
 import java.lang.IllegalArgumentException
 
-abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
-    data class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<Setup>() {
+sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
+    class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<Setup>() {
         override val size = Integra7Size(38u)
 
         val soundMode = UByteField(deviceId, address)
@@ -33,7 +33,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
-    data class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<SystemCommon>() {
+    class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<SystemCommon>() {
         override val size= Integra7Size(0x2Fu)
 
         val masterKeyShift = ByteField(deviceId, address.offsetBy(lsb = 0x04u))
@@ -89,7 +89,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
 
 // -----------------------------------------------------
 
-    data class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSet>() {
+    class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSet>() {
         override val size = Integra7Size(UInt7(mlsb = 0x57u.toUByte7(), lsb = UByte7.MAX_VALUE))
 
         val common = StudioSetCommonAddressRequestBuilder(deviceId, address)
@@ -136,7 +136,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             )
         }
 
-        data class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommon>() {
+        class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommon>() {
             override val size = Integra7Size(54u)
 
             val name = AsciiStringField(deviceId, address, 0x0F)
@@ -220,7 +220,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        data class StudioSetCommonChorusBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommonChorus>() {
+        class StudioSetCommonChorusBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommonChorus>() {
             override val size = Integra7Size(54u)
 
             val type = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
@@ -252,7 +252,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        data class StudioSetCommonReverbBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommonReverb>() {
+        class StudioSetCommonReverbBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommonReverb>() {
             override val size = Integra7Size(63u)
 
             val type = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
@@ -284,7 +284,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        data class StudioSetMotionalSurroundBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetMotionalSurround>() {
+        class StudioSetMotionalSurroundBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetMotionalSurround>() {
             override val size = Integra7Size(0x10u.toUInt7UsingValue())
 
             val switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
@@ -326,7 +326,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        data class StudioSetMasterEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetMasterEq>() {
+        class StudioSetMasterEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetMasterEq>() {
             override val size = Integra7Size(63u)
 
             val lowFrequency = EnumField(
@@ -365,7 +365,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        data class StudioSetPartBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetPart>() {
+        class StudioSetPartBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetPart>() {
             override val size = Integra7Size(0x4Du)
 
             val receiveChannel = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..30)
@@ -526,7 +526,7 @@ abstract class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        data class StudioSetPartEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetPartEq>() {
+        class StudioSetPartEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetPartEq>() {
             override val size = Integra7Size(8u)
 
             val switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
