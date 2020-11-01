@@ -89,4 +89,9 @@ enum class PianoKey(val midiNumber: Int, val pianoKey: Int) {
     B0(23, 3),
     A_SHARP_0(22, 2),
     A0(21, 1);
+
+    companion object {
+        fun byKeyNumber(key: Int): PianoKey =
+            values().first { it.pianoKey == key }
+    }
 }

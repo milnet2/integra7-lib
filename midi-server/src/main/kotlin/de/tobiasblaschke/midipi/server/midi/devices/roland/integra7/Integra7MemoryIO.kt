@@ -122,7 +122,7 @@ data class ToneAddressRequestBuilder(
     override val address: Integra7Address,
     val part: IntegraPart
 ): Integra7MemoryIO<ToneAddressRequestBuilder.TemporaryTone>() {
-    override val size: Integra7Size = Integra7Size(UInt7(mmsb = 0x20.toUByte7()))
+    override val size: Integra7Size = Integra7Size(mmsb = 0x20u, lsb = 0x00u)
 
     val pcmSynthTone = Integra7PartSysEx.PcmSynth7PartSysEx(deviceId, address, part)
     val snSynthTone = Integra7PartSysEx.SuperNaturalSynth7PartSysEx(deviceId, address.offsetBy(mmsb = 0x01u.toUByte7()), part)

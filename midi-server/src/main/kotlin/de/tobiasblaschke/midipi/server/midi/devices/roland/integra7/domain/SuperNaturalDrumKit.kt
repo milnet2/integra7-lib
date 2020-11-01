@@ -195,6 +195,7 @@ enum class SupernaturalDrumMidQ {
 }
 
 data class SuperNaturalDrumKitNote(
+    val pianoKey: PianoKey,
     val instrumentNumber: Int,
     val level: Int,
     val pan: Int,

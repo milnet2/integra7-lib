@@ -28,7 +28,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common2 = PcmSynthToneCommon2Builder(deviceId, address.offsetBy(mlsb = 0x30u, lsb = 0x00u), part)
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthTone {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMS" }
 
             return PcmSynthTone(
                 common = common.deserialize(payload),
@@ -114,7 +114,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val matrixControl4Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthToneCommon {
-            assert(this.isCovering(payload)) { "Not PCM synth tone common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMS Common" }
 
             try {
                 return PcmSynthToneCommon(
@@ -227,7 +227,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             .map { SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x11u).offsetBy(0x04.toUInt7(), factor = it)) }
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthToneMfx {
-            assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)} for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected MFX" }
 
             try {
             return PcmSynthToneMfx(
@@ -305,7 +305,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthTonePartialMixTable {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone PMT ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMS Tone" }
 
             try {
                 return PcmSynthTonePartialMixTable(
@@ -544,7 +544,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthTonePartial {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone partial ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMS partial" }
 
             try {
                 return PcmSynthTonePartial(
@@ -731,7 +731,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthToneCommon2 {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone common2 ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMS Common2" }
 
             try {
                 return PcmSynthToneCommon2(
@@ -773,7 +773,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val partial3 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u), part)
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalSynthTone {
-            assert(this.isCovering(payload)) { "Not a SN-S part ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-S part" }
 
             return SuperNaturalSynthTone(
                 common = common.deserialize(payload),
@@ -824,7 +824,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalSynthToneCommon {
-            assert(this.isCovering(payload)) { "Not a SN-S common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-S common" }
 
             return SupernaturalSynthToneCommon(
                 name = name.deserialize(payload),
@@ -934,7 +934,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SuperNaturalSynthTonePartial {
-            assert(this.isCovering(payload)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-S tone" }
 
             return SuperNaturalSynthTonePartial(
                 oscWaveForm = oscWaveForm.deserialize(payload),
@@ -1015,7 +1015,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalAcousticTone {
-            assert(this.isCovering(payload)) { "Not a SN-A part ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-A part" }
 
             return SuperNaturalAcousticTone(
                 common = common.deserialize(payload),
@@ -1061,7 +1061,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalAcousticToneCommon {
-            assert(this.isCovering(payload)) { "Not SN-A Common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-A common" }
 
             return SupernaturalAcousticToneCommon(
                 name = name.deserialize(payload),
@@ -1106,11 +1106,11 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common = SuperNaturalDrumKitCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
         val commonCompEq = SuperNaturalDrumKitCommonCompEqBuilder(deviceId, address.offsetBy(mlsb = 0x08u, lsb = 0x00u), part)
-        val notes = IntRange(0, 88-17)
-            .map { SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it), part) }
+        val notes = IntRange(27, 88)
+            .map { SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it - 27), part, PianoKey.byKeyNumber(it)) }
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalDrumKit {
-            assert(this.isCovering(payload)) { "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-D" }
 
             return SuperNaturalDrumKit(
                 common = common.deserialize(payload),
@@ -1474,7 +1474,12 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     }
 
     @ExperimentalUnsignedTypes
-    class SuperNaturalDrumKitNoteBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
+    class SuperNaturalDrumKitNoteBuilder(
+        override val deviceId: DeviceId,
+        override val address: Integra7Address,
+        override val part: IntegraPart,
+        val pianoKey: PianoKey
+    ) :
         Integra7PartSysEx<SuperNaturalDrumKitNote>() {
         override val size = Integra7Size(0x13u)
 
@@ -1508,9 +1513,10 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SuperNaturalDrumKitNote {
-            assert(this.isCovering(payload)) { "Not SN-D note ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected SN-D Note for $pianoKey" }
 
             return SuperNaturalDrumKitNote(
+                pianoKey = pianoKey,
                 instrumentNumber = instrumentNumber.deserialize(payload),
                 level = level.deserialize(payload),
                 pan = pan.deserialize(payload),
@@ -1523,7 +1529,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
                 variation = variation.deserialize(payload),
                 dynamicRange = dynamicRange.deserialize(payload),
                 stereoWidth = stereoWidth.deserialize(payload),
-                outputAssign = SuperNaturalDrumToneOutput.PART // TODO outputAssign.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
+                outputAssign = outputAssign.deserialize(payload),
             )
         }
     }
@@ -1545,7 +1551,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common2 = PcmDrumKitCommon2Builder(deviceId, address.offsetBy(mmsb = 0x02u, lsb = 0x00u), part)
 
         override fun deserialize(payload: SparseUByteArray): PcmDrumKit {
-            assert(this.isCovering(payload)) { "Not PCMD ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMD" }
 
             return PcmDrumKit(
                 common = common.deserialize(payload),
@@ -1572,7 +1578,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitCommon {
-            assert(this.isCovering(payload)) { "Not PCMD Common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMD Common" }
 
             return PcmDrumKitCommon(
                 name = name.deserialize(payload),
@@ -1802,7 +1808,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitPartial {
-            assert(this.isCovering(payload)) { "Not PCMS partial ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMD Partial" }
 
             return PcmDrumKitPartial(
                 name = name.deserialize(payload),
@@ -2025,7 +2031,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     @ExperimentalUnsignedTypes
     class PcmDrumKitCommon2Builder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmDrumKitCommon2>() {
-        override val size = Integra7Size(0x32u)
+        override val size = Integra7Size(lsb = 0x32u)
 
         val phraseNumber = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x10u))
         val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x31u))
@@ -2033,7 +2039,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitCommon2 {
-            assert(this.isCovering(payload)) { "Not PCMD Common2 ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
+            assertCovered(payload) { "Expected PCMD Common2" }
 
             return PcmDrumKitCommon2(
                 phraseNumber = phraseNumber.deserialize(payload),
