@@ -27,23 +27,23 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val partial4 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x26u, lsb = 0x00u), part)
         val common2 = PcmSynthToneCommon2Builder(deviceId, address.offsetBy(mlsb = 0x30u, lsb = 0x00u), part)
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): PcmSynthTone {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): PcmSynthTone {
+            assert(this.isCovering(payload)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part" }
 
             return PcmSynthTone(
-                common = common.interpret(startAddress, payload),
-                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), payload),
-                partialMixTable = partialMixTable.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u), payload),
+                common = common.deserialize(payload),
+                mfx = mfx.deserialize(payload),
+                partialMixTable = partialMixTable.deserialize(payload),
                 partial1 = // if (payload.size >= startAddress.offsetBy(msb = 0x20u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial1.interpret(startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u), payload), // else null,
+                partial1.deserialize(payload), // else null,
                 partial2 = // if (payload.size >= startAddress.offsetBy(msb = 0x22u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial2.interpret(startAddress.offsetBy(mlsb = 0x22u, lsb = 0x00u), payload), // else null,
+                partial2.deserialize(payload), // else null,
                 partial3 = // if (payload.size >= startAddress.offsetBy(msb = 0x24u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial3.interpret(startAddress.offsetBy(mlsb = 0x24u, lsb = 0x00u), payload), // else null,
+                partial3.deserialize(payload), // else null,
                 partial4 = // if (payload.size >= startAddress.offsetBy(msb = 0x26u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                partial4.interpret(startAddress.offsetBy(mlsb = 0x26u, lsb = 0x00u), payload), // else null,
+                partial4.deserialize(payload), // else null,
                 common2 = // if (payload.size >= startAddress.offsetBy(msb = 0x30u, lsb = 0x00u).offsetBy(partial1.size).fullByteAddress())
-                common2.interpret(startAddress.offsetBy(mlsb = 0x30u, lsb = 0x00u), payload), //else null,
+                common2.deserialize(payload), //else null,
             )
         }
     }
@@ -143,147 +143,143 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             EnumField(deviceId, address.offsetBy(lsb = 0x4Du), MatrixControlDestination.values())
         val matrixControl4Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthToneCommon {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not a PCM synth tone common ($address..${address.offsetBy(size)}) for part $part" }
 
             try {
                 return PcmSynthToneCommon(
-                    name = name.interpret(startAddress, payload),
-                    level = level.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                    pan = pan.interpret(startAddress.offsetBy(lsb = 0x00Fu), payload),
-                    priority = priority.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                    coarseTuning = coarseTuning.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                    fineTuning = fineTuning.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                    ocataveShift = ocataveShift.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                    stretchTuneDepth = stretchTuneDepth.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                    analogFeel = analogFeel.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                    monoPoly = monoPoly.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
-                    legatoSwitch = legatoSwitch.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                    legatoRetrigger = legatoRetrigger.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
-                    portamentoSwitch = portamentoSwitch.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                    portamentoMode = portamentoMode.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                    portamentoType = portamentoType.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
-                    portamentoStart = portamentoStart.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                    portamentoTime = portamentoTime.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
+                    name = name.deserialize(payload),
+                    level = level.deserialize(payload),
+                    pan = pan.deserialize(payload),
+                    priority = priority.deserialize(payload),
+                    coarseTuning = coarseTuning.deserialize(payload),
+                    fineTuning = fineTuning.deserialize(payload),
+                    ocataveShift = ocataveShift.deserialize(payload),
+                    stretchTuneDepth = stretchTuneDepth.deserialize(payload),
+                    analogFeel = analogFeel.deserialize(payload),
+                    monoPoly = monoPoly.deserialize(payload),
+                    legatoSwitch = legatoSwitch.deserialize(payload),
+                    legatoRetrigger = legatoRetrigger.deserialize(payload),
+                    portamentoSwitch = portamentoSwitch.deserialize(payload),
+                    portamentoMode = portamentoMode.deserialize(payload),
+                    portamentoType = portamentoType.deserialize(payload),
+                    portamentoStart = portamentoStart.deserialize(payload),
+                    portamentoTime = portamentoTime.deserialize(payload),
 
-                    cutoffOffset = cutoffOffset.interpret(startAddress.offsetBy(lsb = 0x22u), payload),
-                    resonanceOffset = resonanceOffset.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                    attackTimeOffset = attackTimeOffset.interpret(startAddress.offsetBy(lsb = 0x24u), payload),
-                    releaseTimeOffset = releaseTimeOffset.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
-                    velocitySensOffset = velocitySensOffset.interpret(startAddress.offsetBy(lsb = 0x26u), payload),
+                    cutoffOffset = cutoffOffset.deserialize(payload),
+                    resonanceOffset = resonanceOffset.deserialize(payload),
+                    attackTimeOffset = attackTimeOffset.deserialize(payload),
+                    releaseTimeOffset = releaseTimeOffset.deserialize(payload),
+                    velocitySensOffset = velocitySensOffset.deserialize(payload),
 
-                    pmtControlSwitch = pmtControlSwitch.interpret(startAddress.offsetBy(lsb = 0x28u), payload),
-                    pitchBendRangeUp = pitchBendRangeUp.interpret(startAddress.offsetBy(lsb = 0x29u), payload),
-                    pitchBendRangeDown = pitchBendRangeDown.interpret(startAddress.offsetBy(lsb = 0x2Au), payload),
+                    pmtControlSwitch = pmtControlSwitch.deserialize(payload),
+                    pitchBendRangeUp = pitchBendRangeUp.deserialize(payload),
+                    pitchBendRangeDown = pitchBendRangeDown.deserialize(payload),
 
-                    matrixControl1Source = matrixControl1Source.interpret(startAddress.offsetBy(lsb = 0x2Bu), payload),
-                    matrixControl1Destination1 = matrixControl1Destination1.interpret(
-                        startAddress.offsetBy(lsb = 0x2Cu),
+                    matrixControl1Source = matrixControl1Source.deserialize(payload),
+                    matrixControl1Destination1 = matrixControl1Destination1.deserialize(
                         payload
                     ),
-                    matrixControl1Sens1 = matrixControl1Sens1.interpret(startAddress.offsetBy(lsb = 0x2Du), payload),
-                    matrixControl1Destination2 = matrixControl1Destination2.interpret(
-                        startAddress.offsetBy(lsb = 0x2Eu),
+                    matrixControl1Sens1 = matrixControl1Sens1.deserialize(payload),
+                    matrixControl1Destination2 = matrixControl1Destination2.deserialize(
                         payload
                     ),
-                    matrixControl1Sens2 = matrixControl1Sens2.interpret(startAddress.offsetBy(lsb = 0x2Fu), payload),
-                    matrixControl1Destination3 = matrixControl1Destination3.interpret(
-                        startAddress.offsetBy(lsb = 0x30u),
+                    matrixControl1Sens2 = matrixControl1Sens2.deserialize(payload),
+                    matrixControl1Destination3 = matrixControl1Destination3.deserialize(
                         payload
                     ),
-                    matrixControl1Sens3 = matrixControl1Sens3.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
-                    matrixControl1Destination4 = matrixControl1Destination4.interpret(
-                        startAddress.offsetBy(lsb = 0x32u), payload
+                    matrixControl1Sens3 = matrixControl1Sens3.deserialize(payload),
+                    matrixControl1Destination4 = matrixControl1Destination4.deserialize(
+                        payload
                     ),
-                    matrixControl1Sens4 = matrixControl1Sens4.interpret(
-                        startAddress.offsetBy(lsb = 0x33u), payload
-                    ),
-
-                    matrixControl2Source = matrixControl2Source.interpret(
-                        startAddress.offsetBy(lsb = 0x34u), payload
-                    ),
-                    matrixControl2Destination1 = matrixControl2Destination1.interpret(
-                        startAddress.offsetBy(lsb = 0x35u), payload
-                    ),
-                    matrixControl2Sens1 = matrixControl2Sens1.interpret(
-                        startAddress.offsetBy(lsb = 0x36u), payload
-                    ),
-                    matrixControl2Destination2 = matrixControl2Destination2.interpret(
-                        startAddress.offsetBy(lsb = 0x37u), payload
-                    ),
-                    matrixControl2Sens2 = matrixControl2Sens2.interpret(
-                        startAddress.offsetBy(lsb = 0x38u), payload
-                    ),
-                    matrixControl2Destination3 = matrixControl2Destination3.interpret(
-                        startAddress.offsetBy(lsb = 0x39u), payload
-                    ),
-                    matrixControl2Sens3 = matrixControl2Sens3.interpret(
-                        startAddress.offsetBy(lsb = 0x3Au), payload
-                    ),
-                    matrixControl2Destination4 = matrixControl2Destination4.interpret(
-                        startAddress.offsetBy(lsb = 0x3Bu), payload
-                    ),
-                    matrixControl2Sens4 = matrixControl2Sens4.interpret(
-                        startAddress.offsetBy(lsb = 0x3Cu), payload
+                    matrixControl1Sens4 = matrixControl1Sens4.deserialize(
+                        payload
                     ),
 
-                    matrixControl3Source = matrixControl3Source.interpret(
-                        startAddress.offsetBy(lsb = 0x3Du), payload
+                    matrixControl2Source = matrixControl2Source.deserialize(
+                        payload
                     ),
-                    matrixControl3Destination1 = matrixControl3Destination1.interpret(
-                        startAddress.offsetBy(lsb = 0x3Eu), payload
+                    matrixControl2Destination1 = matrixControl2Destination1.deserialize(
+                        payload
                     ),
-                    matrixControl3Sens1 = matrixControl3Sens1.interpret(
-                        startAddress.offsetBy(lsb = 0x3Fu), payload
+                    matrixControl2Sens1 = matrixControl2Sens1.deserialize(
+                        payload
                     ),
-                    matrixControl3Destination2 = matrixControl3Destination2.interpret(
-                        startAddress.offsetBy(lsb = 0x40u), payload
+                    matrixControl2Destination2 = matrixControl2Destination2.deserialize(
+                        payload
                     ),
-                    matrixControl3Sens2 = matrixControl3Sens2.interpret(
-                        startAddress.offsetBy(lsb = 0x41u), payload
+                    matrixControl2Sens2 = matrixControl2Sens2.deserialize(
+                        payload
                     ),
-                    matrixControl3Destination3 = matrixControl3Destination3.interpret(
-                        startAddress.offsetBy(lsb = 0x42u), payload
+                    matrixControl2Destination3 = matrixControl2Destination3.deserialize(
+                        payload
                     ),
-                    matrixControl3Sens3 = matrixControl3Sens3.interpret(
-                        startAddress.offsetBy(lsb = 0x43u), payload
+                    matrixControl2Sens3 = matrixControl2Sens3.deserialize(
+                        payload
                     ),
-                    matrixControl3Destination4 = matrixControl3Destination4.interpret(
-                        startAddress.offsetBy(lsb = 0x44u), payload
+                    matrixControl2Destination4 = matrixControl2Destination4.deserialize(
+                        payload
                     ),
-                    matrixControl3Sens4 = matrixControl3Sens4.interpret(
-                        startAddress.offsetBy(lsb = 0x45u), payload
+                    matrixControl2Sens4 = matrixControl2Sens4.deserialize(
+                        payload
                     ),
 
-                    matrixControl4Source = matrixControl4Source.interpret(
-                        startAddress.offsetBy(lsb = 0x46u), payload
+                    matrixControl3Source = matrixControl3Source.deserialize(
+                        payload
                     ),
-                    matrixControl4Destination1 = matrixControl4Destination1.interpret(
-                        startAddress.offsetBy(lsb = 0x47u), payload
+                    matrixControl3Destination1 = matrixControl3Destination1.deserialize(
+                        payload
                     ),
-                    matrixControl4Sens1 = matrixControl4Sens1.interpret(
-                        startAddress.offsetBy(lsb = 0x48u), payload
+                    matrixControl3Sens1 = matrixControl3Sens1.deserialize(
+                        payload
                     ),
-                    matrixControl4Destination2 = matrixControl4Destination2.interpret(
-                        startAddress.offsetBy(lsb = 0x49u), payload
+                    matrixControl3Destination2 = matrixControl3Destination2.deserialize(
+                        payload
                     ),
-                    matrixControl4Sens2 = matrixControl4Sens2.interpret(
-                        startAddress.offsetBy(lsb = 0x4Au), payload
+                    matrixControl3Sens2 = matrixControl3Sens2.deserialize(
+                        payload
                     ),
-                    matrixControl4Destination3 = matrixControl4Destination3.interpret(
-                        startAddress.offsetBy(lsb = 0x4Bu), payload
+                    matrixControl3Destination3 = matrixControl3Destination3.deserialize(
+                        payload
                     ),
-                    matrixControl4Sens3 = matrixControl4Sens3.interpret(
-                        startAddress.offsetBy(lsb = 0x4Cu), payload
+                    matrixControl3Sens3 = matrixControl3Sens3.deserialize(
+                        payload
                     ),
-                    matrixControl4Destination4 = matrixControl4Destination4.interpret(
-                        startAddress.offsetBy(lsb = 0x4Du), payload
+                    matrixControl3Destination4 = matrixControl3Destination4.deserialize(
+                        payload
                     ),
-                    matrixControl4Sens4 = matrixControl4Sens4.interpret(
-                        startAddress.offsetBy(lsb = 0x4Eu), payload
+                    matrixControl3Sens4 = matrixControl3Sens4.deserialize(
+                        payload
+                    ),
+
+                    matrixControl4Source = matrixControl4Source.deserialize(
+                        payload
+                    ),
+                    matrixControl4Destination1 = matrixControl4Destination1.deserialize(
+                        payload
+                    ),
+                    matrixControl4Sens1 = matrixControl4Sens1.deserialize(
+                        payload
+                    ),
+                    matrixControl4Destination2 = matrixControl4Destination2.deserialize(
+                        payload
+                    ),
+                    matrixControl4Sens2 = matrixControl4Sens2.deserialize(
+                        payload
+                    ),
+                    matrixControl4Destination3 = matrixControl4Destination3.deserialize(
+                        payload
+                    ),
+                    matrixControl4Sens3 = matrixControl4Sens3.deserialize(
+                        payload
+                    ),
+                    matrixControl4Destination4 = matrixControl4Destination4.deserialize(
+                        payload
+                    ),
+                    matrixControl4Sens4 = matrixControl4Sens4.deserialize(
+                        payload
                     ),
                 )
             } catch (e: AssertionError) {
@@ -365,68 +361,65 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val mfxParameter32 =
             SignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x0Du))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthToneMfx {
-            assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()} in  ${payload.hexDump({ Integra7Address(
-                it.toUInt7()
-            ).toString() }, 0x10)}" }
+            assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)}" }
 
             try {
             return PcmSynthToneMfx(
-                mfxType = mfxType.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                mfxChorusSend = mfxChorusSend.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
-                mfxReverbSend = mfxReverbSend.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
+                mfxType = mfxType.deserialize(payload),
+                mfxChorusSend = mfxChorusSend.deserialize(payload),
+                mfxReverbSend = mfxReverbSend.deserialize(payload),
 
-                mfxControl1Source = mfxControl1Source.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                mfxControl1Sens = mfxControl1Sens.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                mfxControl2Source = mfxControl2Source.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                mfxControl2Sens = mfxControl2Sens.interpret(startAddress.offsetBy(lsb = 0x08u), payload),
-                mfxControl3Source = mfxControl3Source.interpret(startAddress.offsetBy(lsb = 0x09u), payload),
-                mfxControl3Sens = mfxControl3Sens.interpret(startAddress.offsetBy(lsb = 0x0Au), payload),
-                mfxControl4Source = mfxControl4Source.interpret(startAddress.offsetBy(lsb = 0x0Bu), payload),
-                mfxControl4Sens = mfxControl4Sens.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
+                mfxControl1Source = mfxControl1Source.deserialize(payload),
+                mfxControl1Sens = mfxControl1Sens.deserialize(payload),
+                mfxControl2Source = mfxControl2Source.deserialize(payload),
+                mfxControl2Sens = mfxControl2Sens.deserialize(payload),
+                mfxControl3Source = mfxControl3Source.deserialize(payload),
+                mfxControl3Sens = mfxControl3Sens.deserialize(payload),
+                mfxControl4Source = mfxControl4Source.deserialize(payload),
+                mfxControl4Sens = mfxControl4Sens.deserialize(payload),
 
-                mfxControlAssign1 = mfxControlAssign1.interpret(startAddress.offsetBy(lsb = 0x0Du), payload),
-                mfxControlAssign2 = mfxControlAssign2.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                mfxControlAssign3 = mfxControlAssign3.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                mfxControlAssign4 = mfxControlAssign4.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
+                mfxControlAssign1 = mfxControlAssign1.deserialize(payload),
+                mfxControlAssign2 = mfxControlAssign2.deserialize(payload),
+                mfxControlAssign3 = mfxControlAssign3.deserialize(payload),
+                mfxControlAssign4 = mfxControlAssign4.deserialize(payload),
 
-                mfxParameter1 = mfxParameter1.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                mfxParameter2 = mfxParameter2.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                mfxParameter3 = mfxParameter3.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                mfxParameter4 = mfxParameter4.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                mfxParameter5 = mfxParameter5.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                mfxParameter6 = mfxParameter6.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
-                mfxParameter7 = mfxParameter7.interpret(startAddress.offsetBy(lsb = 0x29u), payload),
-                mfxParameter8 = mfxParameter8.interpret(startAddress.offsetBy(lsb = 0x2Du), payload),
-                mfxParameter9 = mfxParameter9.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
+                mfxParameter1 = mfxParameter1.deserialize(payload),
+                mfxParameter2 = mfxParameter2.deserialize(payload),
+                mfxParameter3 = mfxParameter3.deserialize(payload),
+                mfxParameter4 = mfxParameter4.deserialize(payload),
+                mfxParameter5 = mfxParameter5.deserialize(payload),
+                mfxParameter6 = mfxParameter6.deserialize(payload),
+                mfxParameter7 = mfxParameter7.deserialize(payload),
+                mfxParameter8 = mfxParameter8.deserialize(payload),
+                mfxParameter9 = mfxParameter9.deserialize(payload),
 
-                mfxParameter10 = mfxParameter10.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                mfxParameter11 = mfxParameter11.interpret(startAddress.offsetBy(lsb = 0x39u), payload),
-                mfxParameter12 = mfxParameter12.interpret(startAddress.offsetBy(lsb = 0x3Du), payload),
-                mfxParameter13 = mfxParameter13.interpret(startAddress.offsetBy(lsb = 0x41u), payload),
-                mfxParameter14 = mfxParameter14.interpret(startAddress.offsetBy(lsb = 0x45u), payload),
-                mfxParameter15 = mfxParameter15.interpret(startAddress.offsetBy(lsb = 0x49u), payload),
-                mfxParameter16 = mfxParameter16.interpret(startAddress.offsetBy(lsb = 0x4Du), payload),
-                mfxParameter17 = mfxParameter17.interpret(startAddress.offsetBy(lsb = 0x51u), payload),
-                mfxParameter18 = mfxParameter18.interpret(startAddress.offsetBy(lsb = 0x55u), payload),
-                mfxParameter19 = mfxParameter19.interpret(startAddress.offsetBy(lsb = 0x59u), payload),
+                mfxParameter10 = mfxParameter10.deserialize(payload),
+                mfxParameter11 = mfxParameter11.deserialize(payload),
+                mfxParameter12 = mfxParameter12.deserialize(payload),
+                mfxParameter13 = mfxParameter13.deserialize(payload),
+                mfxParameter14 = mfxParameter14.deserialize(payload),
+                mfxParameter15 = mfxParameter15.deserialize(payload),
+                mfxParameter16 = mfxParameter16.deserialize(payload),
+                mfxParameter17 = mfxParameter17.deserialize(payload),
+                mfxParameter18 = mfxParameter18.deserialize(payload),
+                mfxParameter19 = mfxParameter19.deserialize(payload),
 
-                mfxParameter20 = mfxParameter20.interpret(startAddress.offsetBy(lsb = 0x5Du), payload),
-                mfxParameter21 = mfxParameter21.interpret(startAddress.offsetBy(lsb = 0x61u), payload),
-                mfxParameter22 = mfxParameter22.interpret(startAddress.offsetBy(lsb = 0x65u), payload),
-                mfxParameter23 = mfxParameter23.interpret(startAddress.offsetBy(lsb = 0x69u), payload),
-                mfxParameter24 = mfxParameter24.interpret(startAddress.offsetBy(lsb = 0x6Du), payload),
-                mfxParameter25 = mfxParameter25.interpret(startAddress.offsetBy(lsb = 0x71u), payload),
-                mfxParameter26 = mfxParameter26.interpret(startAddress.offsetBy(lsb = 0x75u), payload),
-                mfxParameter27 = mfxParameter27.interpret(startAddress.offsetBy(lsb = 0x79u), payload),
-                mfxParameter28 = mfxParameter28.interpret(startAddress.offsetBy(lsb = 0x7Du), payload),
-                mfxParameter29 = mfxParameter29.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x01u), payload),
+                mfxParameter20 = mfxParameter20.deserialize(payload),
+                mfxParameter21 = mfxParameter21.deserialize(payload),
+                mfxParameter22 = mfxParameter22.deserialize(payload),
+                mfxParameter23 = mfxParameter23.deserialize(payload),
+                mfxParameter24 = mfxParameter24.deserialize(payload),
+                mfxParameter25 = mfxParameter25.deserialize(payload),
+                mfxParameter26 = mfxParameter26.deserialize(payload),
+                mfxParameter27 = mfxParameter27.deserialize(payload),
+                mfxParameter28 = mfxParameter28.deserialize(payload),
+                mfxParameter29 = mfxParameter29.deserialize(payload),
 
-                mfxParameter30 = mfxParameter30.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x05u), payload),
-                mfxParameter31 = mfxParameter31.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x09u), payload),
+                mfxParameter30 = mfxParameter30.deserialize(payload),
+                mfxParameter31 = mfxParameter31.deserialize(payload),
                 mfxParameter32 = 0 // mfxParameter32.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Du), length, payload),  // TODO!!
             )
             } catch (e: AssertionError) {
@@ -481,55 +474,50 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val pmt4VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x25u))
         val pmt4VelocityFade = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x27u))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthTonePartialMixTable {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not a PCM synth tone PMT ($address..${address.offsetBy(size)}) for part $part" }
 
             try {
                 return PcmSynthTonePartialMixTable(
-                    structureType12 = structureType12.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    booster12 = booster12.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                    structureType34 = structureType34.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
-                    booster34 = booster34.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
+                    structureType12 = structureType12.deserialize(payload),
+                    booster12 = booster12.deserialize(payload),
+                    structureType34 = structureType34.deserialize(payload),
+                    booster34 = booster34.deserialize(payload),
 
-                    velocityControl = velocityControl.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
+                    velocityControl = velocityControl.deserialize(payload),
 
-                    pmt1PartialSwitch = pmt1PartialSwitch.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                    pmt1KeyboardRange = pmt1KeyboardRange.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                    pmt1KeyboardFadeWidth = pmt1KeyboardFadeWidth.interpret(
-                        startAddress.offsetBy(lsb = 0x08u),
+                    pmt1PartialSwitch = pmt1PartialSwitch.deserialize(payload),
+                    pmt1KeyboardRange = pmt1KeyboardRange.deserialize(payload),
+                    pmt1KeyboardFadeWidth = pmt1KeyboardFadeWidth.deserialize(
                         payload
                     ),
-                    pmt1VelocityRange = pmt1VelocityRange.interpret(startAddress.offsetBy(lsb = 0x0Au), payload),
-                    pmt1VelocityFade = pmt1VelocityFade.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
+                    pmt1VelocityRange = pmt1VelocityRange.deserialize(payload),
+                    pmt1VelocityFade = pmt1VelocityFade.deserialize(payload),
 
-                    pmt2PartialSwitch = pmt2PartialSwitch.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                    pmt2KeyboardRange = pmt2KeyboardRange.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                    pmt2KeyboardFadeWidth = pmt2KeyboardFadeWidth.interpret(
-                        startAddress.offsetBy(lsb = 0x11u),
+                    pmt2PartialSwitch = pmt2PartialSwitch.deserialize(payload),
+                    pmt2KeyboardRange = pmt2KeyboardRange.deserialize(payload),
+                    pmt2KeyboardFadeWidth = pmt2KeyboardFadeWidth.deserialize(
                         payload
                     ),
-                    pmt2VelocityRange = pmt2VelocityRange.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                    pmt2VelocityFade = pmt2VelocityFade.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
+                    pmt2VelocityRange = pmt2VelocityRange.deserialize(payload),
+                    pmt2VelocityFade = pmt2VelocityFade.deserialize(payload),
 
-                    pmt3PartialSwitch = pmt3PartialSwitch.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                    pmt3KeyboardRange = pmt3KeyboardRange.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
-                    pmt3KeyboardFadeWidth = pmt3KeyboardFadeWidth.interpret(
-                        startAddress.offsetBy(lsb = 0x1Au),
+                    pmt3PartialSwitch = pmt3PartialSwitch.deserialize(payload),
+                    pmt3KeyboardRange = pmt3KeyboardRange.deserialize(payload),
+                    pmt3KeyboardFadeWidth = pmt3KeyboardFadeWidth.deserialize(
                         payload
                     ),
-                    pmt3VelocityRange = pmt3VelocityRange.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                    pmt3VelocityFade = pmt3VelocityFade.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
+                    pmt3VelocityRange = pmt3VelocityRange.deserialize(payload),
+                    pmt3VelocityFade = pmt3VelocityFade.deserialize(payload),
 
-                    pmt4PartialSwitch = pmt4PartialSwitch.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
-                    pmt4KeyboardRange = pmt4KeyboardRange.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                    pmt4KeyboardFadeWidth = pmt4KeyboardFadeWidth.interpret(
-                        startAddress.offsetBy(lsb = 0x23u),
+                    pmt4PartialSwitch = pmt4PartialSwitch.deserialize(payload),
+                    pmt4KeyboardRange = pmt4KeyboardRange.deserialize(payload),
+                    pmt4KeyboardFadeWidth = pmt4KeyboardFadeWidth.deserialize(
                         payload
                     ),
-                    pmt4VelocityRange = pmt4VelocityRange.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
+                    pmt4VelocityRange = pmt4VelocityRange.deserialize(payload),
                     pmt4VelocityFade = 0 // TODO = pmt4VelocityFade.interpret(startAddress.offsetBy(lsb = 0x27u), length, payload),
                 )
             } catch (e: AssertionError) {
@@ -749,245 +737,216 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val lfoStep16 =
             ByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x19u), -36..36)
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthTonePartial {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not a PCM synth tone partial ($address..${address.offsetBy(size)}) for part $part" }
 
             try {
                 return PcmSynthTonePartial(
-                    level = level.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    chorusTune = chorusTune.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                    fineTune = fineTune.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
-                    randomPithDepth = randomPithDepth.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
-                    pan = pan.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
+                    level = level.deserialize(payload),
+                    chorusTune = chorusTune.deserialize(payload),
+                    fineTune = fineTune.deserialize(payload),
+                    randomPithDepth = randomPithDepth.deserialize(payload),
+                    pan = pan.deserialize(payload),
                     // panKeyFollow = panKeyFollow.interpret(startAddress.offsetBy(lsb = 0x05u), length, payload),
-                    panDepth = panDepth.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                    alternatePanDepth = alternatePanDepth.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                    envMode = envMode.interpret(startAddress.offsetBy(lsb = 0x08u), payload),
-                    delayMode = delayMode.interpret(startAddress.offsetBy(lsb = 0x09u), payload),
-                    delayTime = delayTime.interpret(startAddress.offsetBy(lsb = 0x0Au), payload),
+                    panDepth = panDepth.deserialize(payload),
+                    alternatePanDepth = alternatePanDepth.deserialize(payload),
+                    envMode = envMode.deserialize(payload),
+                    delayMode = delayMode.deserialize(payload),
+                    delayTime = delayTime.deserialize(payload),
 
-                    outputLevel = outputLevel.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
-                    chorusSendLevel = chorusSendLevel.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                    reverbSendLevel = reverbSendLevel.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
+                    outputLevel = outputLevel.deserialize(payload),
+                    chorusSendLevel = chorusSendLevel.deserialize(payload),
+                    reverbSendLevel = reverbSendLevel.deserialize(payload),
 
-                    receiveBender = receiveBender.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                    receiveExpression = receiveExpression.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                    receiveHold1 = receiveHold1.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                    redamper = redamper.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
+                    receiveBender = receiveBender.deserialize(payload),
+                    receiveExpression = receiveExpression.deserialize(payload),
+                    receiveHold1 = receiveHold1.deserialize(payload),
+                    redamper = redamper.deserialize(payload),
 
-                    partialControl1Switch1 = partialControl1Switch1.interpret(
-                        startAddress.offsetBy(lsb = 0x17u),
+                    partialControl1Switch1 = partialControl1Switch1.deserialize(
                         payload
                     ),
-                    partialControl1Switch2 = partialControl1Switch2.interpret(
-                        startAddress.offsetBy(lsb = 0x18u),
+                    partialControl1Switch2 = partialControl1Switch2.deserialize(
                         payload
                     ),
-                    partialControl1Switch3 = partialControl1Switch3.interpret(
-                        startAddress.offsetBy(lsb = 0x19u),
+                    partialControl1Switch3 = partialControl1Switch3.deserialize(
                         payload
                     ),
-                    partialControl1Switch4 = partialControl1Switch4.interpret(
-                        startAddress.offsetBy(lsb = 0x1Au),
+                    partialControl1Switch4 = partialControl1Switch4.deserialize(
                         payload
                     ),
-                    partialControl2Switch1 = partialControl2Switch1.interpret(
-                        startAddress.offsetBy(lsb = 0x1Bu),
+                    partialControl2Switch1 = partialControl2Switch1.deserialize(
                         payload
                     ),
-                    partialControl2Switch2 = partialControl2Switch2.interpret(
-                        startAddress.offsetBy(lsb = 0x1Cu),
+                    partialControl2Switch2 = partialControl2Switch2.deserialize(
                         payload
                     ),
-                    partialControl2Switch3 = partialControl2Switch3.interpret(
-                        startAddress.offsetBy(lsb = 0x1Du),
+                    partialControl2Switch3 = partialControl2Switch3.deserialize(
                         payload
                     ),
-                    partialControl2Switch4 = partialControl2Switch4.interpret(
-                        startAddress.offsetBy(lsb = 0x1Eu),
+                    partialControl2Switch4 = partialControl2Switch4.deserialize(
                         payload
                     ),
-                    partialControl3Switch1 = partialControl3Switch1.interpret(
-                        startAddress.offsetBy(lsb = 0x1Fu),
+                    partialControl3Switch1 = partialControl3Switch1.deserialize(
                         payload
                     ),
-                    partialControl3Switch2 = partialControl3Switch2.interpret(
-                        startAddress.offsetBy(lsb = 0x20u),
+                    partialControl3Switch2 = partialControl3Switch2.deserialize(
                         payload
                     ),
-                    partialControl3Switch3 = partialControl3Switch3.interpret(
-                        startAddress.offsetBy(lsb = 0x21u),
+                    partialControl3Switch3 = partialControl3Switch3.deserialize(
                         payload
                     ),
-                    partialControl3Switch4 = partialControl3Switch4.interpret(
-                        startAddress.offsetBy(lsb = 0x22u),
+                    partialControl3Switch4 = partialControl3Switch4.deserialize(
                         payload
                     ),
-                    partialControl4Switch1 = partialControl4Switch1.interpret(
-                        startAddress.offsetBy(lsb = 0x23u),
+                    partialControl4Switch1 = partialControl4Switch1.deserialize(
                         payload
                     ),
-                    partialControl4Switch2 = partialControl4Switch2.interpret(
-                        startAddress.offsetBy(lsb = 0x24u),
+                    partialControl4Switch2 = partialControl4Switch2.deserialize(
                         payload
                     ),
-                    partialControl4Switch3 = partialControl4Switch3.interpret(
-                        startAddress.offsetBy(lsb = 0x25u),
+                    partialControl4Switch3 = partialControl4Switch3.deserialize(
                         payload
                     ),
-                    partialControl4Switch4 = partialControl4Switch4.interpret(
-                        startAddress.offsetBy(lsb = 0x26u),
+                    partialControl4Switch4 = partialControl4Switch4.deserialize(
                         payload
                     ),
 
-                    waveGroupType = waveGroupType.interpret(startAddress.offsetBy(lsb = 0x27u), payload),
-                    waveGroupId = waveGroupId.interpret(startAddress.offsetBy(lsb = 0x28u), payload),
-                    waveNumberL = waveNumberL.interpret(startAddress.offsetBy(lsb = 0x2Cu), payload),
-                    waveNumberR = waveNumberR.interpret(startAddress.offsetBy(lsb = 0x30u), payload),
-                    waveGain = waveGain.interpret(startAddress.offsetBy(lsb = 0x34u), payload),
-                    waveFXMSwitch = waveFXMSwitch.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                    waveFXMColor = waveFXMColor.interpret(startAddress.offsetBy(lsb = 0x36u), payload),
-                    waveFXMDepth = waveFXMDepth.interpret(startAddress.offsetBy(lsb = 0x37u), payload),
-                    waveTempoSync = waveTempoSync.interpret(startAddress.offsetBy(lsb = 0x38u), payload),
+                    waveGroupType = waveGroupType.deserialize(payload),
+                    waveGroupId = waveGroupId.deserialize(payload),
+                    waveNumberL = waveNumberL.deserialize(payload),
+                    waveNumberR = waveNumberR.deserialize(payload),
+                    waveGain = waveGain.deserialize(payload),
+                    waveFXMSwitch = waveFXMSwitch.deserialize(payload),
+                    waveFXMColor = waveFXMColor.deserialize(payload),
+                    waveFXMDepth = waveFXMDepth.deserialize(payload),
+                    waveTempoSync = waveTempoSync.deserialize(payload),
                     // wavePitchKeyfollow = wavePitchKeyfollow.interpret(startAddress.offsetBy(lsb = 0x39u), length, payload),
 
-                    pitchEnvDepth = pitchEnvDepth.interpret(startAddress.offsetBy(lsb = 0x3Au), payload),
-                    pitchEnvVelocitySens = pitchEnvVelocitySens.interpret(startAddress.offsetBy(lsb = 0x3Bu), payload),
-                    pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x3Cu),
+                    pitchEnvDepth = pitchEnvDepth.deserialize(payload),
+                    pitchEnvVelocitySens = pitchEnvVelocitySens.deserialize(payload),
+                    pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.deserialize(
                         payload
                     ),
-                    pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x3Du),
+                    pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.deserialize(
                         payload
                     ),
                     // pitchEnvTimeKeyfollow = pitchEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x34u), length, payload),
-                    pitchEnvTime1 = pitchEnvTime1.interpret(startAddress.offsetBy(lsb = 0x3Fu), payload),
-                    pitchEnvTime2 = pitchEnvTime2.interpret(startAddress.offsetBy(lsb = 0x40u), payload),
-                    pitchEnvTime3 = pitchEnvTime3.interpret(startAddress.offsetBy(lsb = 0x41u), payload),
-                    pitchEnvTime4 = pitchEnvTime4.interpret(startAddress.offsetBy(lsb = 0x42u), payload),
-                    pitchEnvLevel0 = pitchEnvLevel0.interpret(startAddress.offsetBy(lsb = 0x43u), payload),
-                    pitchEnvLevel1 = pitchEnvLevel1.interpret(startAddress.offsetBy(lsb = 0x44u), payload),
-                    pitchEnvLevel2 = pitchEnvLevel2.interpret(startAddress.offsetBy(lsb = 0x45u), payload),
-                    pitchEnvLevel3 = pitchEnvLevel3.interpret(startAddress.offsetBy(lsb = 0x46u), payload),
-                    pitchEnvLevel4 = pitchEnvLevel4.interpret(startAddress.offsetBy(lsb = 0x47u), payload),
+                    pitchEnvTime1 = pitchEnvTime1.deserialize(payload),
+                    pitchEnvTime2 = pitchEnvTime2.deserialize(payload),
+                    pitchEnvTime3 = pitchEnvTime3.deserialize(payload),
+                    pitchEnvTime4 = pitchEnvTime4.deserialize(payload),
+                    pitchEnvLevel0 = pitchEnvLevel0.deserialize(payload),
+                    pitchEnvLevel1 = pitchEnvLevel1.deserialize(payload),
+                    pitchEnvLevel2 = pitchEnvLevel2.deserialize(payload),
+                    pitchEnvLevel3 = pitchEnvLevel3.deserialize(payload),
+                    pitchEnvLevel4 = pitchEnvLevel4.deserialize(payload),
 
-                    tvfFilterType = tvfFilterType.interpret(startAddress.offsetBy(lsb = 0x48u), payload),
-                    tvfCutoffFrequency = tvfCutoffFrequency.interpret(startAddress.offsetBy(lsb = 0x49u), payload),
+                    tvfFilterType = tvfFilterType.deserialize(payload),
+                    tvfCutoffFrequency = tvfCutoffFrequency.deserialize(payload),
                     // tvfCutoffKeyfollow = tvfCutoffKeyfollow.interpret(startAddress.offsetBy(lsb = 0x4Au), length, payload),
-                    tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.interpret(
-                        startAddress.offsetBy(lsb = 0x4Bu),
+                    tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.deserialize(
                         payload
                     ),
-                    tvfCutoffVelocitySens = tvfCutoffVelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x4Cu),
+                    tvfCutoffVelocitySens = tvfCutoffVelocitySens.deserialize(
                         payload
                     ),
-                    tvfResonance = tvfResonance.interpret(startAddress.offsetBy(lsb = 0x4Du), payload),
-                    tvfResonanceVelocitySens = tvfResonanceVelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x4Eu),
+                    tvfResonance = tvfResonance.deserialize(payload),
+                    tvfResonanceVelocitySens = tvfResonanceVelocitySens.deserialize(
                         payload
                     ),
-                    tvfEnvDepth = tvfEnvDepth.interpret(startAddress.offsetBy(lsb = 0x4Fu), payload),
-                    tvfEnvVelocityCurve = tvfEnvVelocityCurve.interpret(startAddress.offsetBy(lsb = 0x50u), payload),
-                    tvfEnvVelocitySens = tvfEnvVelocitySens.interpret(startAddress.offsetBy(lsb = 0x51u), payload),
-                    tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x52u),
+                    tvfEnvDepth = tvfEnvDepth.deserialize(payload),
+                    tvfEnvVelocityCurve = tvfEnvVelocityCurve.deserialize(payload),
+                    tvfEnvVelocitySens = tvfEnvVelocitySens.deserialize(payload),
+                    tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.deserialize(
                         payload
                     ),
-                    tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x53u),
+                    tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.deserialize(
                         payload
                     ),
                     // tvfEnvTimeKeyfollow = tvfEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x54u), length, payload),
-                    tvfEnvTime1 = tvfEnvTime1.interpret(startAddress.offsetBy(lsb = 0x55u), payload),
-                    tvfEnvTime2 = tvfEnvTime2.interpret(startAddress.offsetBy(lsb = 0x56u), payload),
-                    tvfEnvTime3 = tvfEnvTime3.interpret(startAddress.offsetBy(lsb = 0x57u), payload),
-                    tvfEnvTime4 = tvfEnvTime4.interpret(startAddress.offsetBy(lsb = 0x58u), payload),
-                    tvfEnvLevel0 = tvfEnvLevel0.interpret(startAddress.offsetBy(lsb = 0x59u), payload),
-                    tvfEnvLevel1 = tvfEnvLevel1.interpret(startAddress.offsetBy(lsb = 0x5Au), payload),
-                    tvfEnvLevel2 = tvfEnvLevel2.interpret(startAddress.offsetBy(lsb = 0x5Bu), payload),
-                    tvfEnvLevel3 = tvfEnvLevel3.interpret(startAddress.offsetBy(lsb = 0x5Cu), payload),
-                    tvfEnvLevel4 = tvfEnvLevel4.interpret(startAddress.offsetBy(lsb = 0x5Du), payload),
+                    tvfEnvTime1 = tvfEnvTime1.deserialize(payload),
+                    tvfEnvTime2 = tvfEnvTime2.deserialize(payload),
+                    tvfEnvTime3 = tvfEnvTime3.deserialize(payload),
+                    tvfEnvTime4 = tvfEnvTime4.deserialize(payload),
+                    tvfEnvLevel0 = tvfEnvLevel0.deserialize(payload),
+                    tvfEnvLevel1 = tvfEnvLevel1.deserialize(payload),
+                    tvfEnvLevel2 = tvfEnvLevel2.deserialize(payload),
+                    tvfEnvLevel3 = tvfEnvLevel3.deserialize(payload),
+                    tvfEnvLevel4 = tvfEnvLevel4.deserialize(payload),
 
                     //biasLevel = biasLevel.interpret(startAddress.offsetBy(lsb = 0x5Eu), length, payload),
-                    biasPosition = biasPosition.interpret(startAddress.offsetBy(lsb = 0x5Fu), payload),
-                    biasDirection = biasDirection.interpret(startAddress.offsetBy(lsb = 0x60u), payload),
-                    tvaLevelVelocityCurve = tvaLevelVelocityCurve.interpret(
-                        startAddress.offsetBy(lsb = 0x61u),
+                    biasPosition = biasPosition.deserialize(payload),
+                    biasDirection = biasDirection.deserialize(payload),
+                    tvaLevelVelocityCurve = tvaLevelVelocityCurve.deserialize(
                         payload
                     ),
-                    tvaLevelVelocitySens = tvaLevelVelocitySens.interpret(startAddress.offsetBy(lsb = 0x62u), payload),
-                    tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x63u),
+                    tvaLevelVelocitySens = tvaLevelVelocitySens.deserialize(payload),
+                    tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.deserialize(
                         payload
                     ),
-                    tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.interpret(
-                        startAddress.offsetBy(lsb = 0x64u),
+                    tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.deserialize(
                         payload
                     ),
                     // tvaEnvTimeKeyfollow = tvaEnvTimeKeyfollow.interpret(startAddress.offsetBy(lsb = 0x65u), length, payload),
-                    tvaEnvTime1 = tvaEnvTime1.interpret(startAddress.offsetBy(lsb = 0x66u), payload),
-                    tvaEnvTime2 = tvaEnvTime2.interpret(startAddress.offsetBy(lsb = 0x67u), payload),
-                    tvaEnvTime3 = tvaEnvTime3.interpret(startAddress.offsetBy(lsb = 0x68u), payload),
-                    tvaEnvTime4 = tvaEnvTime4.interpret(startAddress.offsetBy(lsb = 0x69u), payload),
-                    tvaEnvLevel1 = tvaEnvLevel1.interpret(startAddress.offsetBy(lsb = 0x6Au), payload),
-                    tvaEnvLevel2 = tvaEnvLevel2.interpret(startAddress.offsetBy(lsb = 0x6Bu), payload),
-                    tvaEnvLevel3 = tvaEnvLevel3.interpret(startAddress.offsetBy(lsb = 0x6Cu), payload),
+                    tvaEnvTime1 = tvaEnvTime1.deserialize(payload),
+                    tvaEnvTime2 = tvaEnvTime2.deserialize(payload),
+                    tvaEnvTime3 = tvaEnvTime3.deserialize(payload),
+                    tvaEnvTime4 = tvaEnvTime4.deserialize(payload),
+                    tvaEnvLevel1 = tvaEnvLevel1.deserialize(payload),
+                    tvaEnvLevel2 = tvaEnvLevel2.deserialize(payload),
+                    tvaEnvLevel3 = tvaEnvLevel3.deserialize(payload),
 
-                    lfo1WaveForm = lfo1WaveForm.interpret(startAddress.offsetBy(lsb = 0x6Du), payload),
-                    lfo1Rate = lfo1Rate.interpret(startAddress.offsetBy(lsb = 0x6Eu), payload),
-                    lfo1Offset = lfo1Offset.interpret(startAddress.offsetBy(lsb = 0x70u), payload),
-                    lfo1RateDetune = lfo1RateDetune.interpret(startAddress.offsetBy(lsb = 0x71u), payload),
-                    lfo1DelayTime = lfo1DelayTime.interpret(startAddress.offsetBy(lsb = 0x72u), payload),
+                    lfo1WaveForm = lfo1WaveForm.deserialize(payload),
+                    lfo1Rate = lfo1Rate.deserialize(payload),
+                    lfo1Offset = lfo1Offset.deserialize(payload),
+                    lfo1RateDetune = lfo1RateDetune.deserialize(payload),
+                    lfo1DelayTime = lfo1DelayTime.deserialize(payload),
                     // lfo1Keyfollow = lfo1Keyfollow.interpret(startAddress.offsetBy(lsb = 0x73u), length, payload),
-                    lfo1FadeMode = lfo1FadeMode.interpret(startAddress.offsetBy(lsb = 0x74u), payload),
-                    lfo1FadeTime = lfo1FadeTime.interpret(startAddress.offsetBy(lsb = 0x75u), payload),
-                    lfo1KeyTrigger = lfo1KeyTrigger.interpret(startAddress.offsetBy(lsb = 0x76u), payload),
-                    lfo1PitchDepth = lfo1PitchDepth.interpret(startAddress.offsetBy(lsb = 0x77u), payload),
-                    lfo1TvfDepth = lfo1TvfDepth.interpret(startAddress.offsetBy(lsb = 0x78u), payload),
-                    lfo1TvaDepth = lfo1TvaDepth.interpret(startAddress.offsetBy(lsb = 0x79u), payload),
-                    lfo1PanDepth = lfo1PanDepth.interpret(startAddress.offsetBy(lsb = 0x7Au), payload),
+                    lfo1FadeMode = lfo1FadeMode.deserialize(payload),
+                    lfo1FadeTime = lfo1FadeTime.deserialize(payload),
+                    lfo1KeyTrigger = lfo1KeyTrigger.deserialize(payload),
+                    lfo1PitchDepth = lfo1PitchDepth.deserialize(payload),
+                    lfo1TvfDepth = lfo1TvfDepth.deserialize(payload),
+                    lfo1TvaDepth = lfo1TvaDepth.deserialize(payload),
+                    lfo1PanDepth = lfo1PanDepth.deserialize(payload),
 
-                    lfo2WaveForm = lfo2WaveForm.interpret(startAddress.offsetBy(lsb = 0x7Bu), payload),
-                    lfo2Rate = lfo2Rate.interpret(startAddress.offsetBy(lsb = 0x7Cu), payload),
-                    lfo2Offset = lfo2Offset.interpret(startAddress.offsetBy(lsb = 0x7Eu), payload),
-                    lfo2RateDetune = lfo2RateDetune.interpret(startAddress.offsetBy(lsb = 0x7Fu), payload),
-                    lfo2DelayTime = lfo2DelayTime.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x00u), payload),
+                    lfo2WaveForm = lfo2WaveForm.deserialize(payload),
+                    lfo2Rate = lfo2Rate.deserialize(payload),
+                    lfo2Offset = lfo2Offset.deserialize(payload),
+                    lfo2RateDetune = lfo2RateDetune.deserialize(payload),
+                    lfo2DelayTime = lfo2DelayTime.deserialize(payload),
                     // lfo2Keyfollow = lfo2Keyfollow.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x01u), length, payload),
-                    lfo2FadeMode = lfo2FadeMode.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x02u), payload),
-                    lfo2FadeTime = lfo2FadeTime.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x03u), payload),
-                    lfo2KeyTrigger = lfo2KeyTrigger.interpret(
-                        startAddress.offsetBy(mlsb = 0x01u, lsb = 0x04u),
+                    lfo2FadeMode = lfo2FadeMode.deserialize(payload),
+                    lfo2FadeTime = lfo2FadeTime.deserialize(payload),
+                    lfo2KeyTrigger = lfo2KeyTrigger.deserialize(
                         payload
                     ),
-                    lfo2PitchDepth = lfo2PitchDepth.interpret(
-                        startAddress.offsetBy(mlsb = 0x01u, lsb = 0x05u),
+                    lfo2PitchDepth = lfo2PitchDepth.deserialize(
                         payload
                     ),
-                    lfo2TvfDepth = lfo2TvfDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x06u), payload),
-                    lfo2TvaDepth = lfo2TvaDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x07u), payload),
-                    lfo2PanDepth = lfo2PanDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x08u), payload),
+                    lfo2TvfDepth = lfo2TvfDepth.deserialize(payload),
+                    lfo2TvaDepth = lfo2TvaDepth.deserialize(payload),
+                    lfo2PanDepth = lfo2PanDepth.deserialize(payload),
 
 
-                    lfoStepType = lfoStepType.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x09u), payload),
-                    lfoStep1 = lfoStep1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Au), payload),
-                    lfoStep2 = lfoStep2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Bu), payload),
-                    lfoStep3 = lfoStep3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Cu), payload),
-                    lfoStep4 = lfoStep4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Du), payload),
-                    lfoStep5 = lfoStep5.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Eu), payload),
-                    lfoStep6 = lfoStep6.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Fu), payload),
-                    lfoStep7 = lfoStep7.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x10u), payload),
-                    lfoStep8 = lfoStep8.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x11u), payload),
-                    lfoStep9 = lfoStep9.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x12u), payload),
-                    lfoStep10 = lfoStep10.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x13u), payload),
-                    lfoStep11 = lfoStep11.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x14u), payload),
-                    lfoStep12 = lfoStep12.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x15u), payload),
-                    lfoStep13 = lfoStep13.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x16u), payload),
-                    lfoStep14 = lfoStep14.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x17u), payload),
+                    lfoStepType = lfoStepType.deserialize(payload),
+                    lfoStep1 = lfoStep1.deserialize(payload),
+                    lfoStep2 = lfoStep2.deserialize(payload),
+                    lfoStep3 = lfoStep3.deserialize(payload),
+                    lfoStep4 = lfoStep4.deserialize(payload),
+                    lfoStep5 = lfoStep5.deserialize(payload),
+                    lfoStep6 = lfoStep6.deserialize(payload),
+                    lfoStep7 = lfoStep7.deserialize(payload),
+                    lfoStep8 = lfoStep8.deserialize(payload),
+                    lfoStep9 = lfoStep9.deserialize(payload),
+                    lfoStep10 = lfoStep10.deserialize(payload),
+                    lfoStep11 = lfoStep11.deserialize(payload),
+                    lfoStep12 = lfoStep12.deserialize(payload),
+                    lfoStep13 = lfoStep13.deserialize(payload),
+                    lfoStep14 = lfoStep14.deserialize(payload),
                     lfoStep15 = 0, // TODO: lfoStep15.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x18u), length, payload),
                     lfoStep16 = 0 // TODO: lfoStep16.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x19u), length, payload),
                 )
@@ -1020,18 +979,17 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val phraseNmber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x38u), 0..65535)
 
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthToneCommon2 {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not a PCM synth tone common2 ($address..${address.offsetBy(size)}) for part $part" }
 
             try {
                 return PcmSynthToneCommon2(
-                    toneCategory = toneCategory.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                    undocumented = undocumented.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                    phraseOctaveShift = phraseOctaveShift.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                    tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x33u), payload),
+                    toneCategory = toneCategory.deserialize(payload),
+                    undocumented = undocumented.deserialize(payload),
+                    phraseOctaveShift = phraseOctaveShift.deserialize(payload),
+                    tfxSwitch = tfxSwitch.deserialize(payload),
                     phraseNmber = 0 // TODO: phraseNmber.interpret(startAddress.offsetBy(lsb = 0x38u), length, payload),
                 )
             } catch (e: AssertionError) {
@@ -1063,16 +1021,15 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val partial2 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x21u, lsb = 0x00u), part)
         val partial3 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u), part)
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): SuperNaturalSynthTone {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a SN-S tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): SuperNaturalSynthTone {
+            assert(this.isCovering(payload)) { "Not a SN-S part ($address..${address.offsetBy(size)}) for part $part" }
 
             return SuperNaturalSynthTone(
-                common = common.interpret(startAddress, payload),
-                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), payload),
-                partial1 = partial1.interpret(startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u), payload),
-                partial2 = partial2.interpret(startAddress.offsetBy(mlsb = 0x21u, lsb = 0x00u), payload),
-                partial3 = partial3.interpret(startAddress.offsetBy(mlsb = 0x22u, lsb = 0x00u), payload),
+                common = common.deserialize(payload),
+                mfx = mfx.deserialize(payload),
+                partial1 = partial1.deserialize(payload),
+                partial2 = partial2.deserialize(payload),
+                partial3 = partial3.deserialize(payload),
             )
         }
     }
@@ -1112,41 +1069,40 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val phraseOctaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x3Bu), -3..3)
         val unisonSize = EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), UnisonSize.values())
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalSynthToneCommon {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not a SN-S common ($address..${address.offsetBy(size)}) for part $part" }
 
             return SupernaturalSynthToneCommon(
-                name = name.interpret(startAddress, payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
-                portamentoSwitch = portamentoSwitch.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                portamentoTime = portamentoTime.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                monoSwitch = monoSwitch.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                octaveShift = octaveShift.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                pithBendRangeUp = pithBendRangeUp.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
-                pitchBendRangeDown = pitchBendRangeDown.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
+                name = name.deserialize(payload),
+                level = level.deserialize(payload),
+                portamentoSwitch = portamentoSwitch.deserialize(payload),
+                portamentoTime = portamentoTime.deserialize(payload),
+                monoSwitch = monoSwitch.deserialize(payload),
+                octaveShift = octaveShift.deserialize(payload),
+                pithBendRangeUp = pithBendRangeUp.deserialize(payload),
+                pitchBendRangeDown = pitchBendRangeDown.deserialize(payload),
 
-                partial1Switch = partial1Switch.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                partial1Select = partial1Select.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                partial2Switch = partial2Switch.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
-                partial2Select = partial2Select.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                partial3Switch = partial3Switch.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                partial3Select = partial3Select.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
+                partial1Switch = partial1Switch.deserialize(payload),
+                partial1Select = partial1Select.deserialize(payload),
+                partial2Switch = partial2Switch.deserialize(payload),
+                partial2Select = partial2Select.deserialize(payload),
+                partial3Switch = partial3Switch.deserialize(payload),
+                partial3Select = partial3Select.deserialize(payload),
 
-                ringSwitch = ringSwitch.interpret(startAddress.offsetBy(lsb = 0x1Fu), payload),
-                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
+                ringSwitch = ringSwitch.deserialize(payload),
+                tfxSwitch = tfxSwitch.deserialize(payload),
 
-                unisonSwitch = unisonSwitch.interpret(startAddress.offsetBy(lsb = 0x2Eu), payload),
-                portamentoMode = portamentoMode.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
-                legatoSwitch = legatoSwitch.interpret(startAddress.offsetBy(lsb = 0x32u), payload),
-                analogFeel = analogFeel.interpret(startAddress.offsetBy(lsb = 0x34u), payload),
-                waveShape = waveShape.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                toneCategory = toneCategory.interpret(startAddress.offsetBy(lsb = 0x36u), payload),
-                phraseNumber = phraseNumber.interpret(startAddress.offsetBy(lsb = 0x37u), payload),
-                phraseOctaveShift = phraseOctaveShift.interpret(startAddress.offsetBy(lsb = 0x3Bu), payload),
-                unisonSize = unisonSize.interpret(startAddress.offsetBy(lsb = 0x3Cu), payload),
+                unisonSwitch = unisonSwitch.deserialize(payload),
+                portamentoMode = portamentoMode.deserialize(payload),
+                legatoSwitch = legatoSwitch.deserialize(payload),
+                analogFeel = analogFeel.deserialize(payload),
+                waveShape = waveShape.deserialize(payload),
+                toneCategory = toneCategory.deserialize(payload),
+                phraseNumber = phraseNumber.deserialize(payload),
+                phraseOctaveShift = phraseOctaveShift.deserialize(payload),
+                unisonSize = unisonSize.deserialize(payload),
             )
         }
     }
@@ -1222,87 +1178,80 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val modulationLfoRateControl = ByteField(deviceId, address.offsetBy(lsb = 0x3Bu))
 //        val ampLevelKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x3Cu), 100..100)
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): SuperNaturalSynthTonePartial {
-            assert(this.isCovering(payload)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)})" }
 
             return SuperNaturalSynthTonePartial(
-                oscWaveForm = oscWaveForm.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                oscWaveFormVariation = oscWaveFormVariation.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                oscPitch = oscPitch.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
-                oscDetune = oscDetune.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                oscPulseWidthModulationDepth = oscPulseWidthModulationDepth.interpret(
-                    startAddress.offsetBy(lsb = 0x05u),
+                oscWaveForm = oscWaveForm.deserialize(payload),
+                oscWaveFormVariation = oscWaveFormVariation.deserialize(payload),
+                oscPitch = oscPitch.deserialize(payload),
+                oscDetune = oscDetune.deserialize(payload),
+                oscPulseWidthModulationDepth = oscPulseWidthModulationDepth.deserialize(
                     payload
                 ),
-                oscPulseWidth = oscPulseWidth.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                oscPitchAttackTime = oscPitchAttackTime.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                oscPitchEnvDecay = oscPitchEnvDecay.interpret(startAddress.offsetBy(lsb = 0x08u), payload),
-                oscPitchEnvDepth = oscPitchEnvDepth.interpret(startAddress.offsetBy(lsb = 0x09u), payload),
+                oscPulseWidth = oscPulseWidth.deserialize(payload),
+                oscPitchAttackTime = oscPitchAttackTime.deserialize(payload),
+                oscPitchEnvDecay = oscPitchEnvDecay.deserialize(payload),
+                oscPitchEnvDepth = oscPitchEnvDepth.deserialize(payload),
 
-                filterMode = filterMode.interpret(startAddress.offsetBy(lsb = 0x0Au), payload),
-                filterSlope = filterSlope.interpret(startAddress.offsetBy(lsb = 0x0Bu), payload),
-                filterCutoff = filterCutoff.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
+                filterMode = filterMode.deserialize(payload),
+                filterSlope = filterSlope.deserialize(payload),
+                filterCutoff = filterCutoff.deserialize(payload),
 //                filterCutoffKeyflow = filterCutoffKeyflow.interpret(startAddress.offsetBy(lsb = 0x0Du), length, payload),
-                filterEnvVelocitySens = filterEnvVelocitySens.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                filterResonance = filterResonance.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                filterEnvAttackTime = filterEnvAttackTime.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                filterEnvDecayTime = filterEnvDecayTime.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                filterEnvSustainLevel = filterEnvSustainLevel.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                filterEnvReleaseTime = filterEnvReleaseTime.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                filterEnvDepth = filterEnvDepth.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                ampLevel = ampLevel.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                ampVelocitySens = ampVelocitySens.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
-                ampEnvAttackTime = ampEnvAttackTime.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                ampEnvDecayTime = ampEnvDecayTime.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
-                ampEnvSustainLevel = ampEnvSustainLevel.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                ampEnvReleaseTime = ampEnvReleaseTime.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                ampPan = ampPan.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
+                filterEnvVelocitySens = filterEnvVelocitySens.deserialize(payload),
+                filterResonance = filterResonance.deserialize(payload),
+                filterEnvAttackTime = filterEnvAttackTime.deserialize(payload),
+                filterEnvDecayTime = filterEnvDecayTime.deserialize(payload),
+                filterEnvSustainLevel = filterEnvSustainLevel.deserialize(payload),
+                filterEnvReleaseTime = filterEnvReleaseTime.deserialize(payload),
+                filterEnvDepth = filterEnvDepth.deserialize(payload),
+                ampLevel = ampLevel.deserialize(payload),
+                ampVelocitySens = ampVelocitySens.deserialize(payload),
+                ampEnvAttackTime = ampEnvAttackTime.deserialize(payload),
+                ampEnvDecayTime = ampEnvDecayTime.deserialize(payload),
+                ampEnvSustainLevel = ampEnvSustainLevel.deserialize(payload),
+                ampEnvReleaseTime = ampEnvReleaseTime.deserialize(payload),
+                ampPan = ampPan.deserialize(payload),
 
-                lfoShape = lfoShape.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                lfoRate = lfoRate.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                lfoTempoSyncSwitch = lfoTempoSyncSwitch.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
-                lfoTempoSyncNote = lfoTempoSyncNote.interpret(startAddress.offsetBy(lsb = 0x1Fu), payload),
-                lfoFadeTime = lfoFadeTime.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
-                lfoKeyTrigger = lfoKeyTrigger.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                lfoPitchDepth = lfoPitchDepth.interpret(startAddress.offsetBy(lsb = 0x22u), payload),
-                lfoFilterDepth = lfoFilterDepth.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                lfoAmpDepth = lfoAmpDepth.interpret(startAddress.offsetBy(lsb = 0x24u), payload),
-                lfoPanDepth = lfoPanDepth.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
+                lfoShape = lfoShape.deserialize(payload),
+                lfoRate = lfoRate.deserialize(payload),
+                lfoTempoSyncSwitch = lfoTempoSyncSwitch.deserialize(payload),
+                lfoTempoSyncNote = lfoTempoSyncNote.deserialize(payload),
+                lfoFadeTime = lfoFadeTime.deserialize(payload),
+                lfoKeyTrigger = lfoKeyTrigger.deserialize(payload),
+                lfoPitchDepth = lfoPitchDepth.deserialize(payload),
+                lfoFilterDepth = lfoFilterDepth.deserialize(payload),
+                lfoAmpDepth = lfoAmpDepth.deserialize(payload),
+                lfoPanDepth = lfoPanDepth.deserialize(payload),
 
-                modulationShape = modulationShape.interpret(startAddress.offsetBy(lsb = 0x26u), payload),
-                modulationLfoRate = modulationLfoRate.interpret(startAddress.offsetBy(lsb = 0x27u), payload),
-                modulationLfoTempoSyncSwitch = modulationLfoTempoSyncSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x28u),
+                modulationShape = modulationShape.deserialize(payload),
+                modulationLfoRate = modulationLfoRate.deserialize(payload),
+                modulationLfoTempoSyncSwitch = modulationLfoTempoSyncSwitch.deserialize(
                     payload
                 ),
-                modulationLfoTempoSyncNote = modulationLfoTempoSyncNote.interpret(
-                    startAddress.offsetBy(lsb = 0x29u),
+                modulationLfoTempoSyncNote = modulationLfoTempoSyncNote.deserialize(
                     payload
                 ),
-                oscPulseWidthShift = oscPulseWidthShift.interpret(startAddress.offsetBy(lsb = 0x2Au), payload),
-                modulationLfoPitchDepth = modulationLfoPitchDepth.interpret(
-                    startAddress.offsetBy(lsb = 0x2Cu),
+                oscPulseWidthShift = oscPulseWidthShift.deserialize(payload),
+                modulationLfoPitchDepth = modulationLfoPitchDepth.deserialize(
                     payload
                 ),
-                modulationLfoFilterDepth = modulationLfoFilterDepth.interpret(
-                    startAddress.offsetBy(lsb = 0x2Du),
+                modulationLfoFilterDepth = modulationLfoFilterDepth.deserialize(
                     payload
                 ),
-                modulationLfoAmpDepth = modulationLfoAmpDepth.interpret(startAddress.offsetBy(lsb = 0x2Eu), payload),
-                modulationLfoPanDepth = modulationLfoPanDepth.interpret(startAddress.offsetBy(lsb = 0x2Fu), payload),
+                modulationLfoAmpDepth = modulationLfoAmpDepth.deserialize(payload),
+                modulationLfoPanDepth = modulationLfoPanDepth.deserialize(payload),
 
-                cutoffAftertouchSens = cutoffAftertouchSens.interpret(startAddress.offsetBy(lsb = 0x30u), payload),
-                levelAftertouchSens = levelAftertouchSens.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
+                cutoffAftertouchSens = cutoffAftertouchSens.deserialize(payload),
+                levelAftertouchSens = levelAftertouchSens.deserialize(payload),
 
-                waveGain = waveGain.interpret(startAddress.offsetBy(lsb = 0x34u), payload),
-                waveNumber = waveNumber.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                hpfCutoff = hpfCutoff.interpret(startAddress.offsetBy(lsb = 0x39u), payload),
-                superSawDetune = superSawDetune.interpret(startAddress.offsetBy(lsb = 0x3Au), payload),
-                modulationLfoRateControl = modulationLfoRateControl.interpret(
-                    startAddress.offsetBy(lsb = 0x3Bu),
+                waveGain = waveGain.deserialize(payload),
+                waveNumber = waveNumber.deserialize(payload),
+                hpfCutoff = hpfCutoff.deserialize(payload),
+                superSawDetune = superSawDetune.deserialize(payload),
+                modulationLfoRateControl = modulationLfoRateControl.deserialize(
                     payload
                 ),
 //                ampLevelKeyfollow = ampLevelKeyfollow.interpret(startAddress.offsetBy(lsb = 0x3Cu), length, payload),
@@ -1320,13 +1269,12 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common = SuperNaturalAcousticToneCommonBuilder(deviceId, address, part)
         val mfx = PcmSynthToneMfxBuilder(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): SuperNaturalAcousticTone {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a SN-A tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): SuperNaturalAcousticTone {
+            assert(this.isCovering(payload)) { "Not a SN-A part ($address..${address.offsetBy(size)}) for part $part" }
 
             return SuperNaturalAcousticTone(
-                common = common.interpret(startAddress, payload),
-                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), payload)
+                common = common.deserialize(payload),
+                mfx = mfx.deserialize(payload)
             )
         }
     }
@@ -1364,37 +1312,35 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             )
         }
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalAcousticToneCommon {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not SN-A Common ($address..${address.offsetBy(size)}) for part $part" }
 
             return SupernaturalAcousticToneCommon(
-                name = name.interpret(startAddress, payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                monoPoly = monoPoly.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                portamentoTimeOffset = portamentoTimeOffset.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                cutoffOffset = cutoffOffset.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                resonanceOffset = resonanceOffset.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                attackTimeOffset = attackTimeOffset.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                releaseTimeOffset = releaseTimeOffset.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
-                vibratoRate = vibratoRate.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                vibratoDepth = vibratoDepth.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
-                vibratorDelay = vibratorDelay.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                octaveShift = octaveShift.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                category = category.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
-                phraseNumber = phraseNumber.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                phraseOctaveShift = phraseOctaveShift.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
+                name = name.deserialize(payload),
+                level = level.deserialize(payload),
+                monoPoly = monoPoly.deserialize(payload),
+                portamentoTimeOffset = portamentoTimeOffset.deserialize(payload),
+                cutoffOffset = cutoffOffset.deserialize(payload),
+                resonanceOffset = resonanceOffset.deserialize(payload),
+                attackTimeOffset = attackTimeOffset.deserialize(payload),
+                releaseTimeOffset = releaseTimeOffset.deserialize(payload),
+                vibratoRate = vibratoRate.deserialize(payload),
+                vibratoDepth = vibratoDepth.deserialize(payload),
+                vibratorDelay = vibratorDelay.deserialize(payload),
+                octaveShift = octaveShift.deserialize(payload),
+                category = category.deserialize(payload),
+                phraseNumber = phraseNumber.deserialize(payload),
+                phraseOctaveShift = phraseOctaveShift.deserialize(payload),
 
-                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x1Fu), payload),
+                tfxSwitch = tfxSwitch.deserialize(payload),
 
-                instrumentVariation = instrumentVariation.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
-                instrumentNumber = instrumentNumber.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
+                instrumentVariation = instrumentVariation.deserialize(payload),
+                instrumentNumber = instrumentNumber.deserialize(payload),
                 modifyParameters = modifyParameters
                     .mapIndexed { idx, fd ->
-                        fd.interpret(
-                            startAddress.offsetBy(lsb = 0x22u).offsetBy(lsb = 0x01u, factor = idx),
+                        fd.deserialize(
                             payload
                         )
                     }
@@ -1481,325 +1427,202 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val note87 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 60), part)
         val note88 = SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 61), part)
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): SuperNaturalDrumKit {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): SuperNaturalDrumKit {
+            assert(this.isCovering(payload)) { "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part" }
 
             return SuperNaturalDrumKit(
-                common = common.interpret(startAddress, payload),
-                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), payload),
-                commonCompEq = commonCompEq.interpret(startAddress.offsetBy(mlsb = 0x08u, lsb = 0x00u), payload),
+                common = common.deserialize(payload),
+                mfx = mfx.deserialize(payload),
+                commonCompEq = commonCompEq.deserialize(payload),
                 notes = listOf(
-                    note27.interpret(startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u), payload),
-                    note28.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 1),
+                    note27.deserialize(payload),
+                    note28.deserialize(
                         payload
                     ),
-                    note29.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 2),
+                    note29.deserialize(
                         payload
                     ),
 
-                    note30.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 3),
+                    note30.deserialize(
                         payload
                     ),
-                    note31.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 4),
+                    note31.deserialize(
                         payload
                     ),
-                    note32.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 5),
+                    note32.deserialize(
                         payload
                     ),
-                    note33.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 6),
+                    note33.deserialize(
                         payload
                     ),
-                    note34.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 7),
+                    note34.deserialize(
                         payload
                     ),
-                    note35.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 8),
+                    note35.deserialize(
                         payload
                     ),
-                    note36.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 9),
+                    note36.deserialize(
                         payload
                     ),
-                    note37.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 10),
+                    note37.deserialize(
                         payload
                     ),
-                    note38.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 11),
+                    note38.deserialize(
                         payload
                     ),
-                    note39.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 12),
+                    note39.deserialize(
                         payload
                     ),
 
-                    note40.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 13),
+                    note40.deserialize(
                         payload
                     ),
-                    note41.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 14),
+                    note41.deserialize(
                         payload
                     ),
-                    note42.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 15),
+                    note42.deserialize(
                         payload
                     ),
-                    note43.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 16),
+                    note43.deserialize(
                         payload
                     ),
-                    note44.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 17),
+                    note44.deserialize(
                         payload
                     ),
-                    note45.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 18),
+                    note45.deserialize(
                         payload
                     ),
-                    note46.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 19),
+                    note46.deserialize(
                         payload
                     ),
-                    note47.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 20),
+                    note47.deserialize(
                         payload
                     ),
-                    note48.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 21),
+                    note48.deserialize(
                         payload
                     ),
-                    note49.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 22),
+                    note49.deserialize(
                         payload
                     ),
 
-                    note50.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 23),
+                    note50.deserialize(
                         payload
                     ),
-                    note51.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 24),
+                    note51.deserialize(
                         payload
                     ),
-                    note52.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 25),
+                    note52.deserialize(
                         payload
                     ),
-                    note53.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 26),
+                    note53.deserialize(
                         payload
                     ),
-                    note54.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 27),
+                    note54.deserialize(
                         payload
                     ),
-                    note55.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 28),
+                    note55.deserialize(
                         payload
                     ),
-                    note56.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 29),
+                    note56.deserialize(
                         payload
                     ),
-                    note57.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 30),
+                    note57.deserialize(
                         payload
                     ),
-                    note58.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 31),
+                    note58.deserialize(
                         payload
                     ),
-                    note59.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 32),
+                    note59.deserialize(
                         payload
                     ),
 
-                    note60.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 33),
+                    note60.deserialize(
                         payload
                     ),
-                    note61.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 34),
+                    note61.deserialize(
                         payload
                     ),
-                    note62.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 35),
+                    note62.deserialize(
                         payload
                     ),
-                    note63.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 36),
+                    note63.deserialize(
                         payload
                     ),
-                    note64.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 37),
+                    note64.deserialize(
                         payload
                     ),
-                    note65.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 38),
+                    note65.deserialize(
                         payload
                     ),
-                    note66.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 39),
+                    note66.deserialize(
                         payload
                     ),
-                    note67.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 40),
+                    note67.deserialize(
                         payload
                     ),
-                    note68.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 41),
+                    note68.deserialize(
                         payload
                     ),
-                    note69.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 42),
+                    note69.deserialize(
                         payload
                     ),
 
-                    note70.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 43),
+                    note70.deserialize(
                         payload
                     ),
-                    note71.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 44),
+                    note71.deserialize(
                         payload
                     ),
-                    note72.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 45),
+                    note72.deserialize(
                         payload
                     ),
-                    note73.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 46),
+                    note73.deserialize(
                         payload
                     ),
-                    note74.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 47),
+                    note74.deserialize(
                         payload
                     ),
-                    note75.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 48),
+                    note75.deserialize(
                         payload
                     ),
-                    note76.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 49),
+                    note76.deserialize(
                         payload
                     ),
-                    note77.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 50),
+                    note77.deserialize(
                         payload
                     ),
-                    note78.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 51),
+                    note78.deserialize(
                         payload
                     ),
-                    note79.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 52),
+                    note79.deserialize(
                         payload
                     ),
 
-                    note80.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 53),
+                    note80.deserialize(
                         payload
                     ),
-                    note81.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 54),
+                    note81.deserialize(
                         payload
                     ),
-                    note82.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 55),
+                    note82.deserialize(
                         payload
                     ),
-                    note83.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 56),
+                    note83.deserialize(
                         payload
                     ),
-                    note84.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 57),
+                    note84.deserialize(
                         payload
                     ),
-                    note85.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 58),
+                    note85.deserialize(
                         payload
                     ),
-                    note86.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 59),
+                    note86.deserialize(
                         payload
                     ),
-                    note87.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 60),
+                    note87.deserialize(
                         payload
                     ),
-                    note88.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                            .offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = 61),
+                    note88.deserialize(
                         payload
                     )
                 )
@@ -1817,18 +1640,17 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val phraseNo = UByteField(deviceId, address.offsetBy(lsb = 0x12u))
         val tfx = BooleanField(deviceId, address.offsetBy(lsb = 0x13u))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalDrumKitCommon {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not SN-D Common ($address..${address.offsetBy(size)}) for part $part" }
 
             return SupernaturalDrumKitCommon(
-                name = name.interpret(startAddress, payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                ambienceLevel = ambienceLevel.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                phraseNo = phraseNo.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                tfx = tfx.interpret(startAddress.offsetBy(lsb = 0x13u), payload)
+                name = name.deserialize(payload),
+                level = level.deserialize(payload),
+                ambienceLevel = ambienceLevel.deserialize(payload),
+                phraseNo = phraseNo.deserialize(payload),
+                tfx = tfx.deserialize(payload)
             )
         }
     }
@@ -2059,102 +1881,100 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         )
         val eq6HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x53u), 0..30) // - 15
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalDrumKitCommonCompEq {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a SN-D kit comp/eq-definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Not SN-D comp/eq ($address..${address.offsetBy(size)}) for part $part" }
 
             return SupernaturalDrumKitCommonCompEq(
-                comp1Switch = comp1Switch.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                comp1AttackTime = comp1AttackTime.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                comp1ReleaseTime = comp1ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
-                comp1Threshold = comp1Threshold.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
-                comp1Ratio = comp1Ratio.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                comp1OutputGain = comp1OutputGain.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                eq1Switch = eq1Switch.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                eq1LowFrequency = eq1LowFrequency.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                eq1LowGain = eq1LowGain.interpret(startAddress.offsetBy(lsb = 0x08u), payload) - 15,
-                eq1MidFrequency = eq1MidFrequency.interpret(startAddress.offsetBy(lsb = 0x09u), payload),
-                eq1MidGain = eq1MidGain.interpret(startAddress.offsetBy(lsb = 0x0Au), payload) - 15,
-                eq1MidQ = eq1MidQ.interpret(startAddress.offsetBy(lsb = 0x0Bu), payload),
-                eq1HighFrequency = eq1HighFrequency.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
-                eq1HighGain = eq1HighGain.interpret(startAddress.offsetBy(lsb = 0x0Du), payload) - 15,
+                comp1Switch = comp1Switch.deserialize(payload),
+                comp1AttackTime = comp1AttackTime.deserialize(payload),
+                comp1ReleaseTime = comp1ReleaseTime.deserialize(payload),
+                comp1Threshold = comp1Threshold.deserialize(payload),
+                comp1Ratio = comp1Ratio.deserialize(payload),
+                comp1OutputGain = comp1OutputGain.deserialize(payload),
+                eq1Switch = eq1Switch.deserialize(payload),
+                eq1LowFrequency = eq1LowFrequency.deserialize(payload),
+                eq1LowGain = eq1LowGain.deserialize(payload) - 15,
+                eq1MidFrequency = eq1MidFrequency.deserialize(payload),
+                eq1MidGain = eq1MidGain.deserialize(payload) - 15,
+                eq1MidQ = eq1MidQ.deserialize(payload),
+                eq1HighFrequency = eq1HighFrequency.deserialize(payload),
+                eq1HighGain = eq1HighGain.deserialize(payload) - 15,
 
-                comp2Switch = comp2Switch.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                comp2AttackTime = comp2AttackTime.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                comp2ReleaseTime = comp2ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                comp2Threshold = comp2Threshold.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                comp2Ratio = comp2Ratio.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                comp2OutputGain = comp2OutputGain.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                eq2Switch = eq2Switch.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                eq2LowFrequency = eq2LowFrequency.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                eq2LowGain = eq2LowGain.interpret(startAddress.offsetBy(lsb = 0x16u), payload) - 15,
-                eq2MidFrequency = eq2MidFrequency.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                eq2MidGain = eq2MidGain.interpret(startAddress.offsetBy(lsb = 0x18u), payload) - 15,
-                eq2MidQ = eq2MidQ.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                eq2HighFrequency = eq2HighFrequency.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                eq2HighGain = eq2HighGain.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload) - 15,
+                comp2Switch = comp2Switch.deserialize(payload),
+                comp2AttackTime = comp2AttackTime.deserialize(payload),
+                comp2ReleaseTime = comp2ReleaseTime.deserialize(payload),
+                comp2Threshold = comp2Threshold.deserialize(payload),
+                comp2Ratio = comp2Ratio.deserialize(payload),
+                comp2OutputGain = comp2OutputGain.deserialize(payload),
+                eq2Switch = eq2Switch.deserialize(payload),
+                eq2LowFrequency = eq2LowFrequency.deserialize(payload),
+                eq2LowGain = eq2LowGain.deserialize(payload) - 15,
+                eq2MidFrequency = eq2MidFrequency.deserialize(payload),
+                eq2MidGain = eq2MidGain.deserialize(payload) - 15,
+                eq2MidQ = eq2MidQ.deserialize(payload),
+                eq2HighFrequency = eq2HighFrequency.deserialize(payload),
+                eq2HighGain = eq2HighGain.deserialize(payload) - 15,
 
-                comp3Switch = comp3Switch.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                comp3AttackTime = comp3AttackTime.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                comp3ReleaseTime = comp3ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
-                comp3Threshold = comp3Threshold.interpret(startAddress.offsetBy(lsb = 0x1Fu), payload),
-                comp3Ratio = comp3Ratio.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
-                comp3OutputGain = comp3OutputGain.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                eq3Switch = eq3Switch.interpret(startAddress.offsetBy(lsb = 0x22u), payload),
-                eq3LowFrequency = eq3LowFrequency.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                eq3LowGain = eq3LowGain.interpret(startAddress.offsetBy(lsb = 0x24u), payload) - 15,
-                eq3MidFrequency = eq3MidFrequency.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
-                eq3MidGain = eq3MidGain.interpret(startAddress.offsetBy(lsb = 0x26u), payload) - 15,
-                eq3MidQ = eq3MidQ.interpret(startAddress.offsetBy(lsb = 0x27u), payload),
-                eq3HighFrequency = eq3HighFrequency.interpret(startAddress.offsetBy(lsb = 0x28u), payload),
-                eq3HighGain = eq3HighGain.interpret(startAddress.offsetBy(lsb = 0x29u), payload) - 15,
+                comp3Switch = comp3Switch.deserialize(payload),
+                comp3AttackTime = comp3AttackTime.deserialize(payload),
+                comp3ReleaseTime = comp3ReleaseTime.deserialize(payload),
+                comp3Threshold = comp3Threshold.deserialize(payload),
+                comp3Ratio = comp3Ratio.deserialize(payload),
+                comp3OutputGain = comp3OutputGain.deserialize(payload),
+                eq3Switch = eq3Switch.deserialize(payload),
+                eq3LowFrequency = eq3LowFrequency.deserialize(payload),
+                eq3LowGain = eq3LowGain.deserialize(payload) - 15,
+                eq3MidFrequency = eq3MidFrequency.deserialize(payload),
+                eq3MidGain = eq3MidGain.deserialize(payload) - 15,
+                eq3MidQ = eq3MidQ.deserialize(payload),
+                eq3HighFrequency = eq3HighFrequency.deserialize(payload),
+                eq3HighGain = eq3HighGain.deserialize(payload) - 15,
 
-                comp4Switch = comp4Switch.interpret(startAddress.offsetBy(lsb = 0x2Au), payload),
-                comp4AttackTime = comp4AttackTime.interpret(startAddress.offsetBy(lsb = 0x2Bu), payload),
-                comp4ReleaseTime = comp4ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x2Cu), payload),
-                comp4Threshold = comp4Threshold.interpret(startAddress.offsetBy(lsb = 0x2Du), payload),
-                comp4Ratio = comp4Ratio.interpret(startAddress.offsetBy(lsb = 0x2Eu), payload),
-                comp4OutputGain = comp4OutputGain.interpret(startAddress.offsetBy(lsb = 0x2Fu), payload),
-                eq4Switch = eq4Switch.interpret(startAddress.offsetBy(lsb = 0x30u), payload),
-                eq4LowFrequency = eq4LowFrequency.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
-                eq4LowGain = eq4LowGain.interpret(startAddress.offsetBy(lsb = 0x32u), payload) - 15,
-                eq4MidFrequency = eq4MidFrequency.interpret(startAddress.offsetBy(lsb = 0x33u), payload),
-                eq4MidGain = eq4MidGain.interpret(startAddress.offsetBy(lsb = 0x34u), payload) - 15,
-                eq4MidQ = eq4MidQ.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                eq4HighFrequency = eq4HighFrequency.interpret(startAddress.offsetBy(lsb = 0x36u), payload),
-                eq4HighGain = eq4HighGain.interpret(startAddress.offsetBy(lsb = 0x37u), payload) - 15,
+                comp4Switch = comp4Switch.deserialize(payload),
+                comp4AttackTime = comp4AttackTime.deserialize(payload),
+                comp4ReleaseTime = comp4ReleaseTime.deserialize(payload),
+                comp4Threshold = comp4Threshold.deserialize(payload),
+                comp4Ratio = comp4Ratio.deserialize(payload),
+                comp4OutputGain = comp4OutputGain.deserialize(payload),
+                eq4Switch = eq4Switch.deserialize(payload),
+                eq4LowFrequency = eq4LowFrequency.deserialize(payload),
+                eq4LowGain = eq4LowGain.deserialize(payload) - 15,
+                eq4MidFrequency = eq4MidFrequency.deserialize(payload),
+                eq4MidGain = eq4MidGain.deserialize(payload) - 15,
+                eq4MidQ = eq4MidQ.deserialize(payload),
+                eq4HighFrequency = eq4HighFrequency.deserialize(payload),
+                eq4HighGain = eq4HighGain.deserialize(payload) - 15,
 
-                comp5Switch = comp5Switch.interpret(startAddress.offsetBy(lsb = 0x38u), payload),
-                comp5AttackTime = comp5AttackTime.interpret(startAddress.offsetBy(lsb = 0x39u), payload),
-                comp5ReleaseTime = comp5ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x3Au), payload),
-                comp5Threshold = comp5Threshold.interpret(startAddress.offsetBy(lsb = 0x3Bu), payload),
-                comp5Ratio = comp5Ratio.interpret(startAddress.offsetBy(lsb = 0x3Cu), payload),
-                comp5OutputGain = comp5OutputGain.interpret(startAddress.offsetBy(lsb = 0x3Du), payload),
-                eq5Switch = eq5Switch.interpret(startAddress.offsetBy(lsb = 0x3Eu), payload),
-                eq5LowFrequency = eq5LowFrequency.interpret(startAddress.offsetBy(lsb = 0x3Fu), payload),
-                eq5LowGain = eq5LowGain.interpret(startAddress.offsetBy(lsb = 0x40u), payload) - 15,
-                eq5MidFrequency = eq5MidFrequency.interpret(startAddress.offsetBy(lsb = 0x41u), payload),
-                eq5MidGain = eq5MidGain.interpret(startAddress.offsetBy(lsb = 0x42u), payload) - 15,
-                eq5MidQ = eq5MidQ.interpret(startAddress.offsetBy(lsb = 0x43u), payload),
-                eq5HighFrequency = eq5HighFrequency.interpret(startAddress.offsetBy(lsb = 0x44u), payload),
-                eq5HighGain = eq5HighGain.interpret(startAddress.offsetBy(lsb = 0x45u), payload) - 15,
+                comp5Switch = comp5Switch.deserialize(payload),
+                comp5AttackTime = comp5AttackTime.deserialize(payload),
+                comp5ReleaseTime = comp5ReleaseTime.deserialize(payload),
+                comp5Threshold = comp5Threshold.deserialize(payload),
+                comp5Ratio = comp5Ratio.deserialize(payload),
+                comp5OutputGain = comp5OutputGain.deserialize(payload),
+                eq5Switch = eq5Switch.deserialize(payload),
+                eq5LowFrequency = eq5LowFrequency.deserialize(payload),
+                eq5LowGain = eq5LowGain.deserialize(payload) - 15,
+                eq5MidFrequency = eq5MidFrequency.deserialize(payload),
+                eq5MidGain = eq5MidGain.deserialize(payload) - 15,
+                eq5MidQ = eq5MidQ.deserialize(payload),
+                eq5HighFrequency = eq5HighFrequency.deserialize(payload),
+                eq5HighGain = eq5HighGain.deserialize(payload) - 15,
 
-                comp6Switch = comp6Switch.interpret(startAddress.offsetBy(lsb = 0x46u), payload),
-                comp6AttackTime = comp6AttackTime.interpret(startAddress.offsetBy(lsb = 0x47u), payload),
-                comp6ReleaseTime = comp6ReleaseTime.interpret(startAddress.offsetBy(lsb = 0x48u), payload),
-                comp6Threshold = comp6Threshold.interpret(startAddress.offsetBy(lsb = 0x49u), payload),
-                comp6Ratio = comp6Ratio.interpret(startAddress.offsetBy(lsb = 0x4Au), payload),
-                comp6OutputGain = comp6OutputGain.interpret(startAddress.offsetBy(lsb = 0x4Bu), payload),
-                eq6Switch = eq6Switch.interpret(startAddress.offsetBy(lsb = 0x4Cu), payload),
-                eq6LowFrequency = eq6LowFrequency.interpret(startAddress.offsetBy(lsb = 0x4Du), payload),
-                eq6LowGain = eq6LowGain.interpret(startAddress.offsetBy(lsb = 0x4Eu), payload) - 15,
-                eq6MidFrequency = eq6MidFrequency.interpret(startAddress.offsetBy(lsb = 0x4Fu), payload),
-                eq6MidGain = eq6MidGain.interpret(startAddress.offsetBy(lsb = 0x50u), payload) - 15,
-                eq6MidQ = eq6MidQ.interpret(startAddress.offsetBy(lsb = 0x51u), payload),
-                eq6HighFrequency = eq6HighFrequency.interpret(startAddress.offsetBy(lsb = 0x52u), payload),
+                comp6Switch = comp6Switch.deserialize(payload),
+                comp6AttackTime = comp6AttackTime.deserialize(payload),
+                comp6ReleaseTime = comp6ReleaseTime.deserialize(payload),
+                comp6Threshold = comp6Threshold.deserialize(payload),
+                comp6Ratio = comp6Ratio.deserialize(payload),
+                comp6OutputGain = comp6OutputGain.deserialize(payload),
+                eq6Switch = eq6Switch.deserialize(payload),
+                eq6LowFrequency = eq6LowFrequency.deserialize(payload),
+                eq6LowGain = eq6LowGain.deserialize(payload) - 15,
+                eq6MidFrequency = eq6MidFrequency.deserialize(payload),
+                eq6MidGain = eq6MidGain.deserialize(payload) - 15,
+                eq6MidQ = eq6MidQ.deserialize(payload),
+                eq6HighFrequency = eq6HighFrequency.deserialize(payload),
                 eq6HighGain = 0 // TODO eq6HighGain.interpret(startAddress.offsetBy(lsb = 0x53u), length, payload) - 15,
             )
         }
@@ -2191,26 +2011,24 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             SuperNaturalDrumToneOutput.values()
         )
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): SuperNaturalDrumKitNote {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a SN-D kit note-definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Not SN-D note ($address..${address.offsetBy(size)}) for part $part" }
 
             return SuperNaturalDrumKitNote(
-                instrumentNumber = instrumentNumber.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                pan = pan.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                chorusSendLevel = chorusSendLevel.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                reverbSendLevel = reverbSendLevel.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                tune = tune.interpret(startAddress.offsetBy(lsb = 0x08u), payload),
-                attack = attack.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
-                decay = decay.interpret(startAddress.offsetBy(lsb = 0x0Du), payload),
-                brilliance = brilliance.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                variation = variation.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                dynamicRange = dynamicRange.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                stereoWidth = stereoWidth.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
+                instrumentNumber = instrumentNumber.deserialize(payload),
+                level = level.deserialize(payload),
+                pan = pan.deserialize(payload),
+                chorusSendLevel = chorusSendLevel.deserialize(payload),
+                reverbSendLevel = reverbSendLevel.deserialize(payload),
+                tune = tune.deserialize(payload),
+                attack = attack.deserialize(payload),
+                decay = decay.deserialize(payload),
+                brilliance = brilliance.deserialize(payload),
+                variation = variation.deserialize(payload),
+                dynamicRange = dynamicRange.deserialize(payload),
+                stereoWidth = stereoWidth.deserialize(payload),
                 outputAssign = SuperNaturalDrumToneOutput.PART // TODO outputAssign.interpret(startAddress.offsetBy(lsb = 0x12u), length, payload),
             )
         }
@@ -2231,22 +2049,19 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             .map { PcmDrumKitPartialBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x02u, lsb = 0x00u, factor = it), part)  }
         val common2 = PcmDrumKitCommon2Builder(deviceId, address.offsetBy(mmsb = 0x02u, lsb = 0x00u), part)
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): PcmDrumKit {
-            assert(startAddress >= address && startAddress <= address.offsetBy(size)) {
-                "Not a PCM Drum kit ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): PcmDrumKit {
+            assert(this.isCovering(payload)) { "Not PCMD ($address..${address.offsetBy(size)}) for part $part" }
 
             return PcmDrumKit(
-                common = common.interpret(startAddress, payload),
-                mfx = mfx.interpret(startAddress.offsetBy(mlsb = 0x02u, lsb = 0x00u), payload),
+                common = common.deserialize(payload),
+                mfx = mfx.deserialize(payload),
                 keys = keys
                     .mapIndexed { index, b ->
-                        b.interpret(
-                            startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u)
-                                .offsetBy(mlsb = 0x02u, lsb = 0x00u, factor = index),
+                        b.deserialize(
                             payload
                         )
                     },
-                common2 = common2.interpret(startAddress.offsetBy(mmsb = 0x02u, lsb = 0x00u), payload),
+                common2 = common2.deserialize(payload),
             )
         }
     }
@@ -2258,15 +2073,14 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitCommon {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not PCMD Common ($address..${address.offsetBy(size)}) for part $part" }
 
             return PcmDrumKitCommon(
-                name = name.interpret(startAddress, payload),
-                level = level.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
+                name = name.deserialize(payload),
+                level = level.deserialize(payload),
             )
         }
     }
@@ -2488,257 +2302,225 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
 
         val oneShotMode = BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x41u))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitPartial {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not PCMS partial ($address..${address.offsetBy(size)}) for part $part" }
 
             return PcmDrumKitPartial(
-                name = name.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
+                name = name.deserialize(payload),
 
-                assignType = assignType.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
-                muteGroup = muteGroup.interpret(startAddress.offsetBy(lsb = 0x0Du), payload),
+                assignType = assignType.deserialize(payload),
+                muteGroup = muteGroup.deserialize(payload),
 
-                level = level.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                coarseTune = coarseTune.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                fineTune = fineTune.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                randomPitchDepth = randomPitchDepth.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                pan = pan.interpret(startAddress.offsetBy(lsb = 0x12u), payload),
-                randomPanDepth = randomPanDepth.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                alternatePanDepth = alternatePanDepth.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                envMode = envMode.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
+                level = level.deserialize(payload),
+                coarseTune = coarseTune.deserialize(payload),
+                fineTune = fineTune.deserialize(payload),
+                randomPitchDepth = randomPitchDepth.deserialize(payload),
+                pan = pan.deserialize(payload),
+                randomPanDepth = randomPanDepth.deserialize(payload),
+                alternatePanDepth = alternatePanDepth.deserialize(payload),
+                envMode = envMode.deserialize(payload),
 
-                outputLevel = outputLevel.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
-                chorusSendLevel = chorusSendLevel.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                reverbSendLevel = reverbSendLevel.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                outputAssign = outputAssign.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
+                outputLevel = outputLevel.deserialize(payload),
+                chorusSendLevel = chorusSendLevel.deserialize(payload),
+                reverbSendLevel = reverbSendLevel.deserialize(payload),
+                outputAssign = outputAssign.deserialize(payload),
 
-                pitchBendRange = pitchBendRange.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                receiveExpression = receiveExpression.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                receiveHold1 = receiveHold1.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
+                pitchBendRange = pitchBendRange.deserialize(payload),
+                receiveExpression = receiveExpression.deserialize(payload),
+                receiveHold1 = receiveHold1.deserialize(payload),
 
-                wmtVelocityControl = wmtVelocityControl.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
+                wmtVelocityControl = wmtVelocityControl.deserialize(payload),
 
-                wmt1WaveSwitch = wmt1WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                wmt1WaveGroupType = wmt1WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x22u), payload),
-                wmt1WaveGroupId = wmt1WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                wmt1WaveNumberL = wmt1WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x27u), payload),
-                wmt1WaveNumberR = wmt1WaveNumberR.interpret(startAddress.offsetBy(lsb = 0x2Bu), payload),
-                wmt1WaveGain = wmt1WaveGain.interpret(startAddress.offsetBy(lsb = 0x2Fu), payload),
-                wmt1WaveFxmSwitch = wmt1WaveFxmSwitch.interpret(startAddress.offsetBy(lsb = 0x30u), payload),
-                wmt1WaveFxmColor = wmt1WaveFxmColor.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
-                wmt1WaveFxmDepth = wmt1WaveFxmDepth.interpret(startAddress.offsetBy(lsb = 0x32u), payload),
-                wmt1WaveTempoSync = wmt1WaveTempoSync.interpret(startAddress.offsetBy(lsb = 0x33u), payload),
-                wmt1WaveCoarseTune = wmt1WaveCoarseTune.interpret(startAddress.offsetBy(lsb = 0x34u), payload),
-                wmt1WaveFineTune = wmt1WaveFineTune.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                wmt1WavePan = wmt1WavePan.interpret(startAddress.offsetBy(lsb = 0x36u), payload),
-                wmt1WaveRandomPanSwitch = wmt1WaveRandomPanSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x37u),
+                wmt1WaveSwitch = wmt1WaveSwitch.deserialize(payload),
+                wmt1WaveGroupType = wmt1WaveGroupType.deserialize(payload),
+                wmt1WaveGroupId = wmt1WaveGroupId.deserialize(payload),
+                wmt1WaveNumberL = wmt1WaveNumberL.deserialize(payload),
+                wmt1WaveNumberR = wmt1WaveNumberR.deserialize(payload),
+                wmt1WaveGain = wmt1WaveGain.deserialize(payload),
+                wmt1WaveFxmSwitch = wmt1WaveFxmSwitch.deserialize(payload),
+                wmt1WaveFxmColor = wmt1WaveFxmColor.deserialize(payload),
+                wmt1WaveFxmDepth = wmt1WaveFxmDepth.deserialize(payload),
+                wmt1WaveTempoSync = wmt1WaveTempoSync.deserialize(payload),
+                wmt1WaveCoarseTune = wmt1WaveCoarseTune.deserialize(payload),
+                wmt1WaveFineTune = wmt1WaveFineTune.deserialize(payload),
+                wmt1WavePan = wmt1WavePan.deserialize(payload),
+                wmt1WaveRandomPanSwitch = wmt1WaveRandomPanSwitch.deserialize(
                     payload
                 ),
-                wmt1WaveAlternatePanSwitch = wmt1WaveAlternatePanSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x38u),
+                wmt1WaveAlternatePanSwitch = wmt1WaveAlternatePanSwitch.deserialize(
                     payload
                 ),
-                wmt1WaveLevel = wmt1WaveLevel.interpret(startAddress.offsetBy(lsb = 0x39u), payload),
-                wmt1VelocityRange = wmt1VelocityRange.interpret(startAddress.offsetBy(lsb = 0x3Au), payload),
-                wmt1VelocityFadeWidth = wmt1VelocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x3Cu), payload),
+                wmt1WaveLevel = wmt1WaveLevel.deserialize(payload),
+                wmt1VelocityRange = wmt1VelocityRange.deserialize(payload),
+                wmt1VelocityFadeWidth = wmt1VelocityFadeWidth.deserialize(payload),
 
-                wmt2WaveSwitch = wmt2WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x3Eu), payload),
-                wmt2WaveGroupType = wmt2WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x3Fu), payload),
-                wmt2WaveGroupId = wmt2WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x40u), payload),
-                wmt2WaveNumberL = wmt2WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x44u), payload),
-                wmt2WaveNumberR = wmt2WaveNumberR.interpret(startAddress.offsetBy(lsb = 0x48u), payload),
-                wmt2WaveGain = wmt2WaveGain.interpret(startAddress.offsetBy(lsb = 0x4Cu), payload),
-                wmt2WaveFxmSwitch = wmt2WaveFxmSwitch.interpret(startAddress.offsetBy(lsb = 0x4Du), payload),
-                wmt2WaveFxmColor = wmt2WaveFxmColor.interpret(startAddress.offsetBy(lsb = 0x4Eu), payload),
-                wmt2WaveFxmDepth = wmt2WaveFxmDepth.interpret(startAddress.offsetBy(lsb = 0x4Fu), payload),
-                wmt2WaveTempoSync = wmt2WaveTempoSync.interpret(startAddress.offsetBy(lsb = 0x50u), payload),
-                wmt2WaveCoarseTune = wmt2WaveCoarseTune.interpret(startAddress.offsetBy(lsb = 0x51u), payload),
-                wmt2WaveFineTune = wmt2WaveFineTune.interpret(startAddress.offsetBy(lsb = 0x52u), payload),
-                wmt2WavePan = wmt2WavePan.interpret(startAddress.offsetBy(lsb = 0x53u), payload),
-                wmt2WaveRandomPanSwitch = wmt2WaveRandomPanSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x54u),
+                wmt2WaveSwitch = wmt2WaveSwitch.deserialize(payload),
+                wmt2WaveGroupType = wmt2WaveGroupType.deserialize(payload),
+                wmt2WaveGroupId = wmt2WaveGroupId.deserialize(payload),
+                wmt2WaveNumberL = wmt2WaveNumberL.deserialize(payload),
+                wmt2WaveNumberR = wmt2WaveNumberR.deserialize(payload),
+                wmt2WaveGain = wmt2WaveGain.deserialize(payload),
+                wmt2WaveFxmSwitch = wmt2WaveFxmSwitch.deserialize(payload),
+                wmt2WaveFxmColor = wmt2WaveFxmColor.deserialize(payload),
+                wmt2WaveFxmDepth = wmt2WaveFxmDepth.deserialize(payload),
+                wmt2WaveTempoSync = wmt2WaveTempoSync.deserialize(payload),
+                wmt2WaveCoarseTune = wmt2WaveCoarseTune.deserialize(payload),
+                wmt2WaveFineTune = wmt2WaveFineTune.deserialize(payload),
+                wmt2WavePan = wmt2WavePan.deserialize(payload),
+                wmt2WaveRandomPanSwitch = wmt2WaveRandomPanSwitch.deserialize(
                     payload
                 ),
-                wmt2WaveAlternatePanSwitch = wmt2WaveAlternatePanSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x55u),
+                wmt2WaveAlternatePanSwitch = wmt2WaveAlternatePanSwitch.deserialize(
                     payload
                 ),
-                wmt2WaveLevel = wmt2WaveLevel.interpret(startAddress.offsetBy(lsb = 0x56u), payload),
-                wmt2VelocityRange = wmt2VelocityRange.interpret(startAddress.offsetBy(lsb = 0x57u), payload),
-                wmt2VelocityFadeWidth = wmt2VelocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x59u), payload),
+                wmt2WaveLevel = wmt2WaveLevel.deserialize(payload),
+                wmt2VelocityRange = wmt2VelocityRange.deserialize(payload),
+                wmt2VelocityFadeWidth = wmt2VelocityFadeWidth.deserialize(payload),
 
-                wmt3WaveSwitch = wmt3WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x5Bu), payload),
-                wmt3WaveGroupType = wmt3WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x5Cu), payload),
-                wmt3WaveGroupId = wmt3WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x5Du), payload),
-                wmt3WaveNumberL = wmt3WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x61u), payload),
-                wmt3WaveNumberR = wmt3WaveNumberR.interpret(startAddress.offsetBy(lsb = 0x65u), payload),
-                wmt3WaveGain = wmt3WaveGain.interpret(startAddress.offsetBy(lsb = 0x69u), payload),
-                wmt3WaveFxmSwitch = wmt3WaveFxmSwitch.interpret(startAddress.offsetBy(lsb = 0x6Au), payload),
-                wmt3WaveFxmColor = wmt3WaveFxmColor.interpret(startAddress.offsetBy(lsb = 0x6Bu), payload),
-                wmt3WaveFxmDepth = wmt3WaveFxmDepth.interpret(startAddress.offsetBy(lsb = 0x6Cu), payload),
-                wmt3WaveTempoSync = wmt3WaveTempoSync.interpret(startAddress.offsetBy(lsb = 0x6Du), payload),
-                wmt3WaveCoarseTune = wmt3WaveCoarseTune.interpret(startAddress.offsetBy(lsb = 0x6Eu), payload),
-                wmt3WaveFineTune = wmt3WaveFineTune.interpret(startAddress.offsetBy(lsb = 0x6Fu), payload),
-                wmt3WavePan = wmt3WavePan.interpret(startAddress.offsetBy(lsb = 0x70u), payload),
-                wmt3WaveRandomPanSwitch = wmt3WaveRandomPanSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x71u),
+                wmt3WaveSwitch = wmt3WaveSwitch.deserialize(payload),
+                wmt3WaveGroupType = wmt3WaveGroupType.deserialize(payload),
+                wmt3WaveGroupId = wmt3WaveGroupId.deserialize(payload),
+                wmt3WaveNumberL = wmt3WaveNumberL.deserialize(payload),
+                wmt3WaveNumberR = wmt3WaveNumberR.deserialize(payload),
+                wmt3WaveGain = wmt3WaveGain.deserialize(payload),
+                wmt3WaveFxmSwitch = wmt3WaveFxmSwitch.deserialize(payload),
+                wmt3WaveFxmColor = wmt3WaveFxmColor.deserialize(payload),
+                wmt3WaveFxmDepth = wmt3WaveFxmDepth.deserialize(payload),
+                wmt3WaveTempoSync = wmt3WaveTempoSync.deserialize(payload),
+                wmt3WaveCoarseTune = wmt3WaveCoarseTune.deserialize(payload),
+                wmt3WaveFineTune = wmt3WaveFineTune.deserialize(payload),
+                wmt3WavePan = wmt3WavePan.deserialize(payload),
+                wmt3WaveRandomPanSwitch = wmt3WaveRandomPanSwitch.deserialize(
                     payload
                 ),
-                wmt3WaveAlternatePanSwitch = wmt3WaveAlternatePanSwitch.interpret(
-                    startAddress.offsetBy(lsb = 0x72u),
+                wmt3WaveAlternatePanSwitch = wmt3WaveAlternatePanSwitch.deserialize(
                     payload
                 ),
-                wmt3WaveLevel = wmt3WaveLevel.interpret(startAddress.offsetBy(lsb = 0x73u), payload),
-                wmt3VelocityRange = wmt3VelocityRange.interpret(startAddress.offsetBy(lsb = 0x74u), payload),
-                wmt3VelocityFadeWidth = wmt3VelocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x76u), payload),
+                wmt3WaveLevel = wmt3WaveLevel.deserialize(payload),
+                wmt3VelocityRange = wmt3VelocityRange.deserialize(payload),
+                wmt3VelocityFadeWidth = wmt3VelocityFadeWidth.deserialize(payload),
 
-                wmt4WaveSwitch = wmt4WaveSwitch.interpret(startAddress.offsetBy(lsb = 0x78u), payload),
-                wmt4WaveGroupType = wmt4WaveGroupType.interpret(startAddress.offsetBy(lsb = 0x79u), payload),
-                wmt4WaveGroupId = wmt4WaveGroupId.interpret(startAddress.offsetBy(lsb = 0x7Au), payload),
-                wmt4WaveNumberL = wmt4WaveNumberL.interpret(startAddress.offsetBy(lsb = 0x7Eu), payload),
-                wmt4WaveNumberR = wmt4WaveNumberR.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x02u), payload),
-                wmt4WaveGain = wmt4WaveGain.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x06u), payload),
-                wmt4WaveFxmSwitch = wmt4WaveFxmSwitch.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x07u),
+                wmt4WaveSwitch = wmt4WaveSwitch.deserialize(payload),
+                wmt4WaveGroupType = wmt4WaveGroupType.deserialize(payload),
+                wmt4WaveGroupId = wmt4WaveGroupId.deserialize(payload),
+                wmt4WaveNumberL = wmt4WaveNumberL.deserialize(payload),
+                wmt4WaveNumberR = wmt4WaveNumberR.deserialize(payload),
+                wmt4WaveGain = wmt4WaveGain.deserialize(payload),
+                wmt4WaveFxmSwitch = wmt4WaveFxmSwitch.deserialize(
                     payload
                 ),
-                wmt4WaveFxmColor = wmt4WaveFxmColor.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x08u),
+                wmt4WaveFxmColor = wmt4WaveFxmColor.deserialize(
                     payload
                 ),
-                wmt4WaveFxmDepth = wmt4WaveFxmDepth.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x09u),
+                wmt4WaveFxmDepth = wmt4WaveFxmDepth.deserialize(
                     payload
                 ),
-                wmt4WaveTempoSync = wmt4WaveTempoSync.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Au),
+                wmt4WaveTempoSync = wmt4WaveTempoSync.deserialize(
                     payload
                 ),
-                wmt4WaveCoarseTune = wmt4WaveCoarseTune.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Bu),
+                wmt4WaveCoarseTune = wmt4WaveCoarseTune.deserialize(
                     payload
                 ),
-                wmt4WaveFineTune = wmt4WaveFineTune.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Cu),
+                wmt4WaveFineTune = wmt4WaveFineTune.deserialize(
                     payload
                 ),
-                wmt4WavePan = wmt4WavePan.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Du), payload),
-                wmt4WaveRandomPanSwitch = wmt4WaveRandomPanSwitch.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Eu),
+                wmt4WavePan = wmt4WavePan.deserialize(payload),
+                wmt4WaveRandomPanSwitch = wmt4WaveRandomPanSwitch.deserialize(
                     payload
                 ),
-                wmt4WaveAlternatePanSwitch = wmt4WaveAlternatePanSwitch.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x0Fu),
+                wmt4WaveAlternatePanSwitch = wmt4WaveAlternatePanSwitch.deserialize(
                     payload
                 ),
-                wmt4WaveLevel = wmt4WaveLevel.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x10u), payload),
-                wmt4VelocityRange = wmt4VelocityRange.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x11u),
+                wmt4WaveLevel = wmt4WaveLevel.deserialize(payload),
+                wmt4VelocityRange = wmt4VelocityRange.deserialize(
                     payload
                 ),
-                wmt4VelocityFadeWidth = wmt4VelocityFadeWidth.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x13u),
+                wmt4VelocityFadeWidth = wmt4VelocityFadeWidth.deserialize(
                     payload
                 ),
 
-                pitchEnvDepth = pitchEnvDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x15u), payload),
-                pitchEnvVelocitySens = pitchEnvVelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x16u),
+                pitchEnvDepth = pitchEnvDepth.deserialize(payload),
+                pitchEnvVelocitySens = pitchEnvVelocitySens.deserialize(
                     payload
                 ),
-                pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x17u),
+                pitchEnvTime1VelocitySens = pitchEnvTime1VelocitySens.deserialize(
                     payload
                 ),
-                pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x18u),
+                pitchEnvTime4VelocitySens = pitchEnvTime4VelocitySens.deserialize(
                     payload
                 ),
 
-                pitchEnvTime1 = pitchEnvTime1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x19u), payload),
-                pitchEnvTime2 = pitchEnvTime2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Au), payload),
-                pitchEnvTime3 = pitchEnvTime3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Bu), payload),
-                pitchEnvTime4 = pitchEnvTime4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Cu), payload),
+                pitchEnvTime1 = pitchEnvTime1.deserialize(payload),
+                pitchEnvTime2 = pitchEnvTime2.deserialize(payload),
+                pitchEnvTime3 = pitchEnvTime3.deserialize(payload),
+                pitchEnvTime4 = pitchEnvTime4.deserialize(payload),
 
-                pitchEnvLevel0 = pitchEnvLevel0.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Du), payload),
-                pitchEnvLevel1 = pitchEnvLevel1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Eu), payload),
-                pitchEnvLevel2 = pitchEnvLevel2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x1Fu), payload),
-                pitchEnvLevel3 = pitchEnvLevel3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x20u), payload),
-                pitchEnvLevel4 = pitchEnvLevel4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x21u), payload),
+                pitchEnvLevel0 = pitchEnvLevel0.deserialize(payload),
+                pitchEnvLevel1 = pitchEnvLevel1.deserialize(payload),
+                pitchEnvLevel2 = pitchEnvLevel2.deserialize(payload),
+                pitchEnvLevel3 = pitchEnvLevel3.deserialize(payload),
+                pitchEnvLevel4 = pitchEnvLevel4.deserialize(payload),
 
-                tvfFilterType = tvfFilterType.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x22u), payload),
-                tvfCutoffFrequency = tvfCutoffFrequency.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x23u),
+                tvfFilterType = tvfFilterType.deserialize(payload),
+                tvfCutoffFrequency = tvfCutoffFrequency.deserialize(
                     payload
                 ),
-                tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x24u),
+                tvfCutoffVelocityCurve = tvfCutoffVelocityCurve.deserialize(
                     payload
                 ),
-                tvfCutoffVelocitySens = tvfCutoffVelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x25u),
+                tvfCutoffVelocitySens = tvfCutoffVelocitySens.deserialize(
                     payload
                 ),
-                tvfResonance = tvfResonance.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x26u), payload),
-                tvfResonanceVelocitySens = tvfResonanceVelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x27u),
+                tvfResonance = tvfResonance.deserialize(payload),
+                tvfResonanceVelocitySens = tvfResonanceVelocitySens.deserialize(
                     payload
                 ),
-                tvfEnvDepth = tvfEnvDepth.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x28u), payload),
-                tvfEnvVelocityCurveType = tvfEnvVelocityCurveType.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x29u),
+                tvfEnvDepth = tvfEnvDepth.deserialize(payload),
+                tvfEnvVelocityCurveType = tvfEnvVelocityCurveType.deserialize(
                     payload
                 ),
-                tvfEnvVelocitySens = tvfEnvVelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Au),
+                tvfEnvVelocitySens = tvfEnvVelocitySens.deserialize(
                     payload
                 ),
-                tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Bu),
+                tvfEnvTime1VelocitySens = tvfEnvTime1VelocitySens.deserialize(
                     payload
                 ),
-                tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Cu),
+                tvfEnvTime4VelocitySens = tvfEnvTime4VelocitySens.deserialize(
                     payload
                 ),
-                tvfEnvTime1 = tvfEnvTime1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Du), payload),
-                tvfEnvTime2 = tvfEnvTime2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Eu), payload),
-                tvfEnvTime3 = tvfEnvTime3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x2Fu), payload),
-                tvfEnvTime4 = tvfEnvTime4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x30u), payload),
-                tvfEnvLevel0 = tvfEnvLevel0.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x31u), payload),
-                tvfEnvLevel1 = tvfEnvLevel1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x32u), payload),
-                tvfEnvLevel2 = tvfEnvLevel2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x33u), payload),
-                tvfEnvLevel3 = tvfEnvLevel3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x34u), payload),
-                tvfEnvLevel4 = tvfEnvLevel4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x35u), payload),
+                tvfEnvTime1 = tvfEnvTime1.deserialize(payload),
+                tvfEnvTime2 = tvfEnvTime2.deserialize(payload),
+                tvfEnvTime3 = tvfEnvTime3.deserialize(payload),
+                tvfEnvTime4 = tvfEnvTime4.deserialize(payload),
+                tvfEnvLevel0 = tvfEnvLevel0.deserialize(payload),
+                tvfEnvLevel1 = tvfEnvLevel1.deserialize(payload),
+                tvfEnvLevel2 = tvfEnvLevel2.deserialize(payload),
+                tvfEnvLevel3 = tvfEnvLevel3.deserialize(payload),
+                tvfEnvLevel4 = tvfEnvLevel4.deserialize(payload),
 
-                tvaLevelVelocityCurve = tvaLevelVelocityCurve.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x36u),
+                tvaLevelVelocityCurve = tvaLevelVelocityCurve.deserialize(
                     payload
                 ),
-                tvaLevelVelocitySens = tvaLevelVelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x37u),
+                tvaLevelVelocitySens = tvaLevelVelocitySens.deserialize(
                     payload
                 ),
-                tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x38u),
+                tvaEnvTime1VelocitySens = tvaEnvTime1VelocitySens.deserialize(
                     payload
                 ),
-                tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.interpret(
-                    startAddress.offsetBy(mlsb = 0x01u, lsb = 0x39u),
+                tvaEnvTime4VelocitySens = tvaEnvTime4VelocitySens.deserialize(
                     payload
                 ),
-                tvaEnvTime1 = tvaEnvTime1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Au), payload),
-                tvaEnvTime2 = tvaEnvTime2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Bu), payload),
-                tvaEnvTime3 = tvaEnvTime3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Cu), payload),
-                tvaEnvTime4 = tvaEnvTime4.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Du), payload),
-                tvaEnvLevel1 = tvaEnvLevel1.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Eu), payload),
-                tvaEnvLevel2 = tvaEnvLevel2.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x3Fu), payload),
-                tvaEnvLevel3 = tvaEnvLevel3.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x40u), payload),
+                tvaEnvTime1 = tvaEnvTime1.deserialize(payload),
+                tvaEnvTime2 = tvaEnvTime2.deserialize(payload),
+                tvaEnvTime3 = tvaEnvTime3.deserialize(payload),
+                tvaEnvTime4 = tvaEnvTime4.deserialize(payload),
+                tvaEnvLevel1 = tvaEnvLevel1.deserialize(payload),
+                tvaEnvLevel2 = tvaEnvLevel2.deserialize(payload),
+                tvaEnvLevel3 = tvaEnvLevel3.deserialize(payload),
 
-                oneShotMode = oneShotMode.interpret(startAddress.offsetBy(mlsb = 0x01u, lsb = 0x41u), payload),
+                oneShotMode = oneShotMode.deserialize(payload),
             )
         }
     }
@@ -2750,15 +2532,14 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val phraseNumber = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x10u))
         val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x31u))
 
-        override fun interpret(
-            startAddress: Integra7Address,
+        override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitCommon2 {
-            assert(startAddress >= address)
+            assert(this.isCovering(payload)) { "Not PCMD Common2 ($address..${address.offsetBy(size)}) for part $part" }
 
             return PcmDrumKitCommon2(
-                phraseNumber = phraseNumber.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                tfxSwitch = tfxSwitch.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
+                phraseNumber = phraseNumber.deserialize(payload),
+                tfxSwitch = tfxSwitch.deserialize(payload),
             )
         }
     }

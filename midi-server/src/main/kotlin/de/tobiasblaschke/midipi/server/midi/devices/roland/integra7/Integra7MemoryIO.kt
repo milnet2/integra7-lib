@@ -49,7 +49,7 @@ abstract class Integra7MemoryIO<T> {
         return if (reminder < 128u) (128u - reminder).toUByte() else (reminder - 128u).toUByte()
     }
 
-    abstract fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): T
+    abstract fun deserialize(payload: SparseUByteArray): T
 
 }
 
@@ -73,7 +73,7 @@ class AddressRequestBuilder(private val deviceId: DeviceId) {
 
         return Values(
             tone = IntegraPart.values()
-                .map { it to this.tones.getValue(it).interpret(startAddress, payload) } // .subRange(from = 0x200000 * it.zeroBased, to = 0x200000 * it.zeroBased + 0x303C)) }
+                .map { it to this.tones.getValue(it).deserialize(payload) }
                 .toMap()
         )
     }
@@ -120,21 +120,21 @@ data class ToneAddressRequestBuilder(
     val snaDrumKit = Integra7PartSysEx.SuperNaturalDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x03u.toUByte7()), part)
     val pcmDrumKit = Integra7PartSysEx.PcmDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x10u.toUByte7()), part)
 
-    override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): TemporaryTone {
+    override fun deserialize(payload: SparseUByteArray): TemporaryTone {
         // assert(this.isCovering(payload)) { "Not a tone definition ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
         return when {
             pcmSynthTone.isCovering(payload) -> TemporaryTone(
-                tone = pcmSynthTone.interpret(startAddress, payload))
+                tone = pcmSynthTone.deserialize(payload))
             snaSynthTone.isCovering(payload) -> TemporaryTone(
-                tone = snaSynthTone.interpret(startAddress, payload))
+                tone = snaSynthTone.deserialize(payload))
             snaAcousticTone.isCovering(payload) -> TemporaryTone(
-                tone = snaAcousticTone.interpret(startAddress, payload))
+                tone = snaAcousticTone.deserialize(payload))
             snaDrumKit.isCovering(payload) -> TemporaryTone(
-                tone = snaDrumKit.interpret(startAddress, payload))
+                tone = snaDrumKit.deserialize(payload))
             pcmDrumKit.isCovering(payload) -> TemporaryTone(
-                tone = pcmDrumKit.interpret(startAddress, payload))
-            else -> throw IllegalArgumentException("Unsupported tone $startAddress ${startAddress.rangeName()} for part $part")
+                tone = pcmDrumKit.deserialize(payload))
+            else -> throw IllegalArgumentException("Unsupported tone for part $part")
         }
     }
 

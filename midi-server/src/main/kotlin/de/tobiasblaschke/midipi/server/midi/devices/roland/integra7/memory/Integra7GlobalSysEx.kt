@@ -16,20 +16,20 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         val studioSetBankSelectLsb = UByteField(deviceId, address.offsetBy(lsb = 0x05u)) // #CC 32
         val studioSetPc = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Setup {
-            assert(this.isCovering(payload)) { "Expected Setup-range ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): Setup {
+            assert(this.isCovering(payload)) { "Expected Setup-range ($address..${address.offsetBy(size)})" }
 
             return Setup(
-                soundMode = when(val sm = soundMode.interpret(startAddress, payload)) {
+                soundMode = when(val sm = soundMode.deserialize(payload)) {
                     0x01 -> SoundMode.STUDIO
                     0x02 -> SoundMode.GM1
                     0x03 -> SoundMode.GM2
                     0x04 -> SoundMode.GS
                     else -> throw IllegalArgumentException("Unsupported sound-mode $sm")
                 },
-                studioSetBankSelectMsb = studioSetBankSelectMsb.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                studioSetBankSelectLsb = studioSetBankSelectLsb.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                studioSetPc = studioSetPc.interpret(startAddress.offsetBy(lsb = 0x06u), payload))
+                studioSetBankSelectMsb = studioSetBankSelectMsb.deserialize(payload),
+                studioSetBankSelectLsb = studioSetBankSelectLsb.deserialize(payload),
+                studioSetPc = studioSetPc.deserialize(payload))
         }
     }
 
@@ -61,28 +61,28 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         val twoChOutputMode =
             EnumField(deviceId, address.offsetBy(lsb = 0x2Du), TwoChOutputMode.values())
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): SystemCommon {
-            assert(this.isCovering(payload)) { "Expected System-common ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): SystemCommon {
+            assert(this.isCovering(payload)) { "Expected System-common ($address..${address.offsetBy(size)})" }
 
             return SystemCommon(
                 // TODO masterTune = (startAddress, min(payload.size, 0x0F), payload.copyOfRange(0, min(payload.size, 0x0F)))
-                masterKeyShift = masterKeyShift.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                masterLevel = masterLevel.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                scaleTuneSwitch = scaleTuneSwitch.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
+                masterKeyShift = masterKeyShift.deserialize(payload),
+                masterLevel = masterLevel.deserialize(payload),
+                scaleTuneSwitch = scaleTuneSwitch.deserialize(payload),
                 studioSetControlChannel = null, // TODO: if (payload[0x11] < 0x0Fu) payload[0x11].toInt() else null,
-                systemControl1Source = systemControl1Source.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
-                systemControl2Source = systemControl2Source.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                systemControl3Source = systemControl3Source.interpret(startAddress.offsetBy(lsb = 0x22u), payload),
-                systemControl4Source = systemControl4Source.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                controlSource = controlSource.interpret(startAddress.offsetBy(lsb = 0x24u), payload),
-                systemClockSource = systemClockSource.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
-                systemTempo = systemTempo.interpret(startAddress.offsetBy(lsb = 0x26u), payload),
-                tempoAssignSource = tempoAssignSource.interpret(startAddress.offsetBy(lsb = 0x28u), payload),
-                receiveProgramChange = receiveProgramChange.interpret(startAddress.offsetBy(lsb = 0x29u), payload),
-                receiveBankSelect = receiveBankSelect.interpret(startAddress.offsetBy(lsb = 0x2Au), payload),
-                centerSpeakerSwitch = centerSpeakerSwitch.interpret(startAddress.offsetBy(lsb = 0x2Bu), payload),
-                subWooferSwitch = subWooferSwitch.interpret(startAddress.offsetBy(lsb = 0x2Cu), payload),
-                twoChOutputMode = twoChOutputMode.interpret(startAddress.offsetBy(lsb = 0x2Du), payload),
+                systemControl1Source = systemControl1Source.deserialize(payload),
+                systemControl2Source = systemControl2Source.deserialize(payload),
+                systemControl3Source = systemControl3Source.deserialize(payload),
+                systemControl4Source = systemControl4Source.deserialize(payload),
+                controlSource = controlSource.deserialize(payload),
+                systemClockSource = systemClockSource.deserialize(payload),
+                systemTempo = systemTempo.deserialize(payload),
+                tempoAssignSource = tempoAssignSource.deserialize(payload),
+                receiveProgramChange = receiveProgramChange.deserialize(payload),
+                receiveBankSelect = receiveBankSelect.deserialize(payload),
+                centerSpeakerSwitch = centerSpeakerSwitch.deserialize(payload),
+                subWooferSwitch = subWooferSwitch.deserialize(payload),
+                twoChOutputMode = twoChOutputMode.deserialize(payload),
             )
         }
     }
@@ -109,28 +109,25 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         val partEqs = IntRange(0, 15)
             .map { StudioSetPartEqBuilder(deviceId, address.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
 
-        override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSet {
-            assert(this.isCovering(payload)) { "Expected Studio-Set address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+        override fun deserialize(payload: SparseUByteArray): StudioSet {
+            assert(this.isCovering(payload)) { "Expected Studio-Set address ($address..${address.offsetBy(size)})" }
 
             return StudioSet(
-                common = common.interpret(startAddress, payload),
-                commonChorus = commonChorus.interpret(startAddress.offsetBy(mlsb = 0x04u, lsb = 0x00u), payload),
-                commonReverb = commonReverb.interpret(startAddress.offsetBy(mlsb = 0x06u, lsb = 0x00u), payload),
-                motionalSurround = motionalSourround.interpret(startAddress.offsetBy(mlsb = 0x08u, lsb = 0x00u), payload),
-                masterEq = masterEq.interpret(startAddress.offsetBy(mlsb = 0x09u, lsb = 0x00u), payload),
+                common = common.deserialize(payload),
+                commonChorus = commonChorus.deserialize(payload),
+                commonReverb = commonReverb.deserialize(payload),
+                motionalSurround = motionalSourround.deserialize(payload),
+                masterEq = masterEq.deserialize(payload),
                 midiChannelPhaseLocks = midiChannelPhaseLocks
-                    .mapIndexed { index, p -> p.interpret(
-                        startAddress.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = index),
+                    .mapIndexed { index, p -> p.deserialize(
                         payload
                     ) },
                 parts = parts
-                    .mapIndexed { index, p -> p.interpret(
-                        startAddress.offsetBy(mlsb = 0x20u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = index),
+                    .mapIndexed { index, p -> p.deserialize(
                         payload
                     ) },
                 partEqs = partEqs
-                    .mapIndexed { index, p -> p.interpret(
-                        startAddress.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = index),
+                    .mapIndexed { index, p -> p.deserialize(
                         payload
                     ) },
             )
@@ -174,37 +171,37 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val extPartReverbSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
             val extPartReverbMuteSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Fu))
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommon {
-                assert(this.isCovering(payload)) { "Expected Studio-Set common address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetCommon {
+                assert(this.isCovering(payload)) { "Expected Studio-Set common address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetCommon(
-                    name = name.interpret(startAddress, payload),
-                    voiceReserve01 = voiceReserve01.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
-                    voiceReserve02 = voiceReserve02.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                    voiceReserve03 = voiceReserve03.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                    voiceReserve04 = voiceReserve04.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
-                    voiceReserve05 = voiceReserve05.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                    voiceReserve06 = voiceReserve06.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                    voiceReserve07 = voiceReserve07.interpret(startAddress.offsetBy(lsb = 0x1Eu), payload),
-                    voiceReserve08 = voiceReserve08.interpret(startAddress.offsetBy(lsb = 0x1Fu), payload),
-                    voiceReserve09 = voiceReserve09.interpret(startAddress.offsetBy(lsb = 0x20u), payload),
-                    voiceReserve10 = voiceReserve10.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                    voiceReserve11 = voiceReserve11.interpret(startAddress.offsetBy(lsb = 0x22u), payload),
-                    voiceReserve12 = voiceReserve12.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                    voiceReserve13 = voiceReserve13.interpret(startAddress.offsetBy(lsb = 0x24u), payload),
-                    voiceReserve14 = voiceReserve14.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
-                    voiceReserve15 = voiceReserve15.interpret(startAddress.offsetBy(lsb = 0x26u), payload),
-                    voiceReserve16 = voiceReserve16.interpret(startAddress.offsetBy(lsb = 0x27u), payload),
-                    tone1ControlSource = tone1ControlSource.interpret(startAddress.offsetBy(lsb = 0x39u), payload),
-                    tone2ControlSource = tone2ControlSource.interpret(startAddress.offsetBy(lsb = 0x3Au), payload),
-                    tone3ControlSource = tone3ControlSource.interpret(startAddress.offsetBy(lsb = 0x3Bu), payload),
-                    tone4ControlSource = tone4ControlSource.interpret(startAddress.offsetBy(lsb = 0x3Cu), payload),
-                    tempo = tempo.interpret(startAddress.offsetBy(lsb =0x3Du), payload),
+                    name = name.deserialize(payload),
+                    voiceReserve01 = voiceReserve01.deserialize(payload),
+                    voiceReserve02 = voiceReserve02.deserialize(payload),
+                    voiceReserve03 = voiceReserve03.deserialize(payload),
+                    voiceReserve04 = voiceReserve04.deserialize(payload),
+                    voiceReserve05 = voiceReserve05.deserialize(payload),
+                    voiceReserve06 = voiceReserve06.deserialize(payload),
+                    voiceReserve07 = voiceReserve07.deserialize(payload),
+                    voiceReserve08 = voiceReserve08.deserialize(payload),
+                    voiceReserve09 = voiceReserve09.deserialize(payload),
+                    voiceReserve10 = voiceReserve10.deserialize(payload),
+                    voiceReserve11 = voiceReserve11.deserialize(payload),
+                    voiceReserve12 = voiceReserve12.deserialize(payload),
+                    voiceReserve13 = voiceReserve13.deserialize(payload),
+                    voiceReserve14 = voiceReserve14.deserialize(payload),
+                    voiceReserve15 = voiceReserve15.deserialize(payload),
+                    voiceReserve16 = voiceReserve16.deserialize(payload),
+                    tone1ControlSource = tone1ControlSource.deserialize(payload),
+                    tone2ControlSource = tone2ControlSource.deserialize(payload),
+                    tone3ControlSource = tone3ControlSource.deserialize(payload),
+                    tone4ControlSource = tone4ControlSource.deserialize(payload),
+                    tempo = tempo.deserialize(payload),
                     // TODO: soloPart
-                    reverbSwitch = reverbSwitch.interpret(startAddress.offsetBy(lsb = 0x40u), payload),
-                    chorusSwitch = chorusSwitch.interpret(startAddress.offsetBy(lsb = 0x41u), payload),
-                    masterEQSwitch = masterEQSwitch.interpret(startAddress.offsetBy(lsb = 0x42u), payload),
-                    drumCompEQSwitch = drumCompEQSwitch.interpret(startAddress.offsetBy(lsb = 0x43u), payload),
+                    reverbSwitch = reverbSwitch.deserialize(payload),
+                    chorusSwitch = chorusSwitch.deserialize(payload),
+                    masterEQSwitch = masterEQSwitch.deserialize(payload),
+                    drumCompEQSwitch = drumCompEQSwitch.deserialize(payload),
                     // TODO: drumCompEQPart
                     // Drum Comp/EQ 1 Output Assign
                     // Drum Comp/EQ 2 Output Assign
@@ -212,10 +209,10 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                     // Drum Comp/EQ 4 Output Assign
                     // Drum Comp/EQ 5 Output Assign
                     // Drum Comp/EQ 6 Output Assign
-                    extPartLevel = extPartLevel.interpret(startAddress.offsetBy(lsb = 0x4Cu), payload),
-                    extPartChorusSendLevel = extPartChorusSendLevel.interpret(startAddress.offsetBy(lsb = 0x4Du), payload),
-                    extPartReverbSendLevel = extPartReverbSendLevel.interpret(startAddress.offsetBy(lsb = 0x4Eu), payload),
-                    extPartReverbMuteSwitch = extPartReverbMuteSwitch.interpret(startAddress.offsetBy(lsb = 0x4Fu), payload),
+                    extPartLevel = extPartLevel.deserialize(payload),
+                    extPartChorusSendLevel = extPartChorusSendLevel.deserialize(payload),
+                    extPartReverbSendLevel = extPartReverbSendLevel.deserialize(payload),
+                    extPartReverbMuteSwitch = extPartReverbMuteSwitch.deserialize(payload),
                 )
             }
         }
@@ -236,16 +233,15 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                     )
                 }
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommonChorus {
-                assert(this.isCovering(payload)) { "Expected Studio-Set chorus address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetCommonChorus {
+                assert(this.isCovering(payload)) { "Expected Studio-Set chorus address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetCommonChorus(
-                    type = type.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    level = level.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                    outputSelect = outputSelect.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
+                    type = type.deserialize(payload),
+                    level = level.deserialize(payload),
+                    outputSelect = outputSelect.deserialize(payload),
                     parameters = parameters
-                        .mapIndexed { idx, p -> p.interpret(
-                            address.offsetBy(lsb = 0x04u).offsetBy(lsb = 0x04u, factor = idx),
+                        .mapIndexed { idx, p -> p.deserialize(
                             payload
                         ) }
                 )
@@ -268,16 +264,15 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                     )
                 }
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommonReverb {
-                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetCommonReverb {
+                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetCommonReverb(
-                    type = type.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    level = level.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                    outputSelect = outputSelect.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
+                    type = type.deserialize(payload),
+                    level = level.deserialize(payload),
+                    outputSelect = outputSelect.deserialize(payload),
                     parameters = parameters
-                        .mapIndexed { idx, p -> p.interpret(
-                            address.offsetBy(lsb = 0x03u).offsetBy(lsb = 0x04u, factor = idx),
+                        .mapIndexed { idx, p -> p.deserialize(
                             payload
                         ) }
                 )
@@ -305,22 +300,22 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             ) // 1..16, OFF --> Why is OFF the last now *grrr*
             val depth = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetMotionalSurround {
-                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetMotionalSurround {
+                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetMotionalSurround(
-                    switch.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    roomType.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                    ambienceLevel.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
-                    roomSize.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
-                    ambienceTime.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                    ambienceDensity.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                    ambienceHfDamp.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                    extPartLR.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                    extPartFB.interpret(startAddress.offsetBy(lsb = 0x08u), payload),
-                    extPartWidth.interpret(startAddress.offsetBy(lsb = 0x09u), payload),
-                    extPartAmbienceSendLevel.interpret(startAddress.offsetBy(lsb = 0x0Au), payload),
-                    extPartControlChannel.interpret(startAddress.offsetBy(lsb = 0x0Bu), payload),
+                    switch.deserialize(payload),
+                    roomType.deserialize(payload),
+                    ambienceLevel.deserialize(payload),
+                    roomSize.deserialize(payload),
+                    ambienceTime.deserialize(payload),
+                    ambienceDensity.deserialize(payload),
+                    ambienceHfDamp.deserialize(payload),
+                    extPartLR.deserialize(payload),
+                    extPartFB.deserialize(payload),
+                    extPartWidth.deserialize(payload),
+                    extPartAmbienceSendLevel.deserialize(payload),
+                    extPartControlChannel.deserialize(payload),
                     0 // depth.interpret(startAddress.offsetBy(lsb = 0xC0u), length, payload),
                 )
             }
@@ -350,17 +345,17 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             )
             val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x06u), 0..30) // -15
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetMasterEq {
-                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetMasterEq {
+                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetMasterEq(
-                    lowFrequency = lowFrequency.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    lowGain = lowGain.interpret(startAddress.offsetBy(lsb = 0x01u), payload) - 15,
-                    midFrequency = midFrequency.interpret(startAddress.offsetBy(lsb = 0x02u), payload),
-                    midGain = midGain.interpret(startAddress.offsetBy(lsb = 0x03u), payload) - 15,
-                    midQ = midQ.interpret(startAddress.offsetBy(lsb = 0x04u), payload),
-                    highFrequency = highFrequency.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                    highGain = highGain.interpret(startAddress.offsetBy(lsb = 0x06u), payload) - 15,
+                    lowFrequency = lowFrequency.deserialize(payload),
+                    lowGain = lowGain.deserialize(payload) - 15,
+                    midFrequency = midFrequency.deserialize(payload),
+                    midGain = midGain.deserialize(payload) - 15,
+                    midQ = midQ.deserialize(payload),
+                    highFrequency = highFrequency.deserialize(payload),
+                    highGain = highGain.deserialize(payload) - 15,
                 )
             }
         }
@@ -450,78 +445,78 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val motionalSurroundWidth = UByteField(deviceId, address.offsetBy(lsb = 0x48u), 0..32)
             val motionalSurroundAmbienceSend = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetPart {
-                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetPart {
+                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetPart(
-                    receiveChannel.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    receiveSwitch.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
+                    receiveChannel.deserialize(payload),
+                    receiveSwitch.deserialize(payload),
 
-                    toneBankMsb.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                    toneBankLsb.interpret(startAddress.offsetBy(lsb = 0x07u), payload),
-                    toneProgramNumber.interpret(startAddress.offsetBy(lsb = 0x08u), payload),
+                    toneBankMsb.deserialize(payload),
+                    toneBankLsb.deserialize(payload),
+                    toneProgramNumber.deserialize(payload),
 
-                    level.interpret(startAddress.offsetBy(lsb = 0x09u), payload),
-                    pan.interpret(startAddress.offsetBy(lsb = 0x0Au), payload),
-                    coarseTune.interpret(startAddress.offsetBy(lsb = 0x0Bu), payload),
-                    fineTune.interpret(startAddress.offsetBy(lsb = 0x0Cu), payload),
-                    monoPoly.interpret(startAddress.offsetBy(lsb = 0x0Du), payload),
-                    legatoSwitch.interpret(startAddress.offsetBy(lsb = 0x0Eu), payload),
-                    pitchBendRange.interpret(startAddress.offsetBy(lsb = 0x0Fu), payload),
-                    portamentoSwitch.interpret(startAddress.offsetBy(lsb = 0x10u), payload),
-                    portamentoTime.interpret(startAddress.offsetBy(lsb = 0x11u), payload),
-                    cutoffOffset.interpret(startAddress.offsetBy(lsb = 0x13u), payload),
-                    resonanceOffset.interpret(startAddress.offsetBy(lsb = 0x14u), payload),
-                    attackTimeOffset.interpret(startAddress.offsetBy(lsb = 0x15u), payload),
-                    decayTimeOffset.interpret(startAddress.offsetBy(lsb = 0x16u), payload),
-                    releaseTimeOffset.interpret(startAddress.offsetBy(lsb = 0x17u), payload),
-                    vibratoRate.interpret(startAddress.offsetBy(lsb = 0x18u), payload),
-                    vibratoDepth.interpret(startAddress.offsetBy(lsb = 0x19u), payload),
-                    vibratoDelay.interpret(startAddress.offsetBy(lsb = 0x1Au), payload),
-                    octaveShift.interpret(startAddress.offsetBy(lsb = 0x1Bu), payload),
-                    velocitySensOffset.interpret(startAddress.offsetBy(lsb = 0x1Cu), payload),
-                    keyboardRange.interpret(startAddress.offsetBy(lsb = 0x1Du), payload),
-                    keyboardFadeWidth.interpret(startAddress.offsetBy(lsb = 0x1Fu), payload),
-                    velocityRange.interpret(startAddress.offsetBy(lsb = 0x21u), payload),
-                    velocityFadeWidth.interpret(startAddress.offsetBy(lsb = 0x23u), payload),
-                    muteSwitch.interpret(startAddress.offsetBy(lsb = 0x25u), payload),
+                    level.deserialize(payload),
+                    pan.deserialize(payload),
+                    coarseTune.deserialize(payload),
+                    fineTune.deserialize(payload),
+                    monoPoly.deserialize(payload),
+                    legatoSwitch.deserialize(payload),
+                    pitchBendRange.deserialize(payload),
+                    portamentoSwitch.deserialize(payload),
+                    portamentoTime.deserialize(payload),
+                    cutoffOffset.deserialize(payload),
+                    resonanceOffset.deserialize(payload),
+                    attackTimeOffset.deserialize(payload),
+                    decayTimeOffset.deserialize(payload),
+                    releaseTimeOffset.deserialize(payload),
+                    vibratoRate.deserialize(payload),
+                    vibratoDepth.deserialize(payload),
+                    vibratoDelay.deserialize(payload),
+                    octaveShift.deserialize(payload),
+                    velocitySensOffset.deserialize(payload),
+                    keyboardRange.deserialize(payload),
+                    keyboardFadeWidth.deserialize(payload),
+                    velocityRange.deserialize(payload),
+                    velocityFadeWidth.deserialize(payload),
+                    muteSwitch.deserialize(payload),
 
-                    chorusSend.interpret(startAddress.offsetBy(lsb = 0x27u), payload),
-                    reverbSend.interpret(startAddress.offsetBy(lsb = 0x28u), payload),
-                    outputAssign.interpret(startAddress.offsetBy(lsb = 0x29u), payload),
+                    chorusSend.deserialize(payload),
+                    reverbSend.deserialize(payload),
+                    outputAssign.deserialize(payload),
 
-                    scaleTuneType.interpret(startAddress.offsetBy(lsb = 0x2Bu), payload),
-                    scaleTuneKey.interpret(startAddress.offsetBy(lsb = 0x2Cu), payload),
-                    scaleTuneC.interpret(startAddress.offsetBy(lsb = 0x2Du), payload),
-                    scaleTuneCSharp.interpret(startAddress.offsetBy(lsb = 0x2Eu), payload),
-                    scaleTuneD.interpret(startAddress.offsetBy(lsb = 0x2Fu), payload),
-                    scaleTuneDSharp.interpret(startAddress.offsetBy(lsb = 0x30u), payload),
-                    scaleTuneE.interpret(startAddress.offsetBy(lsb = 0x31u), payload),
-                    scaleTuneF.interpret(startAddress.offsetBy(lsb = 0x32u), payload),
-                    scaleTuneFSharp.interpret(startAddress.offsetBy(lsb = 0x33u), payload),
-                    scaleTuneG.interpret(startAddress.offsetBy(lsb = 0x34u), payload),
-                    scaleTuneGSharp.interpret(startAddress.offsetBy(lsb = 0x35u), payload),
-                    scaleTuneA.interpret(startAddress.offsetBy(lsb = 0x36u), payload),
-                    scaleTuneASharp.interpret(startAddress.offsetBy(lsb = 0x37u), payload),
-                    scaleTuneB.interpret(startAddress.offsetBy(lsb = 0x38u), payload),
+                    scaleTuneType.deserialize(payload),
+                    scaleTuneKey.deserialize(payload),
+                    scaleTuneC.deserialize(payload),
+                    scaleTuneCSharp.deserialize(payload),
+                    scaleTuneD.deserialize(payload),
+                    scaleTuneDSharp.deserialize(payload),
+                    scaleTuneE.deserialize(payload),
+                    scaleTuneF.deserialize(payload),
+                    scaleTuneFSharp.deserialize(payload),
+                    scaleTuneG.deserialize(payload),
+                    scaleTuneGSharp.deserialize(payload),
+                    scaleTuneA.deserialize(payload),
+                    scaleTuneASharp.deserialize(payload),
+                    scaleTuneB.deserialize(payload),
 
-                    receiveProgramChange.interpret(startAddress.offsetBy(lsb = 0x39u), payload),
-                    receiveBankSelect.interpret(startAddress.offsetBy(lsb = 0x3Au), payload),
-                    receivePitchBend.interpret(startAddress.offsetBy(lsb = 0x3Bu), payload),
-                    receivePolyphonicKeyPressure.interpret(startAddress.offsetBy(lsb = 0x3Cu), payload),
-                    receiveChannelPressure.interpret(startAddress.offsetBy(lsb = 0x3Du), payload),
-                    receiveModulation.interpret(startAddress.offsetBy(lsb = 0x3Eu), payload),
-                    receiveVolume.interpret(startAddress.offsetBy(lsb = 0x3Fu), payload),
-                    receivePan.interpret(startAddress.offsetBy(lsb = 0x40u), payload),
-                    receiveExpression.interpret(startAddress.offsetBy(lsb = 0x41u), payload),
-                    receiveHold1.interpret(startAddress.offsetBy(lsb = 0x42u), payload),
+                    receiveProgramChange.deserialize(payload),
+                    receiveBankSelect.deserialize(payload),
+                    receivePitchBend.deserialize(payload),
+                    receivePolyphonicKeyPressure.deserialize(payload),
+                    receiveChannelPressure.deserialize(payload),
+                    receiveModulation.deserialize(payload),
+                    receiveVolume.deserialize(payload),
+                    receivePan.deserialize(payload),
+                    receiveExpression.deserialize(payload),
+                    receiveHold1.deserialize(payload),
 
-                    velocityCurveType.interpret(startAddress.offsetBy(lsb = 0x43u), payload) + 1, // TODO
+                    velocityCurveType.deserialize(payload) + 1, // TODO
 
-                    motionalSurroundLR.interpret(startAddress.offsetBy(lsb = 0x44u), payload),
-                    motionalSurroundFB.interpret(startAddress.offsetBy(lsb = 0x46u), payload),
-                    motionalSurroundWidth.interpret(startAddress.offsetBy(lsb = 0x48u), payload),
-                    motionalSurroundAmbienceSend.interpret(startAddress.offsetBy(lsb = 0x49u), payload)
+                    motionalSurroundLR.deserialize(payload),
+                    motionalSurroundFB.deserialize(payload),
+                    motionalSurroundWidth.deserialize(payload),
+                    motionalSurroundAmbienceSend.deserialize(payload)
                 )
             }
         }
@@ -551,18 +546,18 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             )
             val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x07u), 0..30) // -15
 
-            override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetPartEq {
-                assert(this.isCovering(payload)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            override fun deserialize(payload: SparseUByteArray): StudioSetPartEq {
+                assert(this.isCovering(payload)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)})" }
 
                 return StudioSetPartEq(
-                    switch = switch.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
-                    lowFrequency = lowFrequency.interpret(startAddress.offsetBy(lsb = 0x01u), payload),
-                    lowGain = lowGain.interpret(startAddress.offsetBy(lsb = 0x02u), payload) - 15,
-                    midFrequency = midFrequency.interpret(startAddress.offsetBy(lsb = 0x03u), payload),
-                    midGain = midGain.interpret(startAddress.offsetBy(lsb = 0x04u), payload) - 15,
-                    midQ = midQ.interpret(startAddress.offsetBy(lsb = 0x05u), payload),
-                    highFrequency = highFrequency.interpret(startAddress.offsetBy(lsb = 0x06u), payload),
-                    highGain = highGain.interpret(startAddress.offsetBy(lsb = 0x07u), payload) - 15,
+                    switch = switch.deserialize(payload),
+                    lowFrequency = lowFrequency.deserialize(payload),
+                    lowGain = lowGain.deserialize(payload) - 15,
+                    midFrequency = midFrequency.deserialize(payload),
+                    midGain = midGain.deserialize(payload) - 15,
+                    midQ = midQ.deserialize(payload),
+                    highFrequency = highFrequency.deserialize(payload),
+                    highGain = highGain.deserialize(payload) - 15,
                 )
             }
         }
