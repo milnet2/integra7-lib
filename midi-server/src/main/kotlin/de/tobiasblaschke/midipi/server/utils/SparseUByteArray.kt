@@ -8,6 +8,8 @@ class SparseUByteArray(): Collection<UByte> {
     private val values = TreeMap<IntRange, UByteArray>(Comparator.comparing(IntRange::first))
     override val size: Int
         get() = if (values.isEmpty()) 0 else values.lastEntry().key.last + 1
+    val startAddress: Int
+        get() = values.firstKey().first
 
     constructor(startAddress: Int = 0, initial: UByteArray): this() {
         this.values[IntRange(startAddress, startAddress + initial.size - 1)] = initial // TODO: Clone initial?

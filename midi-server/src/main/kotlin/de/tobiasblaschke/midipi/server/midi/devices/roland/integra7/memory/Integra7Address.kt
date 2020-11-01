@@ -203,11 +203,9 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
     fun successor(): Integra7Address =
         Integra7Address((address + 1u).toUInt7UsingValue())
 
-    @Deprecated("Switch to UInt7")
     fun offsetBy(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte, factor: Int = 1): Integra7Address =
         offsetBy(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7())
 
-    @Deprecated("Switch to UInt7")
     fun offsetBy(msb: UByte7 = UByte7.MIN_VALUE, mmsb: UByte7 = UByte7.MIN_VALUE, mlsb: UByte7 = UByte7.MIN_VALUE, lsb: UByte7 = UByte7.MIN_VALUE, factor: Int = 1): Integra7Address =
         offsetBy(UInt7(msb, mmsb, mlsb, lsb), factor)
 
@@ -239,6 +237,9 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
         .firstOrNull { it.range.contains(address.toUInt()) }
         ?.let { it.toString() }
         ?: "Unknown range $this"
+
+    fun toStringDetailed(): String =
+        "${toString()} in range ${rangeName()}"
 
     override fun toString(): String =
         address.toString()

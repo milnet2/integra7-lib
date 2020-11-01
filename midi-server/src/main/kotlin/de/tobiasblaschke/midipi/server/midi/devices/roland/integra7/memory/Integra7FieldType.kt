@@ -66,6 +66,9 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         @Deprecated(message = "Use other constructor")
         constructor(deviceId: DeviceId, address: Integra7Address, values: Array<T>)
             :this(deviceId, address, { elem -> values[elem] })
+        constructor(deviceId: DeviceId, address: Integra7Address, valuesSupplier: () -> Array<T>)
+            :this(deviceId, address, { elem -> valuesSupplier()[elem] })
+
         override val size = Integra7Size.ONE_BYTE
 
         override fun deserialize(payload: SparseUByteArray): T {

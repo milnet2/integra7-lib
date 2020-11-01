@@ -4,20 +4,17 @@ data class PcmSynthTone(
     override val common: PcmSynthToneCommon,
     val mfx: PcmSynthToneMfx,
     val partialMixTable: PcmSynthTonePartialMixTable,
-    val partial1: PcmSynthTonePartial,
-    val partial2: PcmSynthTonePartial,
-    val partial3: PcmSynthTonePartial,
-    val partial4: PcmSynthTonePartial,
+    val partials: List<PcmSynthTonePartial>,
     val common2: PcmSynthToneCommon2,
 ): IntegraTone {
     override fun toString(): String =
         "PcmSynthTone(\n" +
                 "\tcommon = $common\n" +
                 "\tmfx = $mfx\n" +
-                "\tpartial1 = $partial1\n" +
-                "\tpartial2 = $partial2\n" +
-                "\tpartial3 = $partial3\n" +
-                "\tpartial4 = $partial4\n" +
+                "\tpartials = ${partials.joinToString(
+                    prefix = "\n\t  ",
+                    separator = "\n\t  ",
+                    postfix = "\n")}" +
                 "\tcommon2 = $common2\n)"
 }
 
@@ -249,8 +246,8 @@ enum class VelocityControl(val hex: Int) {
     OFF(0), ON(1), RANDOM(2), CYCLE(3);
 
     companion object {
-        fun fromValue(value: Int): ControlSource =
-            ControlSource.values()
+        fun fromValue(value: Int): VelocityControl =
+            values()
                 .first { it.hex.toInt() == value }
     }
 }

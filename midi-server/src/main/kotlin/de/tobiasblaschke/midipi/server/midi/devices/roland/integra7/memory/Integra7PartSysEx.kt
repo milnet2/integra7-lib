@@ -22,23 +22,18 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common = PcmSynthToneCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part)
         val partialMixTable = PcmSynthTonePartialMixTableBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u), part)
-        val partial1 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u), part)
-        val partial2 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u), part)
-        val partial3 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x24u, lsb = 0x00u), part)
-        val partial4 = PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x26u, lsb = 0x00u), part)
+        val partials = IntRange(0, 3)
+            .map { PcmSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u).offsetBy(mlsb = 0x02u, lsb = 0x00u, factor = it), part) }
         val common2 = PcmSynthToneCommon2Builder(deviceId, address.offsetBy(mlsb = 0x30u, lsb = 0x00u), part)
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthTone {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return PcmSynthTone(
                 common = common.deserialize(payload),
                 mfx = mfx.deserialize(payload),
                 partialMixTable = partialMixTable.deserialize(payload),
-                partial1 = partial1.deserialize(payload),
-                partial2 = partial2.deserialize(payload),
-                partial3 = partial3.deserialize(payload),
-                partial4 = partial4.deserialize(payload),
+                partials = partials.map { it.deserialize(payload) },
                 common2 = common2.deserialize(payload), //else null,
             )
         }
@@ -58,7 +53,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val ocataveShift = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -3..3)
         val stretchTuneDepth = UByteField(deviceId, address.offsetBy(lsb = 0x14u), 0..3)
         val analogFeel = UByteField(deviceId, address.offsetBy(lsb = 0x15u))
-        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x16u), MonoPoly.values())
+        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x16u), MonoPoly::values)
         val legatoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x17u))
         val legatoRetrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x18u))
         val portamentoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x19u))
@@ -118,7 +113,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val matrixControl4Sens4 = ByteField(deviceId, address.offsetBy(lsb = 0x4Eu))
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthToneCommon {
-            assert(this.isCovering(payload)) { "Not PCM synth tone common ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not PCM synth tone common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             try {
                 return PcmSynthToneCommon(
@@ -231,7 +226,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             .map { SignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x11u).offsetBy(0x04.toUInt7(), factor = it)) }
 
         override fun deserialize(payload: SparseUByteArray): PcmSynthToneMfx {
-            assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)}" }
+            assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)} for part $part but ${address.toStringDetailed()}" }
 
             try {
             return PcmSynthToneMfx(
@@ -280,7 +275,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val booster34 = UByteField(deviceId, address.offsetBy(lsb = 0x03u)) // ENUM
 
         val velocityControl =
-            EnumField(deviceId, address.offsetBy(lsb = 0x04u), VelocityControl.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x04u), VelocityControl::values)
 
         val pmt1PartialSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x05u))
         val pmt1KeyboardRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x06u))
@@ -309,7 +304,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthTonePartialMixTable {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone PMT ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a PCM synth tone PMT ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             try {
                 return PcmSynthTonePartialMixTable(
@@ -369,13 +364,13 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val chorusTune = ByteField(deviceId, address.offsetBy(lsb = 0x01u), -48..48)
         val fineTune = ByteField(deviceId, address.offsetBy(lsb = 0x02u), -50..50)
         val randomPithDepth =
-            EnumField(deviceId, address.offsetBy(lsb = 0x03u), RandomPithDepth.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x03u), RandomPithDepth::values)
         val pan = ByteField(deviceId, address.offsetBy(lsb = 0x04u))
         // TODO val panKeyFollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x05u), -100..100)
         val panDepth = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
         val alternatePanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x07u))
-        val envMode = EnumField(deviceId, address.offsetBy(lsb = 0x08u), EnvMode.values())
-        val delayMode = EnumField(deviceId, address.offsetBy(lsb = 0x09u), DelayMode.values())
+        val envMode = EnumField(deviceId, address.offsetBy(lsb = 0x08u), EnvMode::values)
+        val delayMode = EnumField(deviceId, address.offsetBy(lsb = 0x09u), DelayMode::values)
         val delayTime = UnsignedMsbLsbNibbles(
             deviceId,
             address.offsetBy(lsb = 0x0Au),
@@ -392,44 +387,44 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val redamper = BooleanField(deviceId, address.offsetBy(lsb = 0x16u))
 
         val partialControl1Switch1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x17u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x17u), OffOnReverse::values)
         val partialControl1Switch2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x18u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x18u), OffOnReverse::values)
         val partialControl1Switch3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x19u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x19u), OffOnReverse::values)
         val partialControl1Switch4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Au), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Au), OffOnReverse::values)
         val partialControl2Switch1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Bu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Bu), OffOnReverse::values)
         val partialControl2Switch2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), OffOnReverse::values)
         val partialControl2Switch3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Du), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Du), OffOnReverse::values)
         val partialControl2Switch4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Eu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Eu), OffOnReverse::values)
         val partialControl3Switch1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), OffOnReverse::values)
         val partialControl3Switch2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x20u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x20u), OffOnReverse::values)
         val partialControl3Switch3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x21u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x21u), OffOnReverse::values)
         val partialControl3Switch4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x22u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x22u), OffOnReverse::values)
         val partialControl4Switch1 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x23u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x23u), OffOnReverse::values)
         val partialControl4Switch2 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x24u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x24u), OffOnReverse::values)
         val partialControl4Switch3 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x25u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x25u), OffOnReverse::values)
         val partialControl4Switch4 =
-            EnumField(deviceId, address.offsetBy(lsb = 0x26u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x26u), OffOnReverse::values)
 
         val waveGroupType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x27u), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x27u), WaveGroupType::values)
         val waveGroupId = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x28u), 0..16384)
         val waveNumberL = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Cu), 0..16384)
         val waveNumberR = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x30u), 0..16384)
-        val waveGain = EnumField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
+        val waveGain = EnumField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain::values)
         val waveFXMSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x35u))
         val waveFXMColor = UByteField(deviceId, address.offsetBy(lsb = 0x36u), 0..3)
         val waveFXMDepth = UByteField(deviceId, address.offsetBy(lsb = 0x37u), 0..16)
@@ -452,7 +447,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val pitchEnvLevel4 = ByteField(deviceId, address.offsetBy(lsb = 0x47u))
 
         val tvfFilterType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x48u), TvfFilterType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x48u), TvfFilterType::values)
         val tvfCutoffFrequency = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
         // TODO val tvfCutoffKeyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x4Au), -200..200)
         val tvfCutoffVelocityCurve = UByteField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..7)
@@ -478,7 +473,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         // TODO val biasLevel = SignedValueField(deviceId, address.offsetBy(lsb = 0x5Eu), -100..100)
         val biasPosition = UByteField(deviceId, address.offsetBy(lsb = 0x5Fu))
         val biasDirection =
-            EnumField(deviceId, address.offsetBy(lsb = 0x60u), BiasDirection.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x60u), BiasDirection::values)
         val tvaLevelVelocityCurve = UByteField(deviceId, address.offsetBy(lsb = 0x61u), 0..7)
         val tvaLevelVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x62u))
         val tvaEnvTime1VelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x63u))
@@ -493,14 +488,14 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val tvaEnvLevel3 = UByteField(deviceId, address.offsetBy(lsb = 0x6Cu))
 
         val lfo1WaveForm =
-            EnumField(deviceId, address.offsetBy(lsb = 0x6Du), LfoWaveForm.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x6Du), LfoWaveForm::values)
         val lfo1Rate = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x6Eu), 0..149)
-        val lfo1Offset = EnumField(deviceId, address.offsetBy(lsb = 0x70u), LfoOffset.values())
+        val lfo1Offset = EnumField(deviceId, address.offsetBy(lsb = 0x70u), LfoOffset::values)
         val lfo1RateDetune = UByteField(deviceId, address.offsetBy(lsb = 0x71u))
         val lfo1DelayTime = UByteField(deviceId, address.offsetBy(lsb = 0x72u))
         // TODO val lfo1Keyfollow = SignedValueField(deviceId, address.offsetBy(lsb = 0x73u), -100..100)
         val lfo1FadeMode =
-            EnumField(deviceId, address.offsetBy(lsb = 0x74u), LfoFadeMode.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x74u), LfoFadeMode::values)
         val lfo1FadeTime = UByteField(deviceId, address.offsetBy(lsb = 0x75u))
         val lfo1KeyTrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x76u))
         val lfo1PitchDepth = ByteField(deviceId, address.offsetBy(lsb = 0x77u))
@@ -509,16 +504,16 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val lfo1PanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x7Au))
 
         val lfo2WaveForm =
-            EnumField(deviceId, address.offsetBy(lsb = 0x7Bu), LfoWaveForm.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x7Bu), LfoWaveForm::values)
         val lfo2Rate = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x7Cu), 0..149)
-        val lfo2Offset = EnumField(deviceId, address.offsetBy(lsb = 0x7Eu), LfoOffset.values())
+        val lfo2Offset = EnumField(deviceId, address.offsetBy(lsb = 0x7Eu), LfoOffset::values)
         val lfo2RateDetune = UByteField(deviceId, address.offsetBy(lsb = 0x7Fu))
         val lfo2DelayTime = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x00u))
         // TODO val lfo2Keyfollow = SignedValueField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x01u), -100..100)
         val lfo2FadeMode = EnumField(
             deviceId,
             address.offsetBy(mlsb = 0x01u, lsb = 0x02u),
-            LfoFadeMode.values()
+            LfoFadeMode::values
         )
         val lfo2FadeTime = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x03u))
         val lfo2KeyTrigger = BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x04u))
@@ -548,7 +543,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthTonePartial {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone partial ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a PCM synth tone partial ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             try {
                 return PcmSynthTonePartial(
@@ -735,7 +730,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmSynthToneCommon2 {
-            assert(this.isCovering(payload)) { "Not a PCM synth tone common2 ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a PCM synth tone common2 ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             try {
                 return PcmSynthToneCommon2(
@@ -776,7 +771,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val partial3 = SuperNaturalSynthTonePartialBuilder(deviceId, address.offsetBy(mlsb = 0x22u, lsb = 0x00u), part)
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalSynthTone {
-            assert(this.isCovering(payload)) { "Not a SN-S part ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a SN-S part ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SuperNaturalSynthTone(
                 common = common.deserialize(payload),
@@ -809,12 +804,12 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val partial3Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Du))
         val partial3Select = BooleanField(deviceId, address.offsetBy(lsb = 0x1Eu))
 
-        val ringSwitch = EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), RingSwitch.values())
+        val ringSwitch = EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), RingSwitch::values)
         val tfxSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x20u))
 
         val unisonSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x2Eu))
         val portamentoMode =
-            EnumField(deviceId, address.offsetBy(lsb = 0x31u), PortamentoMode.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x31u), PortamentoMode::values)
         val legatoSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x32u))
         val analogFeel = UByteField(deviceId, address.offsetBy(lsb = 0x34u))
         val waveShape = UByteField(deviceId, address.offsetBy(lsb = 0x35u))
@@ -822,12 +817,12 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val phraseNumber =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x37u), 0..65535)
         val phraseOctaveShift = ByteField(deviceId, address.offsetBy(lsb = 0x3Bu), -3..3)
-        val unisonSize = EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), UnisonSize.values())
+        val unisonSize = EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), UnisonSize::values)
 
         override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalSynthToneCommon {
-            assert(this.isCovering(payload)) { "Not a SN-S common ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a SN-S common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SupernaturalSynthToneCommon(
                 name = name.deserialize(payload),
@@ -868,9 +863,9 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val size = Integra7Size(0x3Du)
 
         val oscWaveForm =
-            EnumField(deviceId, address.offsetBy(lsb = 0x00u), SnSWaveForm.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x00u), SnSWaveForm::values)
         val oscWaveFormVariation =
-            EnumField(deviceId, address.offsetBy(lsb = 0x01u), SnsWaveFormVariation.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x01u), SnsWaveFormVariation::values)
         val oscPitch = ByteField(deviceId, address.offsetBy(lsb = 0x03u), -24..24)
         val oscDetune = ByteField(deviceId, address.offsetBy(lsb = 0x04u), -50..50)
         val oscPulseWidthModulationDepth = UByteField(deviceId, address.offsetBy(lsb = 0x05u))
@@ -880,9 +875,9 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val oscPitchEnvDepth = ByteField(deviceId, address.offsetBy(lsb = 0x09u))
 
         val filterMode =
-            EnumField(deviceId, address.offsetBy(lsb = 0x0Au), SnsFilterMode.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Au), SnsFilterMode::values)
         val filterSlope =
-            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), SnsFilterSlope.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), SnsFilterSlope::values)
         val filterCutoff = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
 //        val filterCutoffKeyflow = SignedValueField(deviceId, address.offsetBy(lsb = 0x0Du), -100..100)
         val filterEnvVelocitySens = ByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
@@ -900,11 +895,11 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val ampEnvReleaseTime = UByteField(deviceId, address.offsetBy(lsb = 0x1Au))
         val ampPan = ByteField(deviceId, address.offsetBy(lsb = 0x1Bu), -64..63)
 
-        val lfoShape = EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), SnsLfoShape.values())
+        val lfoShape = EnumField(deviceId, address.offsetBy(lsb = 0x1Cu), SnsLfoShape::values)
         val lfoRate = UByteField(deviceId, address.offsetBy(lsb = 0x1Du))
         val lfoTempoSyncSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x1Eu))
         val lfoTempoSyncNote =
-            EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), SnsLfoTempoSyncNote.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x1Fu), SnsLfoTempoSyncNote::values)
         val lfoFadeTime = UByteField(deviceId, address.offsetBy(lsb = 0x20u))
         val lfoKeyTrigger = BooleanField(deviceId, address.offsetBy(lsb = 0x21u))
         val lfoPitchDepth = ByteField(deviceId, address.offsetBy(lsb = 0x22u))
@@ -913,11 +908,11 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val lfoPanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x25u))
 
         val modulationShape =
-            EnumField(deviceId, address.offsetBy(lsb = 0x26u), SnsLfoShape.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x26u), SnsLfoShape::values)
         val modulationLfoRate = UByteField(deviceId, address.offsetBy(lsb = 0x27u))
         val modulationLfoTempoSyncSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x28u))
         val modulationLfoTempoSyncNote =
-            EnumField(deviceId, address.offsetBy(lsb = 0x29u), SnsLfoTempoSyncNote.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x29u), SnsLfoTempoSyncNote::values)
         val oscPulseWidthShift = UByteField(deviceId, address.offsetBy(lsb = 0x2Au))
         val modulationLfoPitchDepth = ByteField(deviceId, address.offsetBy(lsb = 0x2Cu))
         val modulationLfoFilterDepth = ByteField(deviceId, address.offsetBy(lsb = 0x2Du))
@@ -927,7 +922,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val cutoffAftertouchSens = ByteField(deviceId, address.offsetBy(lsb = 0x30u))
         val levelAftertouchSens = ByteField(deviceId, address.offsetBy(lsb = 0x31u))
 
-        val waveGain = EnumField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain.values())
+        val waveGain = EnumField(deviceId, address.offsetBy(lsb = 0x34u), WaveGain::values)
         val waveNumber = UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x35u), 0..16384)
         val hpfCutoff = UByteField(deviceId, address.offsetBy(lsb = 0x39u))
         val superSawDetune = UByteField(deviceId, address.offsetBy(lsb = 0x3Au))
@@ -937,7 +932,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SuperNaturalSynthTonePartial {
-            assert(this.isCovering(payload)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)})" }
+            assert(this.isCovering(payload)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SuperNaturalSynthTonePartial(
                 oscWaveForm = oscWaveForm.deserialize(payload),
@@ -1005,6 +1000,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalAcoustic7PartSysEx(
         override val deviceId: DeviceId,
         override val address: Integra7Address,
@@ -1016,7 +1012,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalAcousticTone {
-            assert(this.isCovering(payload)) { "Not a SN-A part ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a SN-A part ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SuperNaturalAcousticTone(
                 common = common.deserialize(payload),
@@ -1025,6 +1021,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalAcousticToneCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SupernaturalAcousticToneCommon>() {
         override val size = Integra7Size(0x46u)
@@ -1032,7 +1029,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
 
-        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x11u), MonoPoly.values())
+        val monoPoly = EnumField(deviceId, address.offsetBy(lsb = 0x11u), MonoPoly::values)
         val portamentoTimeOffset = ByteField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
         val cutoffOffset = ByteField(deviceId, address.offsetBy(lsb = 0x13u), -64..63)
         val resonanceOffset = ByteField(deviceId, address.offsetBy(lsb = 0x14u), -64..63)
@@ -1061,7 +1058,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalAcousticToneCommon {
-            assert(this.isCovering(payload)) { "Not SN-A Common ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not SN-A Common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SupernaturalAcousticToneCommon(
                 name = name.deserialize(payload),
@@ -1094,6 +1091,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalDrumKitBuilder(
         override val deviceId: DeviceId,
         override val address: Integra7Address,
@@ -1108,7 +1106,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             .map { SuperNaturalDrumKitNoteBuilder(deviceId, address.offsetBy(mlsb = 0x10u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it), part) }
 
         override fun deserialize(payload: SparseUByteArray): SuperNaturalDrumKit {
-            assert(this.isCovering(payload)) { "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not a SN-D kit ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SuperNaturalDrumKit(
                 common = common.deserialize(payload),
@@ -1119,6 +1117,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalDrumKitCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SupernaturalDrumKitCommon>() {
         override val size = Integra7Size(0x46u)
@@ -1132,7 +1131,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalDrumKitCommon {
-            assert(this.isCovering(payload)) { "Not SN-D Common ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not SN-D Common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SupernaturalDrumKitCommon(
                 name = name.deserialize(payload),
@@ -1144,6 +1143,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalDrumKitCommonCompEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SupernaturalDrumKitCommonCompEq>() {
         override val size = Integra7Size(0x54u)
@@ -1152,36 +1152,36 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val comp1AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x01u),
-            SupernaturalDrumAttackTime.values()
+            SupernaturalDrumAttackTime::values
         )
         val comp1ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x02u),
-            SupernaturalDrumReleaseTime.values()
+            SupernaturalDrumReleaseTime::values
         )
         val comp1Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x03u))
         val comp1Ratio =
-            EnumField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumRatio.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x04u), SupernaturalDrumRatio::values)
         val comp1OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x05u), 0..24)
         val eq1Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x06u))
         val eq1LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x07u),
-            SupernaturalDrumLowFrequency.values()
+            SupernaturalDrumLowFrequency::values
         )
         val eq1LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x08u), 0..30) // - 15
         val eq1MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x09u),
-            SupernaturalDrumMidFrequency.values()
+            SupernaturalDrumMidFrequency::values
         )
         val eq1MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x0Au), 0..30) // - 15
         val eq1MidQ =
-            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), SupernaturalDrumMidQ.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Bu), SupernaturalDrumMidQ::values)
         val eq1HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x0Cu),
-            SupernaturalDrumHighFrequency.values()
+            SupernaturalDrumHighFrequency::values
         )
         val eq1HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x0Du), 0..30) // - 15
 
@@ -1189,36 +1189,36 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val comp2AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x0Fu),
-            SupernaturalDrumAttackTime.values()
+            SupernaturalDrumAttackTime::values
         )
         val comp2ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x10u),
-            SupernaturalDrumReleaseTime.values()
+            SupernaturalDrumReleaseTime::values
         )
         val comp2Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x11u))
         val comp2Ratio =
-            EnumField(deviceId, address.offsetBy(lsb = 0x12u), SupernaturalDrumRatio.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x12u), SupernaturalDrumRatio::values)
         val comp2OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x13u), 0..24)
         val eq2Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x14u))
         val eq2LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x15u),
-            SupernaturalDrumLowFrequency.values()
+            SupernaturalDrumLowFrequency::values
         )
         val eq2LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x16u), 0..30) // - 15
         val eq2MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x17u),
-            SupernaturalDrumMidFrequency.values()
+            SupernaturalDrumMidFrequency::values
         )
         val eq2MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x18u), 0..30) // - 15
         val eq2MidQ =
-            EnumField(deviceId, address.offsetBy(lsb = 0x19u), SupernaturalDrumMidQ.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x19u), SupernaturalDrumMidQ::values)
         val eq2HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Au),
-            SupernaturalDrumHighFrequency.values()
+            SupernaturalDrumHighFrequency::values
         )
         val eq2HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x1Bu), 0..30) // - 15
 
@@ -1226,36 +1226,36 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val comp3AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Du),
-            SupernaturalDrumAttackTime.values()
+            SupernaturalDrumAttackTime::values
         )
         val comp3ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Eu),
-            SupernaturalDrumReleaseTime.values()
+            SupernaturalDrumReleaseTime::values
         )
         val comp3Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x1Fu))
         val comp3Ratio =
-            EnumField(deviceId, address.offsetBy(lsb = 0x20u), SupernaturalDrumRatio.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x20u), SupernaturalDrumRatio::values)
         val comp3OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x21u), 0..24)
         val eq3Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x22u))
         val eq3LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x23u),
-            SupernaturalDrumLowFrequency.values()
+            SupernaturalDrumLowFrequency::values
         )
         val eq3LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x24u), 0..30) // - 15
         val eq3MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x25u),
-            SupernaturalDrumMidFrequency.values()
+            SupernaturalDrumMidFrequency::values
         )
         val eq3MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x26u), 0..30) // - 15
         val eq3MidQ =
-            EnumField(deviceId, address.offsetBy(lsb = 0x27u), SupernaturalDrumMidQ.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x27u), SupernaturalDrumMidQ::values)
         val eq3HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x28u),
-            SupernaturalDrumHighFrequency.values()
+            SupernaturalDrumHighFrequency::values
         )
         val eq3HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x29u), 0..30) // - 15
 
@@ -1263,36 +1263,36 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val comp4AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x2Bu),
-            SupernaturalDrumAttackTime.values()
+            SupernaturalDrumAttackTime::values
         )
         val comp4ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x2Cu),
-            SupernaturalDrumReleaseTime.values()
+            SupernaturalDrumReleaseTime::values
         )
         val comp4Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x2Du))
         val comp4Ratio =
-            EnumField(deviceId, address.offsetBy(lsb = 0x2Eu), SupernaturalDrumRatio.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x2Eu), SupernaturalDrumRatio::values)
         val comp4OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x2Fu), 0..24)
         val eq4Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x30u))
         val eq4LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x31u),
-            SupernaturalDrumLowFrequency.values()
+            SupernaturalDrumLowFrequency::values
         )
         val eq4LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x32u), 0..30) // - 15
         val eq4MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x33u),
-            SupernaturalDrumMidFrequency.values()
+            SupernaturalDrumMidFrequency::values
         )
         val eq4MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x34u), 0..30) // - 15
         val eq4MidQ =
-            EnumField(deviceId, address.offsetBy(lsb = 0x35u), SupernaturalDrumMidQ.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x35u), SupernaturalDrumMidQ::values)
         val eq4HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x36u),
-            SupernaturalDrumHighFrequency.values()
+            SupernaturalDrumHighFrequency::values
         )
         val eq4HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x37u), 0..30) // - 15
 
@@ -1300,36 +1300,36 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val comp5AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x39u),
-            SupernaturalDrumAttackTime.values()
+            SupernaturalDrumAttackTime::values
         )
         val comp5ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x3Au),
-            SupernaturalDrumReleaseTime.values()
+            SupernaturalDrumReleaseTime::values
         )
         val comp5Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x3Bu))
         val comp5Ratio =
-            EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Cu), SupernaturalDrumRatio::values)
         val comp5OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x3Du), 0..24)
         val eq5Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x3Eu))
         val eq5LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x3Fu),
-            SupernaturalDrumLowFrequency.values()
+            SupernaturalDrumLowFrequency::values
         )
         val eq5LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x40u), 0..30) // - 15
         val eq5MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x41u),
-            SupernaturalDrumMidFrequency.values()
+            SupernaturalDrumMidFrequency::values
         )
         val eq5MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x42u), 0..30) // - 15
         val eq5MidQ =
-            EnumField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x43u), SupernaturalDrumMidQ::values)
         val eq5HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x44u),
-            SupernaturalDrumHighFrequency.values()
+            SupernaturalDrumHighFrequency::values
         )
         val eq5HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x45u), 0..30) // - 15
 
@@ -1337,43 +1337,43 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val comp6AttackTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x47u),
-            SupernaturalDrumAttackTime.values()
+            SupernaturalDrumAttackTime::values
         )
         val comp6ReleaseTime = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x48u),
-            SupernaturalDrumReleaseTime.values()
+            SupernaturalDrumReleaseTime::values
         )
         val comp6Threshold = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
         val comp6Ratio =
-            EnumField(deviceId, address.offsetBy(lsb = 0x4Au), SupernaturalDrumRatio.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x4Au), SupernaturalDrumRatio::values)
         val comp6OutputGain = UByteField(deviceId, address.offsetBy(lsb = 0x4Bu), 0..24)
         val eq6Switch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Cu))
         val eq6LowFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x4Du),
-            SupernaturalDrumLowFrequency.values()
+            SupernaturalDrumLowFrequency::values
         )
         val eq6LowGain = UByteField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..30) // - 15
         val eq6MidFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x4Fu),
-            SupernaturalDrumMidFrequency.values()
+            SupernaturalDrumMidFrequency::values
         )
         val eq6MidGain = UByteField(deviceId, address.offsetBy(lsb = 0x50u), 0..30) // - 15
         val eq6MidQ =
-            EnumField(deviceId, address.offsetBy(lsb = 0x51u), SupernaturalDrumMidQ.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x51u), SupernaturalDrumMidQ::values)
         val eq6HighFrequency = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x52u),
-            SupernaturalDrumHighFrequency.values()
+            SupernaturalDrumHighFrequency::values
         )
         val eq6HighGain = UByteField(deviceId, address.offsetBy(lsb = 0x53u), 0..30) // - 15
 
         override fun deserialize(
             payload: SparseUByteArray
         ): SupernaturalDrumKitCommonCompEq {
-            assert(this.isCovering(payload)) { "Not SN-D comp/eq ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not SN-D comp/eq ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SupernaturalDrumKitCommonCompEq(
                 comp1Switch = comp1Switch.deserialize(payload),
@@ -1469,6 +1469,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class SuperNaturalDrumKitNoteBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SuperNaturalDrumKitNote>() {
         override val size = Integra7Size(0x13u)
@@ -1490,20 +1491,20 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val variation = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x0Fu),
-            SuperNaturalDrumToneVariation.values()
+            SuperNaturalDrumToneVariation::values
         )
         val dynamicRange = UByteField(deviceId, address.offsetBy(lsb = 0x10u), 0..63)
         val stereoWidth = UByteField(deviceId, address.offsetBy(lsb = 0x11u))
         val outputAssign = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x12u),
-            SuperNaturalDrumToneOutput.values()
+            SuperNaturalDrumToneOutput::values
         )
 
         override fun deserialize(
             payload: SparseUByteArray
         ): SuperNaturalDrumKitNote {
-            assert(this.isCovering(payload)) { "Not SN-D note ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not SN-D note ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return SuperNaturalDrumKitNote(
                 instrumentNumber = instrumentNumber.deserialize(payload),
@@ -1523,6 +1524,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmDrumKitBuilder(
         override val deviceId: DeviceId,
         override val address: Integra7Address,
@@ -1539,7 +1541,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common2 = PcmDrumKitCommon2Builder(deviceId, address.offsetBy(mmsb = 0x02u, lsb = 0x00u), part)
 
         override fun deserialize(payload: SparseUByteArray): PcmDrumKit {
-            assert(this.isCovering(payload)) { "Not PCMD ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not PCMD ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return PcmDrumKit(
                 common = common.deserialize(payload),
@@ -1555,6 +1557,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmDrumKitCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmDrumKitCommon>() {
         override val size = Integra7Size(0x46u)
@@ -1565,7 +1568,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitCommon {
-            assert(this.isCovering(payload)) { "Not PCMD Common ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not PCMD Common ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return PcmDrumKitCommon(
                 name = name.deserialize(payload),
@@ -1574,6 +1577,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmDrumKitPartialBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmDrumKitPartial>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x43u.toUByte7()))
@@ -1581,18 +1585,18 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val name = AsciiStringField(deviceId, address, length = 0x0C)
 
         val assignType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType::values)
         val muteGroup = UByteField(deviceId, address.offsetBy(lsb = 0x0Du), 0..31)
 
         val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Eu))
         val coarseTune = UByteField(deviceId, address.offsetBy(lsb = 0x0Fu))
         val fineTune = ByteField(deviceId, address.offsetBy(lsb = 0x10u), -50..50)
         val randomPitchDepth =
-            EnumField(deviceId, address.offsetBy(lsb = 0x11u), RandomPithDepth.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x11u), RandomPithDepth::values)
         val pan = ByteField(deviceId, address.offsetBy(lsb = 0x12u), -64..63)
         val randomPanDepth = UByteField(deviceId, address.offsetBy(lsb = 0x13u), 0..63)
         val alternatePanDepth = ByteField(deviceId, address.offsetBy(lsb = 0x14u))
-        val envMode = EnumField(deviceId, address.offsetBy(lsb = 0x15u), EnvMode.values())
+        val envMode = EnumField(deviceId, address.offsetBy(lsb = 0x15u), EnvMode::values)
 
         val outputLevel = UByteField(deviceId, address.offsetBy(lsb = 0x16u))
         val chorusSendLevel = UByteField(deviceId, address.offsetBy(lsb = 0x19u))
@@ -1600,7 +1604,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val outputAssign = EnumField(
             deviceId,
             address.offsetBy(lsb = 0x1Bu),
-            SuperNaturalDrumToneOutput.values()
+            SuperNaturalDrumToneOutput::values
         )
 
         val pitchBendRange = UByteField(deviceId, address.offsetBy(lsb = 0x1Cu), 0..48)
@@ -1608,18 +1612,18 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val receiveHold1 = BooleanField(deviceId, address.offsetBy(lsb = 0x1Eu))
 
         val wmtVelocityControl =
-            EnumField(deviceId, address.offsetBy(lsb = 0x20u), WmtVelocityControl.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x20u), WmtVelocityControl::values)
 
         val wmt1WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x21u))
         val wmt1WaveGroupType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x22u), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x22u), WaveGroupType::values)
         val wmt1WaveGroupId =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x23u), 0..16384)
         val wmt1WaveNumberL =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x27u), 0..16384)
         val wmt1WaveNumberR =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x2Bu), 0..16384)
-        val wmt1WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x2Fu), WaveGain.values())
+        val wmt1WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x2Fu), WaveGain::values)
         val wmt1WaveFxmSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x30u))
         val wmt1WaveFxmColor = UByteField(deviceId, address.offsetBy(lsb = 0x31u), 0..3)
         val wmt1WaveFxmDepth = UByteField(deviceId, address.offsetBy(lsb = 0x32u), 0..16)
@@ -1629,21 +1633,21 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val wmt1WavePan = ByteField(deviceId, address.offsetBy(lsb = 0x36u), -64..63)
         val wmt1WaveRandomPanSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x37u))
         val wmt1WaveAlternatePanSwitch =
-            EnumField(deviceId, address.offsetBy(lsb = 0x38u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x38u), OffOnReverse::values)
         val wmt1WaveLevel = UByteField(deviceId, address.offsetBy(lsb = 0x39u))
         val wmt1VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Au))
         val wmt1VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x3Cu))
 
         val wmt2WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x3Eu))
         val wmt2WaveGroupType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x3Fu), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x3Fu), WaveGroupType::values)
         val wmt2WaveGroupId =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x40u), 0..16384)
         val wmt2WaveNumberL =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x44u), 0..16384)
         val wmt2WaveNumberR =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x48u), 0..16384)
-        val wmt2WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x4Cu), WaveGain.values())
+        val wmt2WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x4Cu), WaveGain::values)
         val wmt2WaveFxmSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Du))
         val wmt2WaveFxmColor = UByteField(deviceId, address.offsetBy(lsb = 0x4Eu), 0..3)
         val wmt2WaveFxmDepth = UByteField(deviceId, address.offsetBy(lsb = 0x4Fu), 0..16)
@@ -1653,21 +1657,21 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val wmt2WavePan = ByteField(deviceId, address.offsetBy(lsb = 0x53u), -64..63)
         val wmt2WaveRandomPanSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x54u))
         val wmt2WaveAlternatePanSwitch =
-            EnumField(deviceId, address.offsetBy(lsb = 0x55u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x55u), OffOnReverse::values)
         val wmt2WaveLevel = UByteField(deviceId, address.offsetBy(lsb = 0x56u))
         val wmt2VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x57u))
         val wmt2VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x59u))
 
         val wmt3WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x5Bu))
         val wmt3WaveGroupType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x5Cu), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x5Cu), WaveGroupType::values)
         val wmt3WaveGroupId =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x5Du), 0..16384)
         val wmt3WaveNumberL =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x61u), 0..16384)
         val wmt3WaveNumberR =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x65u), 0..16384)
-        val wmt3WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x69u), WaveGain.values())
+        val wmt3WaveGain = EnumField(deviceId, address.offsetBy(lsb = 0x69u), WaveGain::values)
         val wmt3WaveFxmSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x6Au))
         val wmt3WaveFxmColor = UByteField(deviceId, address.offsetBy(lsb = 0x6Bu), 0..3)
         val wmt3WaveFxmDepth = UByteField(deviceId, address.offsetBy(lsb = 0x6Cu), 0..16)
@@ -1677,14 +1681,14 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val wmt3WavePan = ByteField(deviceId, address.offsetBy(lsb = 0x70u), -64..63)
         val wmt3WaveRandomPanSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x71u))
         val wmt3WaveAlternatePanSwitch =
-            EnumField(deviceId, address.offsetBy(lsb = 0x72u), OffOnReverse.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x72u), OffOnReverse::values)
         val wmt3WaveLevel = UByteField(deviceId, address.offsetBy(lsb = 0x73u))
         val wmt3VelocityRange = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x74u))
         val wmt3VelocityFadeWidth = UnsignedLsbMsbBytes(deviceId, address.offsetBy(lsb = 0x76u))
 
         val wmt4WaveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x78u))
         val wmt4WaveGroupType =
-            EnumField(deviceId, address.offsetBy(lsb = 0x79u), WaveGroupType.values())
+            EnumField(deviceId, address.offsetBy(lsb = 0x79u), WaveGroupType::values)
         val wmt4WaveGroupId =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(lsb = 0x7Au), 0..16384)
         val wmt4WaveNumberL =
@@ -1692,7 +1696,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val wmt4WaveNumberR =
             UnsignedMsbLsbFourNibbles(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x02u), 0..16384)
         val wmt4WaveGain =
-            EnumField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u), WaveGain.values())
+            EnumField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x06u), WaveGain::values)
         val wmt4WaveFxmSwitch =
             BooleanField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x07u))
         val wmt4WaveFxmColor =
@@ -1712,7 +1716,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val wmt4WaveAlternatePanSwitch = EnumField(
             deviceId,
             address.offsetBy(mlsb = 0x01u, lsb = 0x0Fu),
-            OffOnReverse.values()
+            OffOnReverse::values
         )
         val wmt4WaveLevel = UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x10u))
         val wmt4VelocityRange =
@@ -1743,7 +1747,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val tvfFilterType = EnumField(
             deviceId,
             address.offsetBy(mlsb = 0x01u, lsb = 0x22u),
-            TvfFilterType.values()
+            TvfFilterType::values
         )
         val tvfCutoffFrequency =
             UByteField(deviceId, address.offsetBy(mlsb = 0x01u, lsb = 0x23u))
@@ -1794,7 +1798,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitPartial {
-            assert(this.isCovering(payload)) { "Not PCMS partial ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not PCMS partial ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return PcmDrumKitPartial(
                 name = name.deserialize(payload),
@@ -2014,6 +2018,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    @ExperimentalUnsignedTypes
     class PcmDrumKitCommon2Builder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmDrumKitCommon2>() {
         override val size = Integra7Size(0x32u)
@@ -2024,7 +2029,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override fun deserialize(
             payload: SparseUByteArray
         ): PcmDrumKitCommon2 {
-            assert(this.isCovering(payload)) { "Not PCMD Common2 ($address..${address.offsetBy(size)}) for part $part" }
+            assert(this.isCovering(payload)) { "Not PCMD Common2 ($address..${address.offsetBy(size)}) for part $part but ${address.toStringDetailed()}" }
 
             return PcmDrumKitCommon2(
                 phraseNumber = phraseNumber.deserialize(payload),

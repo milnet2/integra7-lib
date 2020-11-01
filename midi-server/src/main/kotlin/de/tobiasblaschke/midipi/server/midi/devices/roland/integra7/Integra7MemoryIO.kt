@@ -21,6 +21,9 @@ abstract class Integra7MemoryIO<T> {
     fun isCovering(address: Integra7Address) =
         address >= this.address && address <= this.address.offsetBy(size)
 
+    protected fun SparseUByteArray.integraStartAddress(): Integra7Address =
+        Integra7Address(this.startAddress.toUInt().toUInt7UsingValue())
+
     fun asDataRequest1(): RolandIntegra7MidiMessage {
         println(" ## Requesting $address to ${address.offsetBy(size)}...")
         return RolandIntegra7MidiMessage.IntegraSysExReadRequest(
