@@ -28,7 +28,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         val common2 = PcmSynthToneCommon2Builder(deviceId, address.offsetBy(mlsb = 0x30u, lsb = 0x00u), part)
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): PcmSynthTone {
-            assert(this.isCovering(startAddress)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Not a PCM synth tone ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
             return PcmSynthTone(
                 common = common.interpret(startAddress, payload),
@@ -369,7 +369,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             startAddress: Integra7Address,
             payload: SparseUByteArray
         ): PcmSynthToneMfx {
-            assert(this.isCovering(startAddress)) { "Not a MFX definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()} in  ${payload.hexDump({ Integra7Address(
+            assert(this.isCovering(payload)) { "Not a MFX definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()} in  ${payload.hexDump({ Integra7Address(
                 it.toUInt7()
             ).toString() }, 0x10)}" }
 
@@ -1226,7 +1226,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
             startAddress: Integra7Address,
             payload: SparseUByteArray
         ): SuperNaturalSynthTonePartial {
-            assert(this.isCovering(startAddress)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Not a SN-S tone definition ($address..${address.offsetBy(size)}), but $startAddress ${startAddress.rangeName()}" }
 
             return SuperNaturalSynthTonePartial(
                 oscWaveForm = oscWaveForm.interpret(startAddress.offsetBy(lsb = 0x00u), payload),

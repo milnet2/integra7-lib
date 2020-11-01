@@ -15,6 +15,9 @@ abstract class Integra7MemoryIO<T> {
     internal abstract val address: Integra7Address
     internal abstract val size: Integra7Size
 
+    fun isCovering(payload: SparseUByteArray): Boolean =
+        payload.contains(address.fullByteAddress())
+
     fun isCovering(address: Integra7Address) =
         address >= this.address && address <= this.address.offsetBy(size)
 
@@ -118,18 +121,18 @@ data class ToneAddressRequestBuilder(
     val pcmDrumKit = Integra7PartSysEx.PcmDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x10u.toUByte7()), part)
 
     override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): TemporaryTone {
-        assert(this.isCovering(startAddress)) { "Not a tone definition ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
+        // assert(this.isCovering(payload)) { "Not a tone definition ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
 
         return when {
-            pcmSynthTone.isCovering(startAddress) -> TemporaryTone(
+            pcmSynthTone.isCovering(payload) -> TemporaryTone(
                 tone = pcmSynthTone.interpret(startAddress, payload))
-            snaSynthTone.isCovering(startAddress) -> TemporaryTone(
+            snaSynthTone.isCovering(payload) -> TemporaryTone(
                 tone = snaSynthTone.interpret(startAddress, payload))
-            snaAcousticTone.isCovering(startAddress) -> TemporaryTone(
+            snaAcousticTone.isCovering(payload) -> TemporaryTone(
                 tone = snaAcousticTone.interpret(startAddress, payload))
-            snaDrumKit.isCovering(startAddress) -> TemporaryTone(
+            snaDrumKit.isCovering(payload) -> TemporaryTone(
                 tone = snaDrumKit.interpret(startAddress, payload))
-            pcmDrumKit.isCovering(startAddress) -> TemporaryTone(
+            pcmDrumKit.isCovering(payload) -> TemporaryTone(
                 tone = pcmDrumKit.interpret(startAddress, payload))
             else -> throw IllegalArgumentException("Unsupported tone $startAddress ${startAddress.rangeName()} for part $part")
         }

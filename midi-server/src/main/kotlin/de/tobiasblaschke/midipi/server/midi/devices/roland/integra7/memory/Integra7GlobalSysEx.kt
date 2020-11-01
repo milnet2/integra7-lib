@@ -17,7 +17,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         val studioSetPc = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): Setup {
-            assert(this.isCovering(startAddress)) { "Expected Setup-range ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Expected Setup-range ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
             return Setup(
                 soundMode = when(val sm = soundMode.interpret(startAddress, payload)) {
@@ -62,7 +62,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             EnumField(deviceId, address.offsetBy(lsb = 0x2Du), TwoChOutputMode.values())
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): SystemCommon {
-            assert(this.isCovering(startAddress)) { "Expected System-common ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Expected System-common ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
             return SystemCommon(
                 // TODO masterTune = (startAddress, min(payload.size, 0x0F), payload.copyOfRange(0, min(payload.size, 0x0F)))
@@ -110,7 +110,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             .map { StudioSetPartEqBuilder(deviceId, address.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
 
         override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSet {
-            assert(this.isCovering(startAddress)) { "Expected Studio-Set address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+            assert(this.isCovering(payload)) { "Expected Studio-Set address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
             return StudioSet(
                 common = common.interpret(startAddress, payload),
@@ -175,7 +175,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val extPartReverbMuteSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Fu))
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommon {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set common address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set common address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetCommon(
                     name = name.interpret(startAddress, payload),
@@ -237,7 +237,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                 }
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommonChorus {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set chorus address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set chorus address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetCommonChorus(
                     type = type.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
@@ -269,7 +269,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                 }
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetCommonReverb {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetCommonReverb(
                     type = type.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
@@ -306,7 +306,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val depth = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetMotionalSurround {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetMotionalSurround(
                     switch.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
@@ -351,7 +351,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x06u), 0..30) // -15
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetMasterEq {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetMasterEq(
                     lowFrequency = lowFrequency.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
@@ -451,7 +451,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val motionalSurroundAmbienceSend = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetPart {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetPart(
                     receiveChannel.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
@@ -552,7 +552,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x07u), 0..30) // -15
 
             override fun interpret(startAddress: Integra7Address, payload: SparseUByteArray): StudioSetPartEq {
-                assert(this.isCovering(startAddress)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)}) but was $startAddress ${startAddress.rangeName()}" }
 
                 return StudioSetPartEq(
                     switch = switch.interpret(startAddress.offsetBy(lsb = 0x00u), payload),
