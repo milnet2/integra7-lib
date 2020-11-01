@@ -2,6 +2,7 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory
 
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.Integra7MemoryIO
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.IntegraPart
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.*
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7FieldType.*
 import de.tobiasblaschke.midipi.server.utils.*
@@ -9,7 +10,7 @@ import java.lang.IllegalArgumentException
 
 sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
     class SetupRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<Setup>() {
-        override val size = Integra7Size(38u)
+        override val size = Integra7Size(38u.toUInt7UsingByteRepresentation())
 
         val soundMode = UByteField(deviceId, address)
         val studioSetBankSelectMsb = UByteField(deviceId, address.offsetBy(lsb = 0x04u)) // #CC 0
@@ -17,7 +18,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         val studioSetPc = UByteField(deviceId, address.offsetBy(lsb = 0x06u))
 
         override fun deserialize(payload: SparseUByteArray): Setup {
-            assert(this.isCovering(payload)) { "Expected Setup-range ($address..${address.offsetBy(size)})" }
+            assertCovered(payload) { "Expected Setup-range!" }
 
             return Setup(
                 soundMode = when(val sm = soundMode.deserialize(payload)) {
@@ -34,7 +35,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
     }
 
     class SystemCommonRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<SystemCommon>() {
-        override val size= Integra7Size(0x2Fu)
+        override val size= Integra7Size(0x2Fu.toUInt7UsingByteRepresentation())
 
         val masterKeyShift = ByteField(deviceId, address.offsetBy(lsb = 0x04u))
         val masterLevel = UByteField(deviceId, address.offsetBy(lsb = 0x05u))
@@ -62,7 +63,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             EnumField(deviceId, address.offsetBy(lsb = 0x2Du), TwoChOutputMode::values)
 
         override fun deserialize(payload: SparseUByteArray): SystemCommon {
-            assert(this.isCovering(payload)) { "Expected System-common ($address..${address.offsetBy(size)})" }
+            assertCovered(payload) { "Expected System-common!" }
 
             return SystemCommon(
                 // TODO masterTune = (startAddress, min(payload.size, 0x0F), payload.copyOfRange(0, min(payload.size, 0x0F)))
@@ -90,7 +91,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
 // -----------------------------------------------------
 
     class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSet>() {
-        override val size = Integra7Size(UInt7(mlsb = 0x57u.toUByte7(), lsb = UByte7.MAX_VALUE))
+        override val size = Integra7Size(mlsb = 0x57u, lsb = 0x08u)
 
         val common = StudioSetCommonAddressRequestBuilder(deviceId, address)
         val commonChorus = StudioSetCommonChorusBuilder(deviceId, address.offsetBy(mlsb = 0x04u, lsb = 0x00u))
@@ -105,12 +106,12 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                 )
             }
         val parts = IntRange(0, 15)
-            .map { StudioSetPartBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
+            .map { StudioSetPartBuilder(deviceId, address.offsetBy(mlsb = 0x20u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it), IntegraPart.values()[it]) }
         val partEqs = IntRange(0, 15)
-            .map { StudioSetPartEqBuilder(deviceId, address.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it)) }
+            .map { StudioSetPartEqBuilder(deviceId, address.offsetBy(mlsb = 0x50u, lsb = 0x00u).offsetBy(mlsb = 0x01u, lsb = 0x00u, factor = it), IntegraPart.values()[it]) }
 
         override fun deserialize(payload: SparseUByteArray): StudioSet {
-            assert(this.isCovering(payload)) { "Expected Studio-Set address ($address..${address.offsetBy(size)})" }
+            assertCovered(payload) { "Expected Studio-Set!" }
 
             return StudioSet(
                 common = common.deserialize(payload),
@@ -134,7 +135,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         }
 
         class StudioSetCommonAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommon>() {
-            override val size = Integra7Size(54u)
+            override val size = Integra7Size(54u.toUInt7UsingByteRepresentation())
 
             val name = AsciiStringField(deviceId, address, 0x0F)
             val voiceReserve01 = UByteField(deviceId, address.offsetBy(lsb = 0x18u), 0..64)
@@ -172,7 +173,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val extPartReverbMuteSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x4Fu))
 
             override fun deserialize(payload: SparseUByteArray): StudioSetCommon {
-                assert(this.isCovering(payload)) { "Expected Studio-Set common address ($address..${address.offsetBy(size)})" }
+                assertCovered(payload) { "Expected Studio-Set common" }
 
                 return StudioSetCommon(
                     name = name.deserialize(payload),
@@ -218,7 +219,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         }
 
         class StudioSetCommonChorusBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommonChorus>() {
-            override val size = Integra7Size(54u)
+            override val size = Integra7Size(54u.toUInt7UsingByteRepresentation())
 
             val type = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
             val level = UByteField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
@@ -234,7 +235,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                 }
 
             override fun deserialize(payload: SparseUByteArray): StudioSetCommonChorus {
-                assert(this.isCovering(payload)) { "Expected Studio-Set chorus address ($address..${address.offsetBy(size)})" }
+                assertCovered(payload) { "Expected Studio-Set chorus" }
 
                 return StudioSetCommonChorus(
                     type = type.deserialize(payload),
@@ -249,7 +250,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         }
 
         class StudioSetCommonReverbBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetCommonReverb>() {
-            override val size = Integra7Size(63u)
+            override val size = Integra7Size(63u.toUInt7UsingByteRepresentation())
 
             val type = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..3)
             val level = UByteField(deviceId, address.offsetBy(lsb = 0x01u), 0..127)
@@ -265,7 +266,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
                 }
 
             override fun deserialize(payload: SparseUByteArray): StudioSetCommonReverb {
-                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)})" }
+                assertCovered(payload) { "Expected Studio-Set reverb" }
 
                 return StudioSetCommonReverb(
                     type = type.deserialize(payload),
@@ -280,7 +281,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         }
 
         class StudioSetMotionalSurroundBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetMotionalSurround>() {
-            override val size = Integra7Size(0x10u.toUInt7UsingValue())
+            override val size = Integra7Size(0x10u.toUInt7UsingByteRepresentation())
 
             val switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
             val roomType = EnumField(deviceId, address.offsetBy(lsb = 0x01u), RoomType::values)
@@ -301,7 +302,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val depth = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu), 0..100)
 
             override fun deserialize(payload: SparseUByteArray): StudioSetMotionalSurround {
-                assert(this.isCovering(payload)) { "Expected Studio-Set reverb address ($address..${address.offsetBy(size)})" }
+                assertCovered(payload) { "Expected Studio-Set motional-surround" }
 
                 return StudioSetMotionalSurround(
                     switch.deserialize(payload),
@@ -322,7 +323,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
         }
 
         class StudioSetMasterEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetMasterEq>() {
-            override val size = Integra7Size(63u)
+            override val size = Integra7Size(0x07u.toUInt7UsingByteRepresentation())
 
             val lowFrequency = EnumField(
                 deviceId,
@@ -346,7 +347,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x06u), 0..30) // -15
 
             override fun deserialize(payload: SparseUByteArray): StudioSetMasterEq {
-                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)})" }
+                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)}) but ${address.toStringDetailed()}" }
 
                 return StudioSetMasterEq(
                     lowFrequency = lowFrequency.deserialize(payload),
@@ -360,8 +361,12 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        class StudioSetPartBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetPart>() {
-            override val size = Integra7Size(0x4Du)
+        class StudioSetPartBuilder(
+            override val deviceId: DeviceId,
+            override val address: Integra7Address,
+            val part: IntegraPart
+        ): Integra7GlobalSysEx<StudioSetPart>() {
+            override val size = Integra7Size(0x4Du.toUInt7UsingByteRepresentation())
 
             val receiveChannel = UByteField(deviceId, address.offsetBy(lsb = 0x00u), 0..30)
             val receiveSwitch = BooleanField(deviceId, address.offsetBy(lsb = 0x01u))
@@ -446,7 +451,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val motionalSurroundAmbienceSend = UByteField(deviceId, address.offsetBy(lsb = 0x49u))
 
             override fun deserialize(payload: SparseUByteArray): StudioSetPart {
-                assert(this.isCovering(payload)) { "Expected Studio-Set master-eq address ($address..${address.offsetBy(size)})" }
+                assertCovered(payload) { "Expected Studio-Set part for $part" }
 
                 return StudioSetPart(
                     receiveChannel.deserialize(payload),
@@ -521,8 +526,8 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             }
         }
 
-        class StudioSetPartEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSetPartEq>() {
-            override val size = Integra7Size(8u)
+        class StudioSetPartEqBuilder(override val deviceId: DeviceId, override val address: Integra7Address, val part: IntegraPart): Integra7GlobalSysEx<StudioSetPartEq>() {
+            override val size = Integra7Size(8u.toUInt7UsingByteRepresentation())
 
             val switch = BooleanField(deviceId, address.offsetBy(lsb = 0x00u))
             val lowFrequency = EnumField(
@@ -547,7 +552,7 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
             val highGain = UByteField(deviceId, address.offsetBy(lsb = 0x07u), 0..30) // -15
 
             override fun deserialize(payload: SparseUByteArray): StudioSetPartEq {
-                assert(this.isCovering(payload)) { "Expected Studio-Set part-eq address ($address..${address.offsetBy(size)})" }
+                assertCovered(payload) { "Expected Studio-Set part-eq for $part" }
 
                 return StudioSetPartEq(
                     switch = switch.deserialize(payload),

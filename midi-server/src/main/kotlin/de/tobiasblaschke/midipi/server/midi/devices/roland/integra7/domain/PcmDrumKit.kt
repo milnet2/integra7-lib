@@ -11,7 +11,7 @@ data class PcmDrumKit(
                 "\tcommon = $common\n" +
                 "\tmfx = $mfx\n" +
                 "\tkeys = ${keys.joinToString(
-                    prefix = "\t  ",
+                    prefix = "\n\t  ",
                     separator = "\n\t  ",
                     postfix = "\n")}" +
                 "\tcommon2 = $common2\n)"

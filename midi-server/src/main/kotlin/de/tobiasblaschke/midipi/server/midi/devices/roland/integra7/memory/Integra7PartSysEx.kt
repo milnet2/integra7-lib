@@ -17,7 +17,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         override val part: IntegraPart
     ) : Integra7PartSysEx<PcmSynthTone>() {
-        override val size = Integra7Size(UInt7(mlsb = 0x30u.toUByte7(), lsb = 0x3Cu.toUByte7()))
+        override val size
+                get() = Integra7Size(mlsb = 0x30u, lsb = 0x00u) + common2.size
 
         val common = PcmSynthToneCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part)
@@ -718,7 +719,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     @ExperimentalUnsignedTypes
     class PcmSynthToneCommon2Builder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmSynthToneCommon2>() {
-        override val size = Integra7Size(0x3Cu.toUInt7UsingValue())
+        override val size = Integra7Size(lsb = 0x3Cu)
 
         val toneCategory = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
         val undocumented = UnsignedMsbLsbNibbles(deviceId, address.offsetBy(lsb = 0x11u), 0..255)
@@ -762,7 +763,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         override val part: IntegraPart
     ) : Integra7PartSysEx<SuperNaturalSynthTone>() {
-        override val size = Integra7Size(UInt7(mlsb = 0x22.toUByte7(), lsb = 0x7Fu.toUByte7()))
+        override val size
+            get() = Integra7Size(mlsb = 0x22u, lsb = 0x00u) + partial3.size
 
         val common = SuperNaturalSynthToneCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
@@ -1006,7 +1008,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         override val part: IntegraPart
     ) : Integra7PartSysEx<SuperNaturalAcousticTone>() {
-        override val size = Integra7Size(UInt7(mlsb = 0x30u.toUByte7(), lsb = 0x3Cu.toUByte7()))
+        override val size
+                get() = Integra7Size(mlsb = 0x02u, lsb = 0x00u) + mfx.size
 
         val common = SuperNaturalAcousticToneCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
@@ -1097,7 +1100,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         override val part: IntegraPart
     ) : Integra7PartSysEx<SuperNaturalDrumKit>() {
-        override val size = Integra7Size(UInt7(mlsb = 0x4D.toUByte7(), lsb = 0x7Fu.toUByte7()))
+        override val size
+            get() = Integra7Size(mlsb = 0x4Du, lsb = 0x00u) + notes.last().size
 
         val common = SuperNaturalDrumKitCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
@@ -1120,7 +1124,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     @ExperimentalUnsignedTypes
     class SuperNaturalDrumKitCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<SupernaturalDrumKitCommon>() {
-        override val size = Integra7Size(0x46u)
+        override val size = Integra7Size(lsb = 0x14u)
 
         val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UByteField(deviceId, address.offsetBy(lsb = 0x10u))
@@ -1530,8 +1534,8 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         override val address: Integra7Address,
         override val part: IntegraPart
     ) : Integra7PartSysEx<PcmDrumKit>() {
-        override val size =
-            Integra7Size(UInt7(mmsb = 0x02u.toUByte7(), mlsb = 0x07Fu.toUByte7(), lsb = 0x7Fu.toUByte7()))
+        override val size
+                get() = Integra7Size(mmsb = 0x02u, mlsb = 0x00u, lsb = 0x00u) + common2.size
 
         val common = PcmDrumKitCommonBuilder(deviceId, address, part)
         val mfx = MfxSysEx(deviceId, address.offsetBy(mlsb = 0x02u, lsb = 0x00u), part) // Same as PCM
@@ -1560,7 +1564,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
     @ExperimentalUnsignedTypes
     class PcmDrumKitCommonBuilder(override val deviceId: DeviceId, override val address: Integra7Address, override val part: IntegraPart) :
         Integra7PartSysEx<PcmDrumKitCommon>() {
-        override val size = Integra7Size(0x46u)
+        override val size = Integra7Size(lsb = 0x12u)
 
         val name = AsciiStringField(deviceId, address, length = 0x0C)
         val level = UByteField(deviceId, address.offsetBy(lsb = 0x0Cu))
@@ -1582,7 +1586,7 @@ sealed class Integra7PartSysEx<T>: Integra7MemoryIO<T>() {
         Integra7PartSysEx<PcmDrumKitPartial>() {
         override val size = Integra7Size(UInt7(mlsb = 0x01u.toUByte7(), lsb = 0x43u.toUByte7()))
 
-        val name = AsciiStringField(deviceId, address, length = 0x0C)
+        val name = AsciiStringField(deviceId, address, length = 0x0C, { _ -> true })
 
         val assignType =
             EnumField(deviceId, address.offsetBy(lsb = 0x0Cu), PcmDrumKitAssignType::values)

@@ -2,12 +2,8 @@ package de.tobiasblaschke.midipi.server.midi.devices.roland.integra7
 
 import de.tobiasblaschke.midipi.server.midi.bearable.lifted.DeviceId
 import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.domain.*
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Address
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7GlobalSysEx
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7Size
-import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.Integra7PartSysEx
+import de.tobiasblaschke.midipi.server.midi.devices.roland.integra7.memory.*
 import de.tobiasblaschke.midipi.server.utils.*
-import java.lang.IllegalArgumentException
 
 
 abstract class Integra7MemoryIO<T> {
@@ -15,8 +11,19 @@ abstract class Integra7MemoryIO<T> {
     internal abstract val address: Integra7Address
     internal abstract val size: Integra7Size
 
+    protected fun assertCovered(payload: SparseUByteArray, message: () -> String) {
+        assert(isCovering(payload)) {
+            message() +
+            " ($address..${address.offsetBy(size - 1)}) in range ${address.rangeName()}\n" +
+             payload.hexDump(
+                 addressTransform = { Integra7Address(it.toUInt7()).toString() },
+                 chunkSize = 0x10)
+        }
+    }
+
     fun isCovering(payload: SparseUByteArray): Boolean =
-        payload.contains(address.fullByteAddress())
+        payload.contains(address.fullByteAddress()) &&
+        payload.contains(address.offsetBy(size - 1).fullByteAddress())
 
     fun isCovering(address: Integra7Address) =
         address >= this.address && address <= this.address.offsetBy(size)
@@ -118,26 +125,34 @@ data class ToneAddressRequestBuilder(
     override val size: Integra7Size = Integra7Size(UInt7(mmsb = 0x20.toUByte7()))
 
     val pcmSynthTone = Integra7PartSysEx.PcmSynth7PartSysEx(deviceId, address, part)
-    val snaSynthTone = Integra7PartSysEx.SuperNaturalSynth7PartSysEx(deviceId, address.offsetBy(mmsb = 0x01u.toUByte7()), part)
-    val snaAcousticTone = Integra7PartSysEx.SuperNaturalAcoustic7PartSysEx(deviceId, address.offsetBy(mmsb = 0x02u.toUByte7()), part)
+    val snSynthTone = Integra7PartSysEx.SuperNaturalSynth7PartSysEx(deviceId, address.offsetBy(mmsb = 0x01u.toUByte7()), part)
+    val snAcousticTone = Integra7PartSysEx.SuperNaturalAcoustic7PartSysEx(deviceId, address.offsetBy(mmsb = 0x02u.toUByte7()), part)
     val snaDrumKit = Integra7PartSysEx.SuperNaturalDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x03u.toUByte7()), part)
     val pcmDrumKit = Integra7PartSysEx.PcmDrumKitBuilder(deviceId, address.offsetBy(mmsb = 0x10u.toUByte7()), part)
 
     override fun deserialize(payload: SparseUByteArray): TemporaryTone {
-        // assert(this.isCovering(payload)) { "Not a tone definition ($address..${address.offsetBy(size)}) for part $part, but $startAddress ${startAddress.rangeName()}" }
-
         return when {
             pcmSynthTone.isCovering(payload) -> TemporaryTone(
                 tone = pcmSynthTone.deserialize(payload))
-            snaSynthTone.isCovering(payload) -> TemporaryTone(
-                tone = snaSynthTone.deserialize(payload))
-            snaAcousticTone.isCovering(payload) -> TemporaryTone(
-                tone = snaAcousticTone.deserialize(payload))
+            snSynthTone.isCovering(payload) -> TemporaryTone(
+                tone = snSynthTone.deserialize(payload))
+            snAcousticTone.isCovering(payload) -> TemporaryTone(
+                tone = snAcousticTone.deserialize(payload))
             snaDrumKit.isCovering(payload) -> TemporaryTone(
                 tone = snaDrumKit.deserialize(payload))
             pcmDrumKit.isCovering(payload) -> TemporaryTone(
                 tone = pcmDrumKit.deserialize(payload))
-            else -> throw IllegalArgumentException("Unsupported tone for part $part")
+            else -> throw Integra7FieldType.FieldReadException(
+                address, size, payload,
+                """
+                    |Unsupported part-type for $part should be either of
+                    |* ${pcmSynthTone.address} .. ${pcmSynthTone.address + pcmSynthTone.size}  ${pcmSynthTone.address.rangeName()}
+                    |* ${snSynthTone.address} .. ${snSynthTone.address + snSynthTone.size}  ${snSynthTone.address.rangeName()}
+                    |* ${snAcousticTone.address} .. ${snAcousticTone.address + snAcousticTone.size}  ${snAcousticTone.address.rangeName()}
+                    |* ${snaDrumKit.address} .. ${snaDrumKit.address + snaDrumKit.size}  ${snaDrumKit.address.rangeName()}
+                    |* ${pcmDrumKit.address} .. ${pcmDrumKit.address + pcmDrumKit.size}  ${pcmDrumKit.address.rangeName()}
+                    |
+                """.trimMargin())
         }
     }
 

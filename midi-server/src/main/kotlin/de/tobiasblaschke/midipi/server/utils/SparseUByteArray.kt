@@ -148,6 +148,9 @@ class SparseUByteArray(): Collection<UByte> {
                                     separator = " ",
                                     transform = { byte -> String.format("%02X", byte.toInt() )}
                                 ) +
+                                IntRange(0, chunkSize - vals.size).joinToString(
+                                    separator = "",
+                                    transform = { "   " }) +
                                 "  " + vals.joinToString(
                                     separator = "",
                                     transform = { byte -> if (byte in 0x20u .. 0x7Du) byte.toByte().toChar().toString() else "." })

@@ -8,12 +8,12 @@ import java.lang.RuntimeException
 
 abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
     @ExperimentalUnsignedTypes
-    data class AsciiStringField(override val deviceId: DeviceId, override val address: Integra7Address, val length: Int): Integra7FieldType<String>() {
+    data class AsciiStringField(override val deviceId: DeviceId, override val address: Integra7Address, val length: Int, val predicate: (String) -> Boolean = String::isNotEmpty): Integra7FieldType<String>() {
         override val size = Integra7Size(length.toUInt7())
 
         override fun deserialize(payload: SparseUByteArray): String {
             try {
-                return payload[IntRange(address.fullByteAddress(), address.fullByteAddress() + this.length)].toAsciiString().trim()
+                return check(payload[IntRange(address.fullByteAddress(), address.fullByteAddress() + this.length)].toAsciiString().trim(), payload, predicate)
             } catch (e: NoSuchElementException) {
                 throw FieldReadException(address, size, payload, "", e)
             }
@@ -205,6 +205,14 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
         }
     }
 
+    protected fun <V> check(value: V, payload: SparseUByteArray, predicate: (V) -> Boolean): V {
+        if (!predicate(value)) {
+            throw FieldReadException(address, size, payload, "Value '$value' is not valid")
+        } else {
+            return value
+        }
+    }
+
     protected fun readByte(startAddress: Integra7Address, payload: SparseUByteArray): UByte7 {
         try {
             return payload[startAddress.fullByteAddress()].toUByte7()
@@ -215,10 +223,8 @@ abstract class Integra7FieldType<T>: Integra7MemoryIO<T>() {
 
     class FieldReadException(val startAddress: Integra7Address, val size: Integra7Size, payload: SparseUByteArray, message: String, cause: Throwable? = null):
         RuntimeException(
-            "$message - When reading range $startAddress..${startAddress.offsetBy(size)} (${startAddress.rangeName()}) from ${payload.hexDump()}", cause)
+            "$message - When reading range $startAddress..${startAddress.offsetBy(size)} (${startAddress.rangeName()}) from ${payload.hexDump(addressTransform = { Integra7Address(it.toUInt7()).toString() },
+                chunkSize = 0x10)}", cause)
 
-    protected fun SparseUByteArray.hexDump() =
-        this.hexDump(
-            addressTransform = { Integra7Address(it.toUInt7()).toString() },
-            chunkSize = 0x10)
+
 }

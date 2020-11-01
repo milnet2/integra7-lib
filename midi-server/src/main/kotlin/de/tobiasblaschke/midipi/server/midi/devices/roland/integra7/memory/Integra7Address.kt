@@ -227,6 +227,9 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
     operator fun minus(other: Integra7Address): Integra7Size =
         Integra7Size((address.toUInt() - other.address.toUInt()).toUInt7UsingValue())
 
+    operator fun plus(other: Integra7Size): Integra7Address =
+        Integra7Address((this.address + other.size).toUInt7UsingValue())
+
     fun fullByteAddress(): Int =
         address.toInt()
 
@@ -246,7 +249,6 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
 }
 
 data class Integra7Size(val size: UInt7): UByteSerializable {
-    @Deprecated("Switch to UInt7...")
     constructor(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte):
             this(UInt7(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7()))
 
@@ -267,6 +269,9 @@ data class Integra7Size(val size: UInt7): UByteSerializable {
 
     operator fun plus(other: Int): Integra7Size =
         Integra7Size((fullByteSize() + other).toUInt())
+
+    operator fun plus(other: Integra7Size): Integra7Size =
+        Integra7Size(this.size + other.size)
 
     fun fullByteSize(): Int =
         size.toInt()
