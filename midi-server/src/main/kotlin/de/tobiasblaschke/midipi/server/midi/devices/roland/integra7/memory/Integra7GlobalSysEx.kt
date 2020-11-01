@@ -91,7 +91,8 @@ sealed class Integra7GlobalSysEx<T>: Integra7MemoryIO<T>() {
 // -----------------------------------------------------
 
     class StudioSetAddressRequestBuilder(override val deviceId: DeviceId, override val address: Integra7Address): Integra7GlobalSysEx<StudioSet>() {
-        override val size = Integra7Size(mlsb = 0x57u, lsb = 0x08u)
+        override val size
+            get() = Integra7Size(mlsb = 0x5Fu, lsb = 0x00u) + partEqs.last().size
 
         val common = StudioSetCommonAddressRequestBuilder(deviceId, address)
         val commonChorus = StudioSetCommonChorusBuilder(deviceId, address.offsetBy(mlsb = 0x04u, lsb = 0x00u))

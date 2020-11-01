@@ -11,7 +11,10 @@ data class SuperNaturalDrumKit (
                 "\tcommon = $common\n" +
                 "\tmfx = $mfx\n" +
                 "\tcommonCompEq = $commonCompEq\n" +
-                "\tnotes = $notes\n" +
+                "\tnotes = ${notes.joinToString(
+                    prefix = "\n\t  ",
+                    separator = "\n\t  ",
+                    postfix = "\n")}" +
                 ")"
 }
 

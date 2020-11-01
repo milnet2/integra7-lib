@@ -204,7 +204,7 @@ data class Integra7Address(val address: UInt7): UByteSerializable, Comparable<In
         Integra7Address((address + 1u).toUInt7UsingValue())
 
     fun offsetBy(msb: UByte = 0x00u, mmsb: UByte = 0x00u, mlsb: UByte = 0x00u, lsb: UByte, factor: Int = 1): Integra7Address =
-        offsetBy(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7())
+        offsetBy(msb.toUByte7(), mmsb.toUByte7(), mlsb.toUByte7(), lsb.toUByte7(), factor)
 
     fun offsetBy(msb: UByte7 = UByte7.MIN_VALUE, mmsb: UByte7 = UByte7.MIN_VALUE, mlsb: UByte7 = UByte7.MIN_VALUE, lsb: UByte7 = UByte7.MIN_VALUE, factor: Int = 1): Integra7Address =
         offsetBy(UInt7(msb, mmsb, mlsb, lsb), factor)
